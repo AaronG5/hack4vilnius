@@ -5,6 +5,7 @@ import { joinChallenge, listChallenges } from "../../api";
 import { challengeKey, challengeMeta, GOALS, type BoardRow } from "../../data/challengeMeta";
 import { useApi } from "../../hooks/useApi";
 import { myDistrict } from "../../lib/activity";
+import { count, shortDate } from "../../lib/format";
 import { districtTable } from "../../lib/cityStats";
 import { store, type PrivateChallenge } from "../../lib/localStore";
 import { myActivity, type Activity } from "../../lib/problemModel";
@@ -24,11 +25,19 @@ export interface ChallengeCard {
   ink: string;
   time: string;
   short: string;
-  pct: number;
+  /** Progress bar; omitted when there's nothing real to measure. */
+  pct?: number;
+  /** The user's own actions that count towards this challenge. */
+  mine: number;
+  /** Seasonal: everyone's actions so far, and the city's goal. */
+  city?: number;
+  target?: number;
   progLabel: string;
   yours: string;
   board: string;
   rows: BoardRow[];
+  /** Shown instead of the leaderboard while it has no rows. */
+  boardEmpty?: string;
   rules: string[];
   prize: string;
   cta?: [string, string];
@@ -52,6 +61,7 @@ function privateCard(p: PrivateChallenge, acts: Activity[], myName: string): Cha
     time: left ? `Liko ${left} d.` : "Baigėsi",
     short: `1 dalyv. · jūs ${mine}/${p.target}`,
     pct: Math.min(100, Math.round((mine / p.target) * 100)),
+    mine,
     progLabel: `Jūsų tikslas: ${p.target} ${goal.unit}`,
     yours:
       mine >= p.target
@@ -70,24 +80,40 @@ function privateCard(p: PrivateChallenge, acts: Activity[], myName: string): Cha
   };
 }
 
+/** "Liko 12 dienų", "Paskutinė diena", "Prasideda spal. 15", "Baigėsi". */
+function timeLeft(start: number, end: number, now: number): string {
+  if (now < start) return `Prasideda ${shortDate(start)}`;
+  const days = Math.ceil((end - now) / DAY);
+  if (days <= 0) return "Baigėsi";
+  return days === 1 ? "Paskutinė diena" : `Liko ${count(days, ["diena", "dienos", "dienų"])}`;
+}
+
 export function useChallenges() {
   const { views, districts, me, toast } = useAppState();
   const { data: apiChallenges, loading } = useApi((signal) => listChallenges(signal), "challenges");
   const [joined, setJoined] = useState(store.joined);
   const [privates, setPrivates] = useState(store.privateChallenges);
+  // One reference time per page view, so deadlines and windows agree.
+  const [now] = useState(() => Date.now());
 
   const acts = useMemo(() => myActivity(views, me?.id), [views, me?.id]);
 
   const cards = useMemo(() => {
+
     const md = myDistrict(acts);
     const table = districtTable(views, districts.map((d) => d.name));
-    const ctx = { myDistrict: md, table, myDistrictActs: acts.filter((a) => a.district === md).length };
     const publicCards: ChallengeCard[] = (apiChallenges ?? [])
       .filter((c) => c.status !== "ended")
       .map((c) => {
         const key = challengeKey(c.name);
-        const meta = key ? challengeMeta(key, ctx) : undefined;
-        return {
+        const meta = key ? challengeMeta(key) : undefined;
+        const start = Date.parse(c.start_date);
+        const end = Date.parse(c.end_date) + DAY;
+        // Only actions since the challenge started, in its categories when it has any.
+        const cats = new Set((c.categories ?? []).map((x) => x.name));
+        const counts = (category: string, at: number) => at >= start && at < end && (!cats.size || cats.has(category));
+        const mine = acts.filter((a) => counts(a.category, a.at)).length;
+        const base = {
           id: c.id,
           apiId: c.id,
           icon: key ?? "kita",
@@ -96,22 +122,58 @@ export function useChallenges() {
           tag: meta?.tag ?? "Iššūkis",
           color: meta?.color ?? "var(--lav)",
           ink: meta?.ink ?? "#3C3C3C",
-          time: meta?.time ?? `Iki ${c.end_date}`,
-          short: meta?.short ?? `+${c.reward_points} tšk.`,
-          pct: meta?.pct ?? 0,
-          progLabel: meta?.progLabel ?? "Eiga",
-          yours: meta?.yours ?? "",
-          board: meta?.board ?? "",
-          rows: meta?.rows ?? [],
+          time: timeLeft(start, end, now),
+          mine,
           rules: meta?.rules ?? [],
           prize: meta?.prize ?? `${c.reward_points} taškų dalyviams.`,
-          cta: meta?.cta ?? ["Prisijungti", "Dalyvaujate"],
+          cta: meta?.cta ?? (["Dalyvauti", "Dalyvaujate"] as [string, string]),
           joined: Boolean(joined[key ?? c.id]),
           seasonal: meta?.seasonal,
+          board: "",
+          rows: [] as BoardRow[],
+          progLabel: "Jūsų veiksmai nuo pradžios",
+          yours: "",
+          short: `Jūsų veiksmai: ${mine} · +${c.reward_points} tšk.`,
         };
+
+        if (meta?.seasonal) {
+          // Everyone's reports and answers in the challenge's categories since it started.
+          let city = 0;
+          for (const v of views) {
+            if (cats.size && !cats.has(v.category)) continue;
+            for (const r of v.detail.reports) if (counts(v.category, Date.parse(r.created_at))) city++;
+            for (const val of v.detail.validations) if (counts(v.category, Date.parse(val.created_at))) city++;
+          }
+          const target = meta.cityTarget ?? 0;
+          return { ...base, city, target, pct: target ? Math.min(100, Math.round((city / target) * 100)) : undefined, progLabel: "Visas miestas" };
+        }
+
+        if (key === "rajonai") {
+          const rank = table.findIndex((r) => r.name === md) + 1;
+          const row = table[rank - 1];
+          const inDistrict = acts.filter((a) => a.district === md && counts(a.category, a.at)).length;
+          // Districts with reports, plus yours; the rest are all "0 %" and say nothing.
+          const shown = table.map((r, i) => ({ r, rank: i + 1 })).filter(({ r }) => r.total > 0 || r.name === md);
+          return {
+            ...base,
+            short: md ? `${md} — ${rank} vieta · ${row.pct} % sutvarkyta` : "Jūsų rajonas nustatomas pagal pirmą veiksmą",
+            pct: md ? row.pct : undefined,
+            progLabel: md ? `${md} — sutvarkyta` : "Jūsų veiksmai",
+            yours: md
+              ? `Jūsų veiksmai rajone: ${inDistrict}. Jūsų rajonas nustatomas pagal paskutinį veiksmą.`
+              : "Praneškite arba patikrinkite problemą — rajonas bus nustatytas pagal jos vietą.",
+            board: "Rajonų lentelė · sutvarkyta dalis",
+            boardEmpty: "Pranešimų dar nėra — lentelė atsiras po pirmųjų.",
+            rows: shown.map(({ r, rank: n }): BoardRow => [String(n), r.name, r.name === md ? `Jūsų rajonas · ${r.total} pran.` : `${r.total} pran.`, `${r.pct} %`, r.name === md]),
+            cta: ["Dalyvauti už savo rajoną", md ? `Dalyvaujate už ${md}` : "Dalyvaujate"] as [string, string],
+          };
+        }
+
+        if (meta?.teams) return { ...base, board: meta.teams.board, boardEmpty: meta.teams.empty, yours: meta.teams.how };
+        return base;
       });
     return [...privates.map((p) => privateCard(p, acts, me?.name ?? "")), ...publicCards];
-  }, [apiChallenges, acts, views, districts, joined, privates, me?.name]);
+  }, [apiChallenges, acts, views, districts, joined, privates, me?.name, now]);
 
   const toggleJoin = useCallback(
     async (card: ChallengeCard) => {

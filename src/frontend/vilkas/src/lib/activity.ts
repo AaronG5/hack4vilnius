@@ -35,8 +35,8 @@ export function earnedLandmarks(acts: Activity[]): { landmark: Landmark; at: num
   return out;
 }
 
-/** District of the latest action, as the demo uses for "your district". */
-export function myDistrict(acts: Activity[], fallback = "Žirmūnai"): string {
+/** District of the latest action, as the demo uses for "your district"; "" before the first action. */
+export function myDistrict(acts: Activity[], fallback = ""): string {
   for (let i = acts.length - 1; i >= 0; i--) if (acts[i].district) return acts[i].district;
   return fallback;
 }

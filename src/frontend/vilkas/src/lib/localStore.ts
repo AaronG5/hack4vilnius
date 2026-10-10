@@ -42,7 +42,7 @@ export interface Assignment {
 export const store = {
   assignments: () => read<Record<string, Assignment>>("vilkas.assignments", {}),
   setAssignments: (v: Record<string, Assignment>) => write("vilkas.assignments", v),
-  joined: () => read<Record<string, boolean>>("vilkas.joined", { rajonai: true, sezonas: true }),
+  joined: () => read<Record<string, boolean>>("vilkas.joined", {}),
   setJoined: (v: Record<string, boolean>) => write("vilkas.joined", v),
   privateChallenges: () => read<PrivateChallenge[]>("vilkas.private", []),
   setPrivateChallenges: (v: PrivateChallenge[]) => write("vilkas.private", v),

@@ -30,9 +30,11 @@ function Card({ c, onOpen }: { c: ChallengeCard; onOpen: () => void }) {
         </span>
         <b style={{ fontSize: 15, lineHeight: 1.2 }}>{c.title}</b>
         <span className="m">{c.short}</span>
-        <span className="bar" style={{ height: 5 }}>
-          <i style={{ height: 5, width: `${c.pct}%`, background: c.priv ? "var(--btn)" : c.color }} />
-        </span>
+        {c.pct !== undefined && (
+          <span className="bar" style={{ height: 5 }}>
+            <i style={{ height: 5, width: `${c.pct}%`, background: c.priv ? "var(--btn)" : c.color }} />
+          </span>
+        )}
       </span>
       <ChevronIcon size={18} style={{ flexShrink: 0, color: "var(--muted)" }} />
     </button>
@@ -50,8 +52,6 @@ export function ChallengesPage() {
   const list = cards.filter((c) => !c.seasonal);
   const total = cards.length;
   const joinedCount = cards.filter((c) => c.joined).length;
-  const duob = acts.filter((a) => a.category === "Duobė").length;
-  const city = 640 + duob; // TODO(api-gap): city-wide progress for the seasonal challenge.
   const week = Math.min(5, weekChecks(acts));
 
   const joinByCode = () => {
@@ -85,12 +85,14 @@ export function ChallengesPage() {
           <b style={{ fontSize: 19 }}>{seasonal.title}</b>
           <small>{seasonal.desc}</small>
           <span className="bar" style={{ background: "#5B5F75" }}>
-            <i style={{ width: `${city / 10}%`, background: "var(--lime)" }} />
+            <i style={{ width: `${seasonal.pct ?? 0}%`, background: "var(--lime)" }} />
           </span>
           <span style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--on-navy-muted)" }}>
-            <span>{city} iš 1 000 patikrinta</span>
             <span>
-              Jūsų indėlis: <b style={{ color: "#fff" }}>{duob}</b>
+              {seasonal.city ?? 0} iš {(seasonal.target ?? 0).toLocaleString("lt-LT")} — visas miestas
+            </span>
+            <span>
+              Jūsų indėlis: <b style={{ color: "#fff" }}>{seasonal.mine}</b>
             </span>
           </span>
           <small style={{ color: "#fff", fontWeight: 600 }}>{seasonal.prize}</small>

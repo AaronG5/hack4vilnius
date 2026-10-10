@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { getChallenge } from "../../api";
 import { BackIcon } from "../../components/icons";
+import { useApi } from "../../hooks/useApi";
+import { count } from "../../lib/format";
 import { CH_ICON } from "../../data/challengeMeta";
 import { useAppState } from "../../state/appState";
 import { ChallengeIcon } from "./ChallengesPage";
@@ -18,6 +21,8 @@ export function ChallengeDetailPage() {
   const { cards, loading, toggleJoin, privates, savePrivates } = useChallenges();
   const [copied, setCopied] = useState(false);
   const c = cards.find((x) => x.id === id);
+  const apiId = c?.apiId;
+  const { data: detail } = useApi((signal) => (apiId ? getChallenge(apiId, signal) : Promise.resolve(undefined)), `challenge-${apiId ?? ""}`);
   const back = () => navigate("/challenges");
 
   if (!c) {
@@ -60,7 +65,10 @@ export function ChallengeDetailPage() {
         <span className="chic big">
           <ChallengeIcon path={CH_ICON[c.icon as keyof typeof CH_ICON]} size={30} />
         </span>
-        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", opacity: 0.85 }}>{c.tag}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", opacity: 0.85 }}>
+          {c.tag}
+          {detail?.participant_count !== undefined && ` · ${count(detail.participant_count, ["dalyvis", "dalyviai", "dalyvių"])}`}
+        </span>
         <h1 style={{ fontSize: 24, lineHeight: 1.15 }}>{c.title}</h1>
         <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{c.desc}</span>
       </div>
@@ -68,13 +76,25 @@ export function ChallengeDetailPage() {
       <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}>
           <span>{c.progLabel}</span>
-          <span>{c.pct} %</span>
+          <span>{c.city !== undefined ? `${c.city} iš ${(c.target ?? 0).toLocaleString("lt-LT")}` : c.pct !== undefined ? `${c.pct} %` : c.mine}</span>
         </div>
-        <span className="bar">
-          <i style={{ width: `${c.pct}%`, background: c.priv || !BRIGHT.includes(c.color) ? "var(--btn)" : c.color }} />
-        </span>
+        {c.pct !== undefined && (
+          <span className="bar">
+            <i style={{ width: `${c.pct}%`, background: c.priv || !BRIGHT.includes(c.color) ? "var(--btn)" : c.color }} />
+          </span>
+        )}
+        {c.city !== undefined && <span className="m">Jūsų indėlis: {c.mine}</span>}
         {c.yours && <span className="m">{c.yours}</span>}
       </div>
+
+      {c.rows.length === 0 && c.boardEmpty && (
+        <div className="card" style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+          <h2 className="sec" style={{ margin: 0 }}>
+            {c.board}
+          </h2>
+          <span className="m">{c.boardEmpty}</span>
+        </div>
+      )}
 
       {c.rows.length > 0 && (
         <div className="card" style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>

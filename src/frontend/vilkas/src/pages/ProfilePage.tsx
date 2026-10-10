@@ -59,7 +59,7 @@ export function ProfilePage() {
             {me?.name || "Jūsų profilis"}
           </h1>
           <p className="pgsub" style={{ margin: 0 }}>
-            {level(points)} · {me?.district?.name ?? myDistrict(acts)} · {points} tšk.
+            {[level(points), me?.district?.name ?? myDistrict(acts), `${points} tšk.`].filter(Boolean).join(" · ")}
           </p>
         </div>
       </div>
