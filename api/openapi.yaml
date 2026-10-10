@@ -1249,6 +1249,14 @@ components:
           description: >-
             Whether a new problem is near a school, kindergarten, hospital or
             playground. Ignored when `problem` is given.
+        new_problem:
+          type: boolean
+          default: false
+          description: >-
+            Set when the user said the nearby problems they were shown aren't
+            this one. Without it, a report a few metres from an open problem
+            of the same category joins that problem. Ignored when `problem`
+            is given.
         media:
           type: array
           items:

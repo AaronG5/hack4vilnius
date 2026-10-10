@@ -256,6 +256,8 @@ export interface ReportCreate {
   address?: string;
   urgency?: ProblemUrgency;
   near_sensitive?: boolean;
+  /** The user said the nearby problems aren't this one; stops the backend joining one a few metres away. */
+  new_problem?: boolean;
 }
 
 export interface Validation {

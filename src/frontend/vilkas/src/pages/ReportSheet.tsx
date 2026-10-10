@@ -281,8 +281,9 @@ export function ReportSheet() {
     const found = near
       .filter((c) => c.category === form.categoryId || c.meters <= OTHER_TYPE_RADIUS_M)
       .flatMap((c) => {
-        // Not your own problems, nor ones you've answered: one answer per person.
-        const view = views.find((v) => v.id === c.id && !v.mine && v.myVote === undefined);
+        // Your own and already-answered problems are offered too: the backend
+        // joins a same-type report within 25 m to them anyway, so ask first.
+        const view = views.find((v) => v.id === c.id);
         return view ? [{ view, meters: Math.max(5, c.meters) }] : [];
       })
       .slice(0, MAX_CANDIDATES);
@@ -295,7 +296,8 @@ export function ReportSheet() {
     }
   };
 
-  const submit = async (from: Step) => {
+  // `newProblem`: the user said none of the nearby problems is this one.
+  const submit = async (from: Step, newProblem = false) => {
     if (!at) return;
     setStep("saving");
     const title = form.title.trim() || categories.find((c) => c.id === form.categoryId)?.name || "";
@@ -309,6 +311,7 @@ export function ReportSheet() {
         location: { type: "Point", coordinates: at },
         urgency: form.urgency,
         near_sensitive: form.nearSensitive,
+        new_problem: newProblem,
       });
       await reload();
       // A report a few metres from an open problem of the same type joins it.
@@ -330,6 +333,12 @@ export function ReportSheet() {
   const confirmDuplicate = async () => {
     const chosen = dupSel !== null ? cands[dupSel] : undefined;
     if (!chosen) return;
+    // One answer per person: a problem you reported or already answered just opens.
+    if (chosen.view.mine || chosen.view.myVote !== undefined) {
+      navigate(`/problems/${chosen.view.id}`);
+      toast("Apie šią problemą jau pranešėte – ji jau sąraše");
+      return;
+    }
     setStep("saving");
     try {
       const result = await createProblemValidation(chosen.view.id, {
@@ -672,7 +681,7 @@ export function ReportSheet() {
                   <b style={{ fontSize: 14 }}>{c.view.title}</b>
                   <br />
                   <span className="sm">
-                    {c.view.category} · {c.meters} m · {c.view.confirms} patvirt.
+                    {c.view.category} · {c.meters} m · {c.view.confirms} patvirt.{c.view.mine ? " · jūsų" : ""}
                   </span>
                 </span>
               </button>
@@ -681,7 +690,7 @@ export function ReportSheet() {
           <button type="button" className="btn" disabled={dupSel === null} onClick={() => void confirmDuplicate()}>
             Taip – patvirtinti pažymėtą
           </button>
-          <button type="button" className="btn link" onClick={() => void submit("dupes")}>
+          <button type="button" className="btn link" onClick={() => void submit("dupes", true)}>
             Ne, tai nauja problema
           </button>
         </>

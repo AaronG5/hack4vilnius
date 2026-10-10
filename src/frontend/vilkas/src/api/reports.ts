@@ -30,6 +30,7 @@ export function createReport(report: ReportCreate, signal?: AbortSignal): Promis
       address: report.address,
       urgency: report.urgency,
       near_sensitive: report.near_sensitive,
+      new_problem: report.new_problem,
     }),
     signal,
   });

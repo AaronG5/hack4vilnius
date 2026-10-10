@@ -186,6 +186,29 @@ class TestReportCreate:
         assert Problem.objects.count() == 1
         assert _body(response)["problem"] == str(problem.id)
 
+    def test_a_new_problem_on_request_is_not_joined(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        category: Category,
+    ) -> None:
+        """When the user said the problem nearby isn't this one, it isn't joined."""
+        response = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "A different pothole.",
+                "category": str(category.id),
+                "latitude": 54.6901,
+                "longitude": 25.28,
+                "new_problem": True,
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert Problem.objects.count() == PROBLEMS_AFTER_A_SECOND
+        assert _body(response)["problem"] != str(problem.id)
+
     def test_a_report_further_away_is_a_new_problem(
         self,
         auth_client: APIClient,

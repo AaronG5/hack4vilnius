@@ -80,6 +80,8 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
     report a new problem rather than attach to an existing one. `latitude`
     and `longitude` locate a new problem and are required unless `problem`
     is given - see the `location` note on `ReportCreate` in api/openapi.yaml.
+    `new_problem` is sent when the user said a nearby problem isn't this one,
+    so the report isn't joined to an open problem a few metres away.
     `media` is optional: a text-only report is allowed. `title`, `address`,
     `urgency` and `near_sensitive` describe a new problem and are ignored
     when attaching to an existing one.
@@ -116,6 +118,7 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
         required=False,
     )
     near_sensitive = serializers.BooleanField(required=False, default=False)
+    new_problem = serializers.BooleanField(required=False, default=False)
     # Optional: the app also lets a resident describe a problem in words only.
     media = serializers.ListField(
         child=serializers.FileField(),

@@ -61,6 +61,8 @@ class _NewProblemDetails:
     address: str
     urgency: str | None
     near_sensitive: bool
+    # The user said the problems nearby aren't this one: don't join one.
+    new_problem: bool = False
 
 
 def _get_or_create_problem(
@@ -89,7 +91,11 @@ def _get_or_create_problem(
         "type": "Point",
         "coordinates": [details.longitude, details.latitude],
     }
-    duplicate = problem_services.find_duplicate_problem(location, resolved_category)
+    duplicate = (
+        None
+        if details.new_problem
+        else problem_services.find_duplicate_problem(location, resolved_category)
+    )
     if duplicate is not None:
         return duplicate
 
@@ -147,6 +153,7 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
                 address=cast("str", data["address"]).strip(),
                 urgency=cast("str | None", data.get("urgency")),
                 near_sensitive=cast("bool", data["near_sensitive"]),
+                new_problem=cast("bool", data["new_problem"]),
             ),
         )
 
