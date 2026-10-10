@@ -1,13 +1,12 @@
 // Resident app frame from the demo: splash, header with points, scrolling main, FAB, bottom nav.
-// Pages render once a session exists, so authenticated calls work on deep links.
+// Pages render once RootLayout has a session, so authenticated calls work on deep links.
 
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ensureSession, getToken } from "../api";
-import { AppStateProvider } from "../state/AppStateProvider";
 import { useAppState } from "../state/appState";
 import { BellIcon, FlagIcon, MapIcon, PlusIcon, UserIcon } from "./icons";
 import { Logo } from "./Logo";
+import { useSession } from "../state/session";
 import "./AppShell.css";
 
 const SPLASH_MS = 1900;
@@ -19,37 +18,26 @@ const NAV = [
 ];
 
 export function AppShell() {
-  const [ready, setReady] = useState(() => getToken() !== null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    if (ready) return;
-    ensureSession().then(
-      () => setReady(true),
-      () => setFailed(true),
-    );
-  }, [ready]);
+  const { ready, failed } = useSession();
 
   return (
-    <AppStateProvider ready={ready}>
-      <div className="app">
-        <Splash ready={ready} />
-        <Header />
-        {failed ? (
-          <main className="app-main">
-            <div className="card empty" role="alert">
-              Nepavyko prisijungti prie serverio.{" "}
-              <button type="button" className="btn link" onClick={() => window.location.reload()}>
-                Bandyti dar kartą
-              </button>
-            </div>
-          </main>
-        ) : (
-          ready && <Outlet />
-        )}
-        <BottomNav />
-      </div>
-    </AppStateProvider>
+    <div className="app">
+      <Splash ready={ready} />
+      <Header />
+      {failed ? (
+        <main className="app-main">
+          <div className="card empty" role="alert">
+            Nepavyko prisijungti prie serverio.{" "}
+            <button type="button" className="btn link" onClick={() => window.location.reload()}>
+              Bandyti dar kartą
+            </button>
+          </div>
+        </main>
+      ) : (
+        ready && <Outlet />
+      )}
+      <BottomNav />
+    </div>
   );
 }
 

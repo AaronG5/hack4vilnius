@@ -38,43 +38,7 @@ export function CityMap({ districts, pins, onOpen, onPick, mark }: CityMapProps)
         onClick={handleClick}
         style={pick ? { cursor: "crosshair" } : undefined}
       >
-        <rect width={MAP_W} height={MAP_H} fill="var(--map-land)" />
-        {districts.map((d, i) => (
-          <polygon
-            key={d.id}
-            points={districtPolygon(d)
-              .map((p) => p.join(","))
-              .join(" ")}
-            fill={i % 2 ? "var(--map-d1)" : "var(--map-d2)"}
-            stroke="var(--map-road)"
-            strokeWidth="3"
-          />
-        ))}
-        <g stroke="var(--map-road)" strokeWidth="5" fill="none" strokeLinecap="round" opacity=".9">
-          <path d="M40 0 L95 440" />
-          <path d="M0 120 L400 90" />
-          <path d="M0 380 L400 350" />
-          <path d="M265 0 L285 440" />
-          <path d="M150 230 L215 440" />
-        </g>
-        <path
-          d="M-10 238 C 60 205,120 255,190 230 S 300 185,410 210"
-          fill="none"
-          stroke="var(--map-water)"
-          strokeWidth="16"
-          strokeLinecap="round"
-        />
-        <text x="44" y="226" fontSize="10" fontStyle="italic" fill="var(--map-label)">
-          Neris
-        </text>
-        {districts.map((d) => {
-          const [x, y] = districtLabelAt(districtPolygon(d));
-          return (
-            <text key={d.id} x={x} y={y} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--map-label)">
-              {d.name}
-            </text>
-          );
-        })}
+        <MapBaseLayers districts={districts} />
         {pins.map((m) => {
           const [x, y] = m.xy;
           const color = m.status === "fixed" ? "var(--green)" : m.status === "work" ? "var(--yellow)" : "var(--red)";
@@ -123,6 +87,51 @@ export function CityMap({ districts, pins, onOpen, onPick, mark }: CityMapProps)
         )}
       </svg>
     </div>
+  );
+}
+
+export function MapBaseLayers({ districts, labels = true }: { districts: District[]; labels?: boolean }) {
+  return (
+    <>
+      <rect width={MAP_W} height={MAP_H} fill="var(--map-land)" />
+      {districts.map((d, i) => (
+        <polygon
+          key={d.id}
+          points={districtPolygon(d)
+            .map((p) => p.join(","))
+            .join(" ")}
+          fill={i % 2 ? "var(--map-d1)" : "var(--map-d2)"}
+          stroke="var(--map-road)"
+          strokeWidth="3"
+        />
+      ))}
+      <g stroke="var(--map-road)" strokeWidth="5" fill="none" strokeLinecap="round" opacity=".9">
+        <path d="M40 0 L95 440" />
+        <path d="M0 120 L400 90" />
+        <path d="M0 380 L400 350" />
+        <path d="M265 0 L285 440" />
+        <path d="M150 230 L215 440" />
+      </g>
+      <path
+        d="M-10 238 C 60 205,120 255,190 230 S 300 185,410 210"
+        fill="none"
+        stroke="var(--map-water)"
+        strokeWidth="16"
+        strokeLinecap="round"
+      />
+      <text x="44" y="226" fontSize="10" fontStyle="italic" fill="var(--map-label)">
+        Neris
+      </text>
+      {labels &&
+        districts.map((d) => {
+          const [x, y] = districtLabelAt(districtPolygon(d));
+          return (
+            <text key={d.id} x={x} y={y} textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--map-label)">
+              {d.name}
+            </text>
+          );
+        })}
+    </>
   );
 }
 

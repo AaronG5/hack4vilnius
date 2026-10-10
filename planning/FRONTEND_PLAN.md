@@ -110,6 +110,7 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
 | Partner prizes + redeem | profile | static list | `GET /rewards`, `POST /rewards/{id}/redeem` |
 | City KPIs, district stats | dashboards | fixtures | `GET /stats/city`, `GET /districts/{id}/stats` |
+| City staff login / role check | dashboards | city pages use the anonymous session | auth for `city_administrator` |
 | Institutions + assignment | board 10 | fixtures | `GET /institutions`, `POST /problems/{id}/assignments` |
 
 ## Progress
@@ -132,7 +133,10 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 - [x] Phase 6 — Profile
   - Landmark icons come from the demo (`src/data/landmarks.json`); "Naujas ženklelis" toast when an action unlocks one.
   - Badges are computed client-side like the demo, not from `GET /users/me/badges`.
-- [ ] Phase 7 — Municipality dashboard
+- [x] Phase 7 — Municipality dashboard
+  - `/city`: filters (district, category, period) kept in the URL; KPI tiles, hotspot map (size/colour = priority, top-2 districts labelled), ranked table with Priskirti / Atidaryti.
+  - All numbers are computed from live problems (`src/lib/cityStats.ts`): trend = recent confirmations, reopened = "still there" answers after completion.
+  - Session + shared data moved to `RootLayout` so city pages share them with the resident app.
 - [ ] Phase 8 — District dashboard
 - [ ] Phase 9 — Problem card + assignment
 - [ ] Phase 10 — Real map (optional)
