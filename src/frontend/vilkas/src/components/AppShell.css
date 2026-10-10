@@ -1,0 +1,28 @@
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+}
+
+.app-shell__phone {
+  position: relative;
+  width: 100%;
+  max-width: var(--phone-width);
+  min-height: 100dvh;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+@media (min-width: 500px) {
+  .app-shell {
+    align-items: center;
+    padding: 24px 0;
+  }
+
+  .app-shell__phone {
+    min-height: 844px;
+    height: 844px;
+    border-radius: 32px;
+    box-shadow: 0 20px 60px rgba(65, 68, 84, 0.25);
+  }
+}

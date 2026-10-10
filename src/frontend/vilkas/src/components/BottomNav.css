@@ -1,0 +1,32 @@
+.bottom-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--nav-height);
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  z-index: 20;
+}
+
+.bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bottom-nav__item.active {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.bottom-nav__item.active span {
+  color: var(--text);
+}

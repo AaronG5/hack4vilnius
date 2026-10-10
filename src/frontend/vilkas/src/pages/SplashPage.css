@@ -1,0 +1,63 @@
+.splash {
+  position: absolute;
+  inset: 0;
+  background: var(--red);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.splash__logo {
+  margin-bottom: 12px;
+  display: flex;
+}
+
+.splash__name {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.splash__tagline {
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.splash__progress {
+  width: 120px;
+  height: 5px;
+  margin-top: 30px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.splash__progress span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #ffffff;
+  animation: splash-load 1.2s ease-out forwards;
+}
+
+@keyframes splash-load {
+  from {
+    width: 10%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.splash__footer {
+  position: absolute;
+  bottom: 40px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
