@@ -58,6 +58,12 @@ the nine example problems (the same ones the frontend's mock API serves) with
 their reports and answers. Everything is keyed by name, so re-running updates
 in place instead of duplicating.
 
+### Address lookup
+`GET /api/geocode?q=` turns a typed address into coordinates for the report
+form. It proxies [Photon](https://photon.komoot.io/) (OpenStreetMap data);
+point it at another instance with `GEOCODER_URL`, and identify your
+deployment with `GEOCODER_USER_AGENT`.
+
 ## Frontend
 
 A Vite + React + TypeScript app in `src/frontend/vilkas`, with a typed client

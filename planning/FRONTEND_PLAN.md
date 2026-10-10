@@ -105,7 +105,7 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | Priority score | map list, sheet, dashboard | computed client-side (`src/lib/priority.ts`, the demo formula) | `priority_score` + factors on `Problem` |
 | List summaries | map list | `getProblem()` per problem | title, thumb, confirmation counts in `GET /problems` |
 | AI analysis before submit | report sheet | keyword stand-in in `src/lib/gaps.ts` | `POST /reports/analyze` |
-| Reverse geocoding (point → address) | report sheet | address typed by the user | backend proxy to a geocoder (Nominatim policy: max 1 req/s, no bulk use from browsers) |
+| Reverse geocoding (point → address) | report sheet, after picking on the map or using GPS | the district stands in for a street | extend `GET /geocode` with a point → address lookup |
 | Notification title vs body, deep-link target | notifications | split `message` at the first sentence | `title` + `body` on `Notification` |
 | Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
 | Partner prizes + redeem | profile | static list | `GET /rewards`, `POST /rewards/{id}/redeem` |
@@ -168,4 +168,8 @@ Ideas parked until the frontend phases are done; none are commitments.
   - Endpoints the backend doesn't serve now say so: urgency voting (404) → "Skubumo balsavimas dar neveikia"; assignment on the city pages (403, no staff login) → "Reikia savivaldybės darbuotojo paskyros".
   - A token the API doesn't know (left over from the mock API, or from a reset database) made DRF reject *every* request with 401 — public endpoints included, since it authenticates before checking permissions — which left the report form with no categories and its button disabled. `request()` now drops such a token, starts a fresh anonymous session and retries once; concurrent 401s share the one `POST /session`.
   - `manage.py seed_demo` seeds the reference data (and `--with-examples` the nine example problems), since `GET /categories` / `GET /districts` back the report form and the map.
+- [x] Address lookup (2026-10-10)
+  - `GET /api/geocode?q=` (new `geocoding` app) proxies Photon, an OpenStreetMap geocoder built for type-ahead, bounded to Vilnius and cached. It runs server-side because those services ask callers to identify themselves and keep rates low, which browser type-ahead can't promise; it needs a session, so the app isn't an open relay.
+  - The report form's address field is a combobox: suggestions appear as you type (350 ms debounce, 3 characters minimum), and choosing one sets the report's location. The "Kur tai?" map step is then skipped — "Patikslinti vietą žemėlapyje" still opens it.
+  - No match, a failed lookup, or an address typed but never resolved all fall back to the map step, each saying which happened.
 - [ ] Phase 11 — API client tests

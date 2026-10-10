@@ -33,6 +33,7 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "drf-spectacular" },
     { name = "google-auth", extra = ["requests"] },
+    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -53,6 +54,7 @@ requires-dist = [
     { name = "djangorestframework", specifier = ">=3.18.3" },
     { name = "drf-spectacular", specifier = ">=0.30.0" },
     { name = "google-auth", extras = ["requests"], specifier = ">=2.61.0" },
+    { name = "requests", specifier = ">=2.34.2" },
 ]
 
 [package.metadata.requires-dev]

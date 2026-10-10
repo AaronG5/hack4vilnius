@@ -90,6 +90,16 @@ export interface Institution {
   contact_info: string;
 }
 
+/** A geocoder result: the street line, what follows it, and where it is. */
+export interface Place {
+  /** e.g. "Kalvarijų g. 98". */
+  address: string;
+  /** e.g. "Šnipiškės, Vilnius". */
+  locality: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface GeoPoint {
   type: "Point";
   /** [longitude, latitude] */

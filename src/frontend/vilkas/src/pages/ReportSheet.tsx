@@ -1,9 +1,9 @@
 // Report flow sheet from the demo (FAB): source → comment → AI → form → place → duplicates → send.
 // "Nufotografuoti" is a file input with capture, so tapping it opens the camera directly.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { createProblemValidation, createReport, type ProblemUrgency } from "../api";
+import { createProblemValidation, createReport, searchPlaces, type Place, type ProblemUrgency } from "../api";
 import { LazyMap } from "../components/map/LazyMap";
 import { CameraIcon, GalleryIcon, MicIcon, PencilIcon, PinIcon } from "../components/icons";
 import { Sheet, Steps } from "../components/Sheet";
@@ -31,6 +31,12 @@ interface Candidate {
 }
 
 const DUPLICATE_RADIUS_M = 270;
+
+// Address lookup: wait for a pause in typing, and for enough of an address
+// to be worth searching for (the API rejects anything shorter).
+const SEARCH_DEBOUNCE_MS = 350;
+const MIN_QUERY = 3;
+const MAX_MATCHES = 5;
 
 const BLANK: Form = { categoryId: "", urgency: "urgent", title: "", address: "", description: "", nearSensitive: false };
 
@@ -73,6 +79,16 @@ export function ReportSheet() {
   // The GPS fix behind the address, while it still describes `at`.
   const [fix, setFix] = useState<Fix & { district: string }>();
   const [fixError, setFixError] = useState<string>();
+  // Address lookup: suggestions for what is typed, and the one chosen.
+  const [matches, setMatches] = useState<Place[]>([]);
+  const [matchesOpen, setMatchesOpen] = useState(false);
+  const [activeMatch, setActiveMatch] = useState(-1);
+  const [searching, setSearching] = useState(false);
+  const [matched, setMatched] = useState<Place>();
+  const [notFound, setNotFound] = useState(false);
+  const [lookupFailed, setLookupFailed] = useState(false);
+  // Address text that already has coordinates, so it isn't searched again.
+  const settled = useRef("");
   const [cands, setCands] = useState<Candidate[]>([]);
   const [dupSel, setDupSel] = useState<number | null>(null);
   const aiCtl = useRef<AbortController>(undefined);
@@ -109,6 +125,79 @@ export function ReportSheet() {
     setStep("photoText");
   };
 
+  // Look up what is typed, after a pause. A match means the map step can be
+  // skipped; no match (or no geocoder) falls back to placing the pin by hand.
+  useEffect(() => {
+    const query = form.address.trim();
+    // Too short, already placed, or not on the form: nothing to look up.
+    if (step !== "form" || query === settled.current || query.length < MIN_QUERY) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setSearching(true);
+      searchPlaces(query, MAX_MATCHES, controller.signal)
+        .then((found) => {
+          setMatches(found);
+          setMatchesOpen(found.length > 0);
+          setActiveMatch(-1);
+          setNotFound(found.length === 0);
+          setLookupFailed(false);
+        })
+        .catch((error: unknown) => {
+          // The map step still works, so say which of the two happened:
+          // nothing matched, or the lookup itself is unavailable.
+          setMatches([]);
+          setNotFound(false);
+          setLookupFailed(!(error instanceof DOMException && error.name === "AbortError"));
+        })
+        .finally(() => setSearching(false));
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [form.address, step]);
+
+  const editAddress = (text: string) => {
+    patch({ address: text });
+    if (text.trim().length < MIN_QUERY) {
+      setMatches([]);
+      setMatchesOpen(false);
+      setNotFound(false);
+      setLookupFailed(false);
+    }
+    // The coordinates came from the old text, so they no longer describe it.
+    if (matched) {
+      setMatched(undefined);
+      setAt(undefined);
+    }
+    settled.current = "";
+  };
+
+  const chooseMatch = (place: Place) => {
+    settled.current = place.address;
+    patch({ address: place.address });
+    setAt([place.longitude, place.latitude]);
+    setMatched(place);
+    setFix(undefined);
+    setMatches([]);
+    setMatchesOpen(false);
+    setNotFound(false);
+  };
+
+  const onAddressKeys = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!matchesOpen || !matches.length) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const step_ = event.key === "ArrowDown" ? 1 : -1;
+      setActiveMatch((i) => (i + step_ + matches.length) % matches.length);
+    } else if (event.key === "Enter" && activeMatch >= 0) {
+      event.preventDefault();
+      chooseMatch(matches[activeMatch]);
+    } else if (event.key === "Escape") {
+      setMatchesOpen(false);
+    }
+  };
+
   // The browser gives coordinates, not a street. Until there is a geocoder
   // (TODO(api-gap): reverse geocoding), the pin carries the precision and the
   // address field gets the district as an orientyras.
@@ -121,7 +210,14 @@ export function ReportSheet() {
       setAt(here.at);
       setFocus(here.at);
       setFix({ ...here, district });
-      if (!form.address.trim() && district) patch({ address: district });
+      setMatched(undefined);
+      setMatches([]);
+      setMatchesOpen(false);
+      setNotFound(false);
+      if (!form.address.trim() && district) {
+        patch({ address: district });
+        settled.current = district;
+      }
     } catch (error) {
       setFixError(locationError(error));
     } finally {
@@ -133,6 +229,7 @@ export function ReportSheet() {
   const pickPlace = (picked: LngLat) => {
     setAt(picked);
     setFix(undefined);
+    setMatched(undefined);
   };
 
   const back = () => {
@@ -402,7 +499,15 @@ export function ReportSheet() {
                 style={{ flex: 1, minWidth: 0 }}
                 placeholder="Pvz.: Kalvarijų g. 98"
                 value={form.address}
-                onChange={(e) => patch({ address: e.target.value })}
+                onChange={(e) => editAddress(e.target.value)}
+                onKeyDown={onAddressKeys}
+                onFocus={() => setMatchesOpen(matches.length > 0)}
+                role="combobox"
+                aria-expanded={matchesOpen}
+                aria-controls="address-matches"
+                aria-autocomplete="list"
+                aria-activedescendant={activeMatch >= 0 ? `address-match-${activeMatch}` : undefined}
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -415,6 +520,37 @@ export function ReportSheet() {
                 {locating ? "Ieškoma…" : "Mano vieta"}
               </button>
             </div>
+            {matchesOpen && matches.length > 0 && (
+              <ul className="ac" id="address-matches" role="listbox" aria-label="Rasti adresai">
+                {matches.map((place, i) => (
+                  <li
+                    key={`${place.address}-${place.latitude}-${place.longitude}`}
+                    id={`address-match-${i}`}
+                    role="option"
+                    aria-selected={i === activeMatch}
+                    className={i === activeMatch ? "ac-item on" : "ac-item"}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => chooseMatch(place)}
+                  >
+                    <b>{place.address}</b>
+                    {place.locality && <small>{place.locality}</small>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {searching && <span style={{ fontWeight: 500 }}>Ieškoma adreso…</span>}
+            {matched && (
+              <span style={{ fontWeight: 500 }}>
+                ✓ Rasta: {matched.address}
+                {matched.locality && `, ${matched.locality}`} — vietos žymėti nereikės.
+              </span>
+            )}
+            {notFound && !searching && (
+              <span style={{ fontWeight: 500 }}>Tokio adreso nerasta — vietą pažymėsite žemėlapyje.</span>
+            )}
+            {lookupFailed && !searching && (
+              <span style={{ fontWeight: 500 }}>Adresų paieška neveikia — vietą pažymėsite žemėlapyje.</span>
+            )}
             {fix && (
               <span style={{ fontWeight: 500 }}>
                 Vieta nustatyta{fix.district && `: ${fix.district}`} · {fix.at[1].toFixed(5)}, {fix.at[0].toFixed(5)} (±{Math.round(fix.accuracy)} m).
@@ -436,9 +572,19 @@ export function ReportSheet() {
             />
             Šalia mokyklos, darželio ar ligoninės
           </label>
-          <button type="button" className="btn" disabled={!form.categoryId || !form.title.trim()} onClick={() => setStep("place")}>
-            Toliau — pažymėti vietą
+          <button
+            type="button"
+            className="btn"
+            disabled={!form.categoryId || !form.title.trim()}
+            onClick={() => (at ? checkDuplicates() : setStep("place"))}
+          >
+            {at ? "Toliau — peržiūrėti" : "Toliau — pažymėti vietą"}
           </button>
+          {at && (
+            <button type="button" className="btn link" onClick={() => setStep("place")}>
+              Patikslinti vietą žemėlapyje
+            </button>
+          )}
         </>
       );
       break;

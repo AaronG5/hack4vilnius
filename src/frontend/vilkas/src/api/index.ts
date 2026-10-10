@@ -7,6 +7,7 @@ export * from "./users";
 export * from "./problems";
 export * from "./reports";
 export * from "./catalog";
+export * from "./geocode";
 export * from "./challenges";
 export * from "./notifications";
 export * from "./moderation";

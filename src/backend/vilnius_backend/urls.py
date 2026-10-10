@@ -45,6 +45,7 @@ urlpatterns = [
     path("api/", include("challenges.urls")),
     path("api/", include("notifications.urls")),
     path("api/", include("moderation.urls")),
+    path("api/", include("geocoding.urls")),
     path("api/openapi.yaml", ManualOpenApiSchemaView.as_view(), name="manual-schema"),
     path(
         "api/",
