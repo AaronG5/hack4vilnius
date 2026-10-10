@@ -1,5 +1,6 @@
-"""Registration, login, logout and Google sign-in endpoints."""
+"""Registration, login, logout, Google sign-in and session endpoints."""
 
+import uuid
 from collections.abc import Callable, Mapping
 from typing import cast, final
 
@@ -19,7 +20,8 @@ from users.serializers import (
     GoogleAuthSerializer,
     LoginSerializer,
     RegisterSerializer,
-    UserSerializer,
+    UserProfileSerializer,
+    UserProfileUpdateSerializer,
 )
 
 _VerifyOAuth2Token = Callable[[str, google_requests.Request, str], Mapping[str, object]]
@@ -28,7 +30,7 @@ _VerifyOAuth2Token = Callable[[str, google_requests.Request, str], Mapping[str, 
 def _authenticated_response(user: User, status_code: int) -> Response:
     token, _created = Token.objects.get_or_create(user=user)
     key = cast("str", token.key)
-    data = cast("dict[str, object]", UserSerializer(user).data)
+    data = cast("dict[str, object]", UserProfileSerializer(user).data)
     return Response({"token": key, "user": data}, status=status_code)
 
 
@@ -150,3 +152,49 @@ def _get_or_create_google_user(
     user.google_sub = google_sub
     user.save(update_fields=["google_sub"])
     return user, False
+
+
+@final
+class SessionView(AnonymousIdentityMixin):
+    """
+    `POST /api/session` — create an anonymous session for a new user.
+
+    Mints a throwaway `User` with no usable password, so the frontend's
+    "report right away" flow never has to block on registration first.
+    """
+
+    permission_classes = (AllowAny,)
+
+    def post(self, request: Request) -> Response:
+        """Create the anonymous account and return an auth token for it."""
+        del request
+        email = f"anon-{uuid.uuid4()}@anon.hack4vilnius.local"
+        user = User.objects.create_user(email=email, password=None)
+        if self.anonymous_identity is not None:
+            self.anonymous_identity.claim(user)
+        return _authenticated_response(user, status.HTTP_201_CREATED)
+
+
+@final
+class ProfileView(APIView):
+    """`GET`/`PUT /api/users/me` — the current user's profile."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request) -> Response:
+        """Return the current user's own profile."""
+        user = cast("User", request.user)
+        data = cast("dict[str, object]", UserProfileSerializer(user).data)
+        return Response(data)
+
+    def put(self, request: Request) -> Response:
+        """Update the fields the client supplied on the current user."""
+        serializer = UserProfileUpdateSerializer(
+            cast("User", request.user),
+            data=request.data,
+            partial=True,
+        )
+        _ = serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        data = cast("dict[str, object]", UserProfileSerializer(user).data)
+        return Response(data)

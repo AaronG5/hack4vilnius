@@ -998,6 +998,15 @@ components:
             Id of an existing nearby problem this report should be attached
             to, if the user confirmed it's a duplicate. Omit to report a new
             problem.
+        latitude:
+          type: number
+          description: >-
+            Required when `problem` is omitted, to place the new problem
+            this report creates. Flat lat/lng rather than a GeoPoint object
+            because this request body is multipart/form-data.
+        longitude:
+          type: number
+          description: Required when `problem` is omitted; see `latitude`.
         media:
           type: array
           items:
