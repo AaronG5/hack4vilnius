@@ -179,4 +179,10 @@ Ideas parked until the frontend phases are done; none are commitments.
   - An answer can carry several photos **or videos** (up to 5 in the UI), picked from the camera or the gallery, each removable before sending.
   - Problems this user has answered draw a **gray pin** on the map (legend: "Jūs atsakėte") and say so in the ranked list; the sheet's answer buttons and urgency controls are disabled with "Atsakymas galutinis".
   - "Nežinau" still isn't sent, so it doesn't use up the one answer.
+- [x] Answers are "is it there?", and they decide the status (2026-10-10)
+  - The two answers are **"Problema yra"** and **"Problemos nėra"** — `is_valid` either way, as `planning/ARCHITECTURE.md` always described it. "Sutvarkyta" and "Nežinau" are gone: the first was a different question (the municipality owns that status) and the second was never sent anywhere.
+  - Both buttons are the same gray `btn ghost`, side by side: they are worth the same, so neither is dressed up as the expected answer.
+  - **Two agreeing answers decide**: two saying it is there set the problem `confirmed`, two saying it isn't set it `canceled` — each needs more answers than the other way. One person decides nothing. A verdict is only promoted, never withdrawn for lack of votes, so a late answer can't undo what a case worker set; and once a problem is `ongoing`/`pending`/`completed`, answers stop moving it (`validations.services.evaluate_problem_validations`, no longer a stub).
+  - An answer carries **free text** — "Ką matote?" — meant to say more than the original report did; it is optional (the answer is the `is_valid` flag). Those accounts are listed under "Kaimynų patikslinimai" in the problem sheet and under "Gyventojų patikslinimai" on the municipality's problem card.
+  - `Vote` is now `"yes" | "no"` throughout (`stillVotes`/`fixedVotes` → `yesVotes`/`noVotes`), so no screen still says "sutvarkyta" for what is really "problemos nėra".
 - [ ] Phase 11 — API client tests
