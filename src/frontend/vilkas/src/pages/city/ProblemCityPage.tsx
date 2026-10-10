@@ -57,14 +57,14 @@ function history(v: ProblemView, assignment: Assignment | undefined): HistoryIte
     items.push(
       i === 0
         ? { at, color: "var(--lav)", title: "Pranešė gyventojas", sub: `${dateTime(at)} · ${r.media.length ? "nuotrauka + aprašymas" : "aprašymas"}` }
-        : { at, color: "var(--lav)", title: "Sujungtas dublikatas", sub: `${dateTime(at)} · ${r.user.name}` },
+        : { at, color: "var(--lav)", title: "Sujungtas dublikatas", sub: `${dateTime(at)} · ${r.user.name || "Gyventojas"}` },
     );
   });
   for (const val of v.detail.validations) {
     const at = Date.parse(val.created_at);
     if (val.media.length) items.push({ at, color: "var(--navy)", title: "Nauja nuotrauka", sub: `${ago(at)} · ${val.is_valid ? "„vis dar yra“" : "„sutvarkyta“"}` });
-    else if (val.is_valid) items.push({ at, color: "var(--red)", title: "Patvirtino: vis dar yra", sub: `${ago(at)} · ${val.user.name}` });
-    else items.push({ at, color: "var(--green)", title: "Pažymėjo „sutvarkyta“", sub: `${ago(at)} · ${val.user.name}` });
+    else if (val.is_valid) items.push({ at, color: "var(--red)", title: "Patvirtino: vis dar yra", sub: `${ago(at)} · ${val.user.name || "Gyventojas"}` });
+    else items.push({ at, color: "var(--green)", title: "Pažymėjo „sutvarkyta“", sub: `${ago(at)} · ${val.user.name || "Gyventojas"}` });
   }
   if (assignment) {
     items.push({

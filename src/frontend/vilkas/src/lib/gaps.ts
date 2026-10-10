@@ -10,10 +10,7 @@ export interface Analysis {
   description: string;
   address: string;
   nearSensitive: boolean;
-  /** 0–100, how sure the category is. */
-  confidence: number;
-  source: "photo" | "text";
-  /** Shown when the stand-in can't do what the real AI would. */
+  /** Shown when the type couldn't be recognised from the text. */
   note?: string;
 }
 
@@ -38,15 +35,19 @@ function sentence(text: string): string {
   return capped.length <= 45 ? capped : `${capped.slice(0, 44)}…`;
 }
 
-/** Stand-in for POST /reports/analyze: keyword matching on the user's text. */
+/**
+ * Stand-in for POST /reports/analyze: keyword matching on the user's text.
+ * It doesn't look at photos, so the UI calls it a suggestion, not AI. (The
+ * backend separately asks Claude for a category when the report is submitted.)
+ */
 export async function analyzeReport(
   text: string,
-  hasPhoto: boolean,
   categories: Category[],
   signal: AbortSignal,
 ): Promise<Analysis> {
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(resolve, 1200);
+    // Brief pause so the step change is visible rather than a flash.
+    const timer = setTimeout(resolve, 300);
     signal.addEventListener("abort", () => {
       clearTimeout(timer);
       reject(new DOMException("Aborted", "AbortError"));
@@ -66,10 +67,6 @@ export async function analyzeReport(
     description: textWithoutAddress,
     address,
     nearSensitive: SENSITIVE.test(text),
-    confidence: name ? 82 : 35,
-    source: hasPhoto ? "photo" : "text",
-    note: hasPhoto
-      ? "Nuotraukų atpažinimas bus prijungtas kartu su serveriu — kol kas DI remiasi tik jūsų tekstu. Patikrinkite tipą."
-      : undefined,
+    note: name ? undefined : "Iš aprašymo tipo neatpažinome — pasirinkite jį žemiau.",
   };
 }

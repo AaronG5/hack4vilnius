@@ -186,7 +186,7 @@ These run in the browser today. They should live in one place so the resident ap
 | 4 | Lithuanian notification texts + `validation_requested` | BE | Notifications screen |
 | 5 | Staff login form + seeded admin; "accepted / fixed" buttons on the city card | FE + BE | Whole municipality flow end to end |
 | 6 | ✅ Remove or replace the fake challenge numbers (deadlines from `end_date`, empty leaderboards, no fake counter) — checkpoint 1, 2026-10-10 | FE | Challenges |
-| 7 | Hide or relabel prizes and the DI confidence; anonymous default name + name field | FE | Profile, report form |
+| 7 | ✅ Hide or relabel prizes and the DI confidence; anonymous default name + name field — checkpoint 2, 2026-10-11 | FE | Profile, report form |
 | 8 | `GET /problems/nearby` + backend duplicate check | BE | Validation and clustering (core problem #1) |
 | 9 | Urgency votes endpoint | BE | Problem sheet, priority |
 | 10 | `GET /institutions` + `Assignment` model | BE + FE | Municipality card |

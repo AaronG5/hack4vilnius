@@ -183,8 +183,6 @@ export const challenges: ChallengeDetail[] = [
   { id: mockId("h", 1), name: "Duobių medžioklė prieš žiemą", description: "Visas miestas kartu patikrina 1 000 duobių, kol neprasidėjo šalčiai.", start_date: "2026-10-01", end_date: "2026-10-22", reward_points: 100, status: "active", categories: [category("Duobė")], participant_count: 1840, milestones: [{ label: "1 000 patikrinimų", target: 1000, reached: false }] },
   { id: mockId("h", 2), name: "Rajonų aktyvumo iššūkis", description: "Kuris rajonas sutvarkys didžiausią dalį pranešimų?", start_date: "2026-10-01", end_date: "2026-10-31", reward_points: 200, status: "active", participant_count: 5320, milestones: [] },
   { id: mockId("h", 3), name: "Moksleivių pilietiškumo iššūkis", description: "Klasės komanda tikrina problemas pakeliui į mokyklą.", start_date: "2026-09-01", end_date: "2026-12-20", reward_points: 150, status: "active", participant_count: 640, milestones: [] },
-  { id: mockId("h", 4), name: "Vienaragių aktyvumo iššūkis", description: "Technologijų įmonių komandos varžosi, kuri daugiau prisideda prie miesto.", start_date: "2026-10-01", end_date: "2026-11-30", reward_points: 150, status: "active", participant_count: 167, milestones: [] },
-  { id: mockId("h", 5), name: "Dviračių takų patikra", description: "Pažymėkite problemas ant miesto dviračių takų.", start_date: "2026-10-01", end_date: "2026-10-31", reward_points: 80, status: "active", participant_count: 210, milestones: [] },
   { id: mockId("h", 6), name: "Mano kiemo iššūkis", description: "Kaimynai drauge peržiūri savo kiemą.", start_date: "2026-10-01", end_date: "2026-11-15", reward_points: 120, status: "active", participant_count: 14, milestones: [] },
 ];
 

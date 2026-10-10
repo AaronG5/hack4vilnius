@@ -100,7 +100,7 @@ export function useChallenges() {
 
   const cards = useMemo(() => {
 
-    const md = myDistrict(acts);
+    const md = me?.district?.name ?? myDistrict(acts);
     const table = districtTable(views, districts.map((d) => d.name));
     const publicCards: ChallengeCard[] = (apiChallenges ?? [])
       .filter((c) => c.status !== "ended")
@@ -173,7 +173,7 @@ export function useChallenges() {
         return base;
       });
     return [...privates.map((p) => privateCard(p, acts, me?.name ?? "")), ...publicCards];
-  }, [apiChallenges, acts, views, districts, joined, privates, me?.name, now]);
+  }, [apiChallenges, acts, views, districts, joined, privates, me?.name, me?.district?.name, now]);
 
   const toggleJoin = useCallback(
     async (card: ChallengeCard) => {

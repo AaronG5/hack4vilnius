@@ -70,7 +70,7 @@ export function ReportSheet() {
   const [step, setStep] = useState<Step>("source");
   const [text, setText] = useState("");
   const [form, setForm] = useState<Form>(BLANK);
-  const [ai, setAi] = useState<{ confidence: number; source: "photo" | "text" }>();
+  const [suggested, setSuggested] = useState(false);
   const [aiNote, setAiNote] = useState("");
   const [at, setAt] = useState<LngLat>();
   // Where the map should move to after "Mano vieta".
@@ -96,7 +96,6 @@ export function ReportSheet() {
   const onFull = useCallback((max: number) => toast(`Daugiausia ${max} failai`), [toast]);
   const { files, add: addFiles, remove: removeFile, clear: clearFiles, previewFor } = useAttachments(MAX_ATTACHMENTS, onFull);
   // The AI stand-in reads photos, not clips.
-  const hasImage = files.some((f) => f.type.startsWith("image/"));
 
   const close = useCallback(() => {
     aiCtl.current?.abort();
@@ -237,7 +236,7 @@ export function ReportSheet() {
     const ctl = new AbortController();
     aiCtl.current = ctl;
     try {
-      const r = await analyzeReport(text, hasImage, categories, ctl.signal);
+      const r = await analyzeReport(text, categories, ctl.signal);
       setForm({
         categoryId: r.categoryId,
         urgency: r.urgency,
@@ -246,7 +245,7 @@ export function ReportSheet() {
         description: r.description,
         nearSensitive: r.nearSensitive,
       });
-      setAi({ confidence: r.confidence, source: r.source });
+      setSuggested(true);
       setAiNote(r.note ?? "");
       setStep("form");
     } catch {
@@ -257,7 +256,7 @@ export function ReportSheet() {
   const stopAI = () => {
     aiCtl.current?.abort();
     setForm({ ...BLANK, description: text });
-    setAi(undefined);
+    setSuggested(false);
     setStep("form");
   };
 
@@ -344,14 +343,14 @@ export function ReportSheet() {
         <>
           <Steps n={1} />
           <h1>Pranešti apie problemą</h1>
-          <p className="lead">Parodykite arba aprašykite — DI užpildys detales, o jūs jas patikrinsite.</p>
+          <p className="lead">Parodykite arba aprašykite — tipą ir skubumą pasiūlysime, o jūs patikrinsite.</p>
           <label className="src">
             <span className="ic" style={{ background: "var(--red)" }}>
               <CameraIcon />
             </span>
             <span>
               <b>Nufotografuoti</b>
-              <small>DI atpažins problemą iš nuotraukos — užtenka adreso</small>
+              <small>Nuotrauka ir keli žodžiai — to užtenka</small>
             </span>
             <input
               type="file"
@@ -420,11 +419,11 @@ export function ReportSheet() {
         <>
           <Steps n={1} />
           <h1>Aprašykite problemą</h1>
-          <p className="lead">Kas, kur ir kaip rimta? DI iš teksto atpažins tipą, skubumą ir adresą.</p>
+          <p className="lead">Kas, kur ir kaip rimta? Iš teksto pasiūlysime tipą, skubumą ir adresą.</p>
           {textArea("Aprašymas", "Pvz.: Kalvarijų g. 98 prie stotelės didelė duobė, mašinos ją apvažiuoja")}
           <div className="row">
             <button type="button" className="btn" style={{ flex: 1 }} onClick={() => void analyze()}>
-              Atpažinti su DI
+              Toliau
             </button>
             <button type="button" className="btn ghost" onClick={back}>
               Atgal
@@ -476,7 +475,7 @@ export function ReportSheet() {
           )}
           <div className="row">
             <button type="button" className="btn" style={{ flex: 1 }} onClick={() => void analyze()}>
-              Atpažinti su DI
+              Toliau
             </button>
             <button type="button" className="btn ghost" onClick={back}>
               Atgal
@@ -491,11 +490,8 @@ export function ReportSheet() {
         <>
           <Steps n={2} />
           <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
-          <div className="spin" role="progressbar" aria-label="DI analizuoja" />
-          <h1 style={{ textAlign: "center" }}>{hasImage ? "DI žiūri į nuotrauką…" : "DI atpažįsta problemą…"}</h1>
-          <p className="lead" style={{ textAlign: "center" }}>
-            {hasImage ? "Nuotraukos analizė trunka iki minutės." : "Tai užtrunka kelias sekundes."}
-          </p>
+          <div className="spin" role="progressbar" aria-label="Atpažįstama" />
+          <h1 style={{ textAlign: "center" }}>Atpažįstame problemą…</h1>
           <button type="button" className="btn ghost" onClick={stopAI}>
             Sustabdyti ir pildyti ranka
           </button>
@@ -508,14 +504,13 @@ export function ReportSheet() {
         <>
           <Steps n={2} />
           <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
-          {ai && (
-            <div className="row" style={{ alignItems: "center" }}>
-              <span className="tag ai">✦ DI atpažino {ai.source === "photo" ? "iš nuotraukos" : "iš teksto"}</span>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Tikimybė {ai.confidence} %</span>
-            </div>
+          {suggested && !aiNote && (
+            <span className="tag ai" style={{ alignSelf: "flex-start" }}>
+              ✦ Pasiūlyta pagal jūsų aprašymą
+            </span>
           )}
           {aiNote && <div className="note warn">{aiNote}</div>}
-          <h1>Patikrinkite, ką rado DI</h1>
+          <h1>Patikrinkite detales</h1>
           <div className="fld" role="group" aria-label="Problemos tipas">
             Problemos tipas — palieskite, jei reikia pataisyti
             <div className="cats">
@@ -527,7 +522,7 @@ export function ReportSheet() {
             </div>
           </div>
           <div className="fld" role="group" aria-label="Skubumas">
-            Skubumas{ai ? " · pasiūlė DI" : ""} — kiti gyventojai galės balsuoti
+            Skubumas{suggested ? " · pasiūlytas" : ""} — kiti gyventojai galės balsuoti
             <div className="seg">
               {URGENCIES.map((u) => (
                 <button key={u} type="button" aria-pressed={form.urgency === u} onClick={() => patch({ urgency: u })}>
@@ -698,7 +693,6 @@ export function ReportSheet() {
                     {c.view.category} · {c.meters} m · {c.view.confirms} patvirt.
                   </span>
                 </span>
-                <span className="tag ai">{c.match} %</span>
               </button>
             ))}
           </div>

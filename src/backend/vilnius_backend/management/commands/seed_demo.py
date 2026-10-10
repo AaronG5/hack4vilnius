@@ -162,22 +162,6 @@ _CHALLENGES: Final[tuple[_ChallengeSeed, ...]] = (
         (),
     ),
     _ChallengeSeed(
-        "Vienaragių aktyvumo iššūkis",
-        "Technologijų įmonių komandos varžosi, kuri daugiau prisideda prie miesto.",
-        9,
-        51,
-        150,
-        (),
-    ),
-    _ChallengeSeed(
-        "Dviračių takų patikra",
-        "Pažymėkite problemas ant miesto dviračių takų.",
-        9,
-        21,
-        80,
-        (),
-    ),
-    _ChallengeSeed(
         "Mano kiemo iššūkis",
         "Kaimynai drauge peržiūri savo kiemą.",
         9,

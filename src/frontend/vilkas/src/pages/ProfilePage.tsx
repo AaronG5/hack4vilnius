@@ -1,7 +1,8 @@
 // Profilis from the demo: impact, stats, badges, Vilnius landmark collection, prizes, own reports.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { updateCurrentUser, type District } from "../api";
 import { ProblemItem } from "../components/ProblemItem";
 import { earnedLandmarks, LANDMARKS, level, myDistrict, type Landmark } from "../lib/activity";
 import { initials, plural, shortDate } from "../lib/format";
@@ -10,10 +11,7 @@ import { useAppState } from "../state/appState";
 import "./ProfilePage.css";
 
 // TODO(api-gap): partner prizes and redeeming (GET /rewards, POST /rewards/{id}/redeem).
-const PRIZES: [string, number][] = [
-  ["JUDU kelionių kreditas", 500],
-  ["Go Vilnius renginio bilietas", 1500],
-];
+// Until partners are signed up, the section says so instead of listing invented offers.
 
 const LOCK = "M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v10H5z";
 
@@ -27,7 +25,8 @@ function LandmarkIcon({ landmark, size, locked }: { landmark: Landmark; size: nu
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { me, views, toast } = useAppState();
+  const { me, views, districts, reload, toast } = useAppState();
+  const [editing, setEditing] = useState(false);
   const points = me?.points ?? 0;
 
   const acts = useMemo(() => myActivity(views, me?.id), [views, me?.id]);
@@ -54,15 +53,47 @@ export function ProfilePage() {
     <main className="app-main">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span className="avatar">{initials(me?.name ?? "")}</span>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className="pg" style={{ fontSize: 24 }}>
-            {me?.name || "Jūsų profilis"}
+            {me?.name || "Miesto agentas"}
           </h1>
           <p className="pgsub" style={{ margin: 0 }}>
             {[level(points), me?.district?.name ?? myDistrict(acts), `${points} tšk.`].filter(Boolean).join(" · ")}
           </p>
         </div>
+        {!editing && (
+          <button type="button" className="btn link" style={{ height: 36 }} onClick={() => setEditing(true)}>
+            Keisti
+          </button>
+        )}
       </div>
+
+      {editing ? (
+        <ProfileForm
+          name={me?.name ?? ""}
+          districtId={me?.district?.id ?? ""}
+          districts={districts}
+          onCancel={() => setEditing(false)}
+          onSave={async (update) => {
+            try {
+              await updateCurrentUser(update);
+              await reload();
+              setEditing(false);
+              toast("Profilis išsaugotas");
+            } catch {
+              toast("Nepavyko išsaugoti — pabandykite dar kartą");
+            }
+          }}
+        />
+      ) : (
+        !me?.name && (
+          <button type="button" className="card" style={{ marginTop: 12, textAlign: "left", cursor: "pointer", font: "inherit", color: "inherit" }} onClick={() => setEditing(true)}>
+            <b>Kaip jus vadinti?</b>
+            <br />
+            <span className="m">Vardas matomas iššūkių lentelėse ir prie jūsų patikrinimų. Galite nurodyti ir savo rajoną.</span>
+          </button>
+        )
+      )}
 
       <section className="redcard">
         <span className="tag" style={{ background: "var(--pink)", alignSelf: "flex-start" }}>
@@ -148,27 +179,11 @@ export function ProfilePage() {
       </div>
 
       <h2 className="sec">Partnerių prizai</h2>
-      <div className="list">
-        {PRIZES.map(([name, cost]) => (
-          <div key={name} className="item" style={{ cursor: "default" }}>
-            <span style={{ flex: 1 }}>
-              <span className="t">{name}</span>
-              <br />
-              <span className="m">
-                {cost} taškų{points < cost ? ` · trūksta ${cost - points}` : ""}
-              </span>
-            </span>
-            <button
-              type="button"
-              className={`btn${points >= cost ? "" : " ghost"}`}
-              disabled={points < cost}
-              style={{ height: 40, fontSize: 13 }}
-              onClick={() => toast("Prizų keitimas bus įjungtas kartu su partneriais")}
-            >
-              {points >= cost ? "Iškeisti" : "Užrakinta"}
-            </button>
-          </div>
-        ))}
+      <div className="card" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <span className="tag ex" style={{ flexShrink: 0 }}>
+          Netrukus
+        </span>
+        <span className="m">Surinktus taškus galėsite iškeisti į miesto partnerių pasiūlymus. Taškai kaupiasi jau dabar.</span>
       </div>
 
       <h2 className="sec">Mano pranešimai</h2>
@@ -182,5 +197,64 @@ export function ProfilePage() {
         <div className="card empty">Dar nepranešėte apie jokią problemą.</div>
       )}
     </main>
+  );
+}
+
+function ProfileForm({
+  name: initialName,
+  districtId: initialDistrict,
+  districts,
+  onCancel,
+  onSave,
+}: {
+  name: string;
+  districtId: string;
+  districts: District[];
+  onCancel: () => void;
+  onSave: (update: { name: string; district?: string }) => Promise<void>;
+}) {
+  const [name, setName] = useState(initialName);
+  const [district, setDistrict] = useState(initialDistrict);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    await onSave({ name: name.trim(), ...(district ? { district } : {}) });
+    setBusy(false);
+  };
+
+  return (
+    <form
+      className="card"
+      style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <label className="fld">
+        Vardas
+        <input className="inp" autoFocus maxLength={60} placeholder="Pvz.: Rūta V." value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <label className="fld">
+        Jūsų rajonas
+        <select className="inp" value={district} onChange={(e) => setDistrict(e.target.value)}>
+          <option value="">Nustatyti pagal mano veiksmus</option>
+          {districts.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="row">
+        <button type="submit" className="btn" style={{ flex: 1 }} disabled={busy || !name.trim()}>
+          {busy ? "Saugoma…" : "Išsaugoti"}
+        </button>
+        <button type="button" className="btn ghost" onClick={onCancel}>
+          Atšaukti
+        </button>
+      </div>
+    </form>
   );
 }
