@@ -2,11 +2,12 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { CityShell } from "./components/CityShell";
 import { RootLayout } from "./components/RootLayout";
-import { Stub } from "./components/Stub";
 import { ChallengeCreatePage } from "./pages/challenges/ChallengeCreatePage";
 import { ChallengeDetailPage } from "./pages/challenges/ChallengeDetailPage";
 import { ChallengesPage } from "./pages/challenges/ChallengesPage";
 import { DashboardPage } from "./pages/city/DashboardPage";
+import { DistrictPage } from "./pages/city/DistrictPage";
+import { ProblemCityPage } from "./pages/city/ProblemCityPage";
 import { MapPage } from "./pages/MapPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProblemSheet } from "./pages/ProblemSheet";
@@ -35,8 +36,8 @@ export default function App() {
 
           <Route path="city" element={<CityShell />}>
             <Route index element={<DashboardPage />} />
-            <Route path="districts/:id" element={<Stub board="9" title="Rajono skydelis" />} />
-            <Route path="problems/:id" element={<Stub board="10" title="Problemos kortelė" />} />
+            <Route path="districts/:id" element={<DistrictPage />} />
+            <Route path="problems/:id" element={<ProblemCityPage />} />
           </Route>
         </Route>
 

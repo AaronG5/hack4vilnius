@@ -41,12 +41,17 @@ export function AppShell() {
   );
 }
 
+// The splash is the app's launch screen: it plays once, and only when the page load
+// starts in the resident app (not after arriving from the municipality pages).
+let splashPlayed = window.location.pathname.startsWith("/city");
+
 function Splash({ ready }: { ready: boolean }) {
   const [timeUp, setTimeUp] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [removed, setRemoved] = useState(false);
+  const [removed, setRemoved] = useState(() => splashPlayed);
 
   useEffect(() => {
+    splashPlayed = true;
     const t = setTimeout(() => setTimeUp(true), SPLASH_MS);
     return () => clearTimeout(t);
   }, []);

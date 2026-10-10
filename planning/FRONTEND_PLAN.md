@@ -109,9 +109,16 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | Notification title vs body, deep-link target | notifications | split `message` at the first sentence | `title` + `body` on `Notification` |
 | Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
 | Partner prizes + redeem | profile | static list | `GET /rewards`, `POST /rewards/{id}/redeem` |
+| Status history (completed_at) | district dashboard | resolve time uses `updated_at` | `GET /problems/{id}/history` or `completed_at` |
 | City KPIs, district stats | dashboards | fixtures | `GET /stats/city`, `GET /districts/{id}/stats` |
 | City staff login / role check | dashboards | city pages use the anonymous session | auth for `city_administrator` |
 | Institutions + assignment | board 10 | fixtures | `GET /institutions`, `POST /problems/{id}/assignments` |
+
+## Maybe later
+
+Ideas parked until the frontend phases are done; none are commitments.
+
+- **Historical sample data** — seed the mock API with a few dozen older (mostly fixed) problems so the district charts and resolve-time KPIs look realistic. Trade-off: extra green pins on the resident map. Decided 2026-10-10: not now, no fabricated data.
 
 ## Progress
 
@@ -137,7 +144,14 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
   - `/city`: filters (district, category, period) kept in the URL; KPI tiles, hotspot map (size/colour = priority, top-2 districts labelled), ranked table with Priskirti / Atidaryti.
   - All numbers are computed from live problems (`src/lib/cityStats.ts`): trend = recent confirmations, reopened = "still there" answers after completion.
   - Session + shared data moved to `RootLayout` so city pages share them with the resident app.
-- [ ] Phase 8 — District dashboard
-- [ ] Phase 9 — Problem card + assignment
+- [x] Phase 8 — District dashboard
+  - `/city/districts/:id`: district tabs, 5 KPI tiles (vs city average), weekly stacked chart with hover/focus tooltip and table toggle, top categories, longest-waiting problems, generated summary.
+  - Everything is computed from live problems for the last 8 weeks; average resolve time uses `updated_at` of completed problems as a proxy.
+  - The sample data only spans ~2 weeks, so most weekly bars are empty until real history exists.
+- [x] Phase 9 — Problem card + assignment
+  - `/city/problems/:id`: header (breadcrumbs, case number, status pill, priority), photos + merged description, community check with urgency votes, priority factors (the formula actually used), zoomed location, history from reports/answers.
+  - Assigning sets status `pending` ("Perduota vykdytojams"), so the resident pin turns yellow; "Perskirti" sets it back to `confirmed`. The suggestion comes from the category's API institution.
+  - Institutions list, deadline, note and notification toggles are stand-ins (`src/data/institutions.ts`, browser-local assignment records). "Rašyti vykdytojui" opens an email.
+  - Fixed on the way: the splash replayed when moving from city pages into the resident app.
 - [ ] Phase 10 — Real map (optional)
 - [ ] Phase 11 — API client tests

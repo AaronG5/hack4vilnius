@@ -2,11 +2,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { joinChallenge, listChallenges } from "../../api";
-import { challengeKey, challengeMeta, GOALS, type BoardRow, type DistrictRow } from "../../data/challengeMeta";
+import { challengeKey, challengeMeta, GOALS, type BoardRow } from "../../data/challengeMeta";
 import { useApi } from "../../hooks/useApi";
 import { myDistrict } from "../../lib/activity";
+import { districtTable } from "../../lib/cityStats";
 import { store, type PrivateChallenge } from "../../lib/localStore";
-import { myActivity, type Activity, type ProblemView } from "../../lib/problemModel";
+import { myActivity, type Activity } from "../../lib/problemModel";
 import { useAppState } from "../../state/appState";
 
 const DAY = 86_400_000;
@@ -34,16 +35,6 @@ export interface ChallengeCard {
   joined: boolean;
   seasonal?: boolean;
   priv?: PrivateChallenge;
-}
-
-function districtTable(views: ProblemView[], districts: string[]): DistrictRow[] {
-  return districts
-    .map((name) => {
-      const rs = views.filter((v) => v.district === name);
-      const fixed = rs.filter((v) => v.isFixed).length;
-      return { name, total: rs.length, pct: rs.length ? Math.round((fixed / rs.length) * 100) : 0 };
-    })
-    .sort((a, b) => b.pct - a.pct || b.total - a.total);
 }
 
 function privateCard(p: PrivateChallenge, acts: Activity[], myName: string): ChallengeCard {
