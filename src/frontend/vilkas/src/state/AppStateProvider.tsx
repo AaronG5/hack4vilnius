@@ -6,9 +6,12 @@ import {
   getProblem,
   listCategories,
   listDistricts,
+  listNotifications,
   listProblems,
+  markNotificationRead,
   type Category,
   type District,
+  type Notification,
   type ProblemDetail,
   type User,
 } from "../api";
@@ -23,6 +26,7 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   const [districts, setDistricts] = useState<District[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [details, setDetails] = useState<ProblemDetail[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<Error>();
   const [filter, setFilter] = useState<MapFilter>("all");
@@ -32,10 +36,11 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   // TODO(api-gap): GET /problems lacks list summaries, so details are fetched per problem.
   const reload = useCallback(async () => {
     try {
-      const [user, problems] = await Promise.all([getCurrentUser(), listProblems()]);
+      const [user, problems, notes] = await Promise.all([getCurrentUser(), listProblems(), listNotifications()]);
       const full = await Promise.all(problems.map((p) => getProblem(p.id)));
       setMe(user);
       setDetails(full);
+      setNotifications(notes);
       setError(undefined);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -60,6 +65,15 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
     toastTimer.current = setTimeout(() => setToastMessage(undefined), TOAST_MS);
   }, []);
 
+  const markRead = useCallback(async (id: string) => {
+    setNotifications((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await markNotificationRead(id);
+    } catch {
+      setNotifications((list) => list.map((n) => (n.id === id ? { ...n, read: false } : n)));
+    }
+  }, []);
+
   const views = useMemo(
     () => details.filter((p) => p.status !== "canceled").map((p) => toView(p, me?.id, districts)),
     [details, me?.id, districts],
@@ -80,8 +94,8 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   }, [views, me, toast]);
 
   const value = useMemo(
-    () => ({ me, districts, categories, views, loaded, error, reload, filter, setFilter, toast }),
-    [me, districts, categories, views, loaded, error, reload, filter, toast],
+    () => ({ me, districts, categories, views, notifications, markRead, loaded, error, reload, filter, setFilter, toast }),
+    [me, districts, categories, views, notifications, markRead, loaded, error, reload, filter, toast],
   );
 
   return (

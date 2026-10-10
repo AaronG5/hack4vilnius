@@ -6,6 +6,7 @@ import { ChallengeCreatePage } from "./pages/challenges/ChallengeCreatePage";
 import { ChallengeDetailPage } from "./pages/challenges/ChallengeDetailPage";
 import { ChallengesPage } from "./pages/challenges/ChallengesPage";
 import { MapPage } from "./pages/MapPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProblemSheet } from "./pages/ProblemSheet";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ReportSheet } from "./pages/ReportSheet";
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="challenges/new" element={<ChallengeCreatePage />} />
           <Route path="challenges/:id" element={<ChallengeDetailPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         <Route path="city" element={<CityShell />}>

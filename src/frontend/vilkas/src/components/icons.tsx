@@ -122,3 +122,29 @@ export const ChevronIcon = (p: IconProps) => (
     <path d="M9 5l7 7-7 7" />
   </Icon>
 );
+
+export const BellIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" />
+    <path d="M10 21h4" />
+  </Icon>
+);
+
+export const PinIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z" />
+    <circle cx="12" cy="11" r="2" />
+  </Icon>
+);
+
+export const CheckIcon = (p: IconProps) => (
+  <Icon strokeWidth={2.6} {...p}>
+    <path d="M5 12l5 5 9-10" />
+  </Icon>
+);
+
+export const StarIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
+  </Icon>
+);

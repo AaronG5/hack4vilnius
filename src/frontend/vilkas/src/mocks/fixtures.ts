@@ -195,8 +195,9 @@ export function challengeSummary({ participant_count: _p, milestones: _m, ...res
 }
 
 export const notifications: Notification[] = [
-  { id: mockId("n", 1), message: "Duobė už 30 m — vis dar yra? Kalvarijų g. 98. Patikrinkite pakeliui ir gaukite +10 tšk.", event_type: "validation_requested", read: false, problem: problems[0].id, created_at: ago(10 * 60_000) },
-  { id: mockId("n", 2), message: "Grafitis ant mokyklos tvoros pažymėtas kaip sutvarkytas. Ar patvirtinsite?", event_type: "status_changed", read: false, problem: problems[8].id, created_at: ago(DAY) },
+  { id: mockId("n", 1), message: "Duobė už 30 m — vis dar yra? Kalvarijų g. 98. Patikrinkite pakeliui ir gaukite +10 tšk. — tai užtruks 5 sekundes.", event_type: "validation_requested", read: false, problem: problems[0].id, created_at: ago(10 * 60_000) },
+  { id: mockId("n", 2), message: "Grafitis ant mokyklos tvoros sutvarkytas! Žirmūnų g. 70. Ar patvirtinsite, kad tvora švari?", event_type: "status_changed", read: false, problem: problems[8].id, created_at: ago(DAY) },
+  { id: mockId("n", 3), message: "+20 tšk. už pranešimą! Ačiū, kad praneštumėte apie problemas mieste.", event_type: "points_awarded", read: true, problem: null, created_at: ago(3 * DAY) },
 ];
 
 export const moderationFlags: ModerationFlag[] = [

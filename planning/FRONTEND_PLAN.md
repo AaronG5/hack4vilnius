@@ -106,6 +106,7 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | Priority score | map list, sheet, dashboard | computed client-side (`src/lib/priority.ts`, the demo formula) | `priority_score` + factors on `Problem` |
 | List summaries | map list | `getProblem()` per problem | title, thumb, confirmation counts in `GET /problems` |
 | AI analysis before submit | report sheet | keyword stand-in in `src/lib/gaps.ts` | `POST /reports/analyze` |
+| Notification title vs body, deep-link target | notifications | split `message` at the first sentence | `title` + `body` on `Notification` |
 | Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
 | Partner prizes + redeem | profile | static list | `GET /rewards`, `POST /rewards/{id}/redeem` |
 | City KPIs, district stats | dashboards | fixtures | `GET /stats/city`, `GET /districts/{id}/stats` |
@@ -123,7 +124,9 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 - [x] Phase 3 — Problem sheet
   - For problems older than a day, the answer is sent together with the optional fresh photo (one validation instead of two).
   - "Nežinau" is not sent to the API (no field for it).
-- [ ] Phase 4 — Notifications
+- [x] Phase 4 — Notifications
+  - Header bell with unread count → `/notifications` (board 5 cards in-app). Tapping marks read and opens the problem sheet.
+  - Headline/body are split from the single `message` string.
 - [x] Phase 5 — Challenges
   - Leaving a public challenge and private challenges are browser-local; joining by a friend's code shows a "not yet available" message.
 - [x] Phase 6 — Profile

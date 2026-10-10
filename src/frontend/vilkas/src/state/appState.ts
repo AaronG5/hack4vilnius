@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { Category, District, User } from "../api";
+import type { Category, District, Notification, User } from "../api";
 import type { ProblemView } from "../lib/problemModel";
 
 export type MapFilter = "all" | "new" | "work" | "fixed";
@@ -9,6 +9,9 @@ export interface AppState {
   districts: District[];
   categories: Category[];
   views: ProblemView[];
+  notifications: Notification[];
+  /** Mark a notification read (optimistically). */
+  markRead: (id: string) => Promise<void>;
   /** First load finished (successfully or not). */
   loaded: boolean;
   error?: Error;

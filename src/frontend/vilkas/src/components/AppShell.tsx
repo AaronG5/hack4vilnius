@@ -6,7 +6,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ensureSession, getToken } from "../api";
 import { AppStateProvider } from "../state/AppStateProvider";
 import { useAppState } from "../state/appState";
-import { FlagIcon, MapIcon, PlusIcon, UserIcon } from "./icons";
+import { BellIcon, FlagIcon, MapIcon, PlusIcon, UserIcon } from "./icons";
 import { Logo } from "./Logo";
 import "./AppShell.css";
 
@@ -91,7 +91,10 @@ function Splash({ ready }: { ready: boolean }) {
 }
 
 function Header() {
-  const { me } = useAppState();
+  const { me, notifications } = useAppState();
+  const navigate = useNavigate();
+  const onNotifications = useLocation().pathname === "/notifications";
+  const unread = notifications.filter((n) => !n.read).length;
   return (
     <header className="top">
       <span className="brand">
@@ -103,6 +106,16 @@ function Header() {
         <br />
         radaras
       </span>
+      <button
+        type="button"
+        className="bell"
+        aria-label={unread ? `Pranešimai, ${unread} neperskaityti` : "Pranešimai"}
+        aria-current={onNotifications ? "page" : undefined}
+        onClick={() => navigate(onNotifications ? "/map" : "/notifications")}
+      >
+        <BellIcon size={20} />
+        {unread > 0 && <span className="bell-count">{unread}</span>}
+      </button>
       <span className="pts">{me?.points ?? 0} tšk.</span>
     </header>
   );
