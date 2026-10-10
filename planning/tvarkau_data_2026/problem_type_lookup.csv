@@ -1,0 +1,139 @@
+﻿problemTypeId,problemType,categoryId,category,active,seasonal,onlyRegister,reports2026,typeCityId
+20,Transporto priemonių stovėjimo tvarkos pažeidimai,1,Pažeidimai,1,0,1,30123,1
+116,Neeksploatuojami automobiliai,1,Pažeidimai,1,0,1,4058,1
+17,Tvarkymo ir švaros taisyklių pažeidimas,1,Pažeidimai,1,0,1,2052,1
+151,Grafičiai,1,Pažeidimai,1,0,1,386,1
+16,Triukšmo prevencijos viešosiose vietose taisyklių pažeidimas,1,Pažeidimai,1,0,1,336,1
+10,Gyvūnų laikymo Vilniaus miesto Savivaldybės teritorijoje taisyklių pažeidimai,1,Pažeidimai,1,0,1,114,1
+11,Išorinės reklamos įrengimo taisyklių pažeidimai,1,Pažeidimai,1,0,1,106,1
+203,Paspirtukų/dviračių pažeidimai,1,Pažeidimai,1,0,0,0,1
+114,"Ženklai, horizontalus ženklinimas, greičio mažinimo kalneliai ir kitos eismo organizavimo priemonės",2,Eismas,1,0,1,2264,1
+18,Viešasis transportas,2,Eismas,1,0,1,263,1
+113,"Šviesoforai (gedimai, sutrikimai)",2,Eismas,1,0,1,251,1
+8,Gatvių apšvietimas,2,Eismas,1,0,1,209,1
+22,Beglobių gyvūnų gaudymas,3,Gyvūnai,1,0,1,45,1
+201,Rasti gyvūnai,3,Gyvūnai,1,0,1,28,1
+216,"Teritorijų tvarkymas (šienavimas, dangų valymas, lapų grėbimas)",4,Aplinkos tvarkymas,1,0,1,3146,1
+25,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),4,Aplinkos tvarkymas,1,0,1,3050,1
+13,"Komunalinių atliekų tvarkymas, konteineriai",4,Aplinkos tvarkymas,1,0,1,989,1
+24,"Vaikų žaidimo aikštelės (įrengimas, remontas, valymas)",4,Aplinkos tvarkymas,1,0,1,592,1
+218,"Suolelių, šiukšliadėžių, paminklų, adresų lentelių priežiūra",4,Aplinkos tvarkymas,1,0,0,571,1
+217,"Sporto aikštelės, treniruokliai (įrengimas, remontas ir valymas)",4,Aplinkos tvarkymas,1,0,1,200,1
+12,Kapinių priežiūra,4,Aplinkos tvarkymas,1,0,1,50,1
+66,"Duobės, įgriuvos, šuliniai",5,Dangų remontas,1,0,1,1564,1
+137,Gatvių remontas,5,Dangų remontas,1,0,1,1394,1
+67,Šaligatvių remontas,5,Dangų remontas,1,0,1,1278,1
+68,Kiemų dangos remontas,5,Dangų remontas,1,0,1,648,1
+69,Žvyrkeliai,5,Dangų remontas,1,0,1,566,1
+70,Laiptai,5,Dangų remontas,1,0,1,248,1
+23,Dviračių takų problemos,5,Dangų remontas,1,0,1,139,1
+15,"Tiltų, viadukų, tunelių ir estakadų priežiūra",5,Dangų remontas,1,0,1,64,1
+148,Apšvietimo gedimai,6,Gedimai,1,0,1,508,1
+21,Statinių priežiūra,7,Pastatai,1,0,1,525,1
+14,Pastatų administravimas,7,Pastatai,1,0,1,278,1
+210,Šaligatvių valymas,8,Sezoninės problemos,1,0,1,834,1
+215,Gatvių valymas,8,Sezoninės problemos,1,0,1,816,1
+212,Daugiabučių namų kiemų valymas,8,Sezoninės problemos,1,0,1,282,1
+214,Automobilių stovėjimo aikštelių valymas,8,Sezoninės problemos,1,0,1,109,1
+213,Dviračių takų valymas,8,Sezoninės problemos,1,0,1,41,1
+211,Stotelių valymas,8,Sezoninės problemos,1,0,1,25,1
+83,Tvarkymo ir švaros taisyklių pažeidimas,,(other municipality),0,0,0,255,4
+86,Transporto priemonių stovėjimo tvarkos pažeidimai,,(other municipality),0,0,1,151,4
+91,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,0,149,4
+42,Statinių priežiūra,,(other municipality),0,0,1,139,2
+254,"Duobės, įgriuvos, šuliniai",,(other municipality),0,0,0,119,4
+138,"Duobės, įgriuvos, šuliniai",,(other municipality),0,0,0,92,6
+136,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,0,75,6
+74,Gatvių apšvietimas,,(other municipality),0,0,0,73,4
+89,Dviračių takų problemos,,(other municipality),0,0,0,68,4
+6,Transporto stovėjimo  pažeidimai,,(legacy Vilnius type),0,,,59,
+252,Šaligatvių remontas,,(other municipality),0,0,0,53,4
+81,"Tiltų, viadukų, tunelių ir estakadų priežiūra",,(other municipality),0,0,0,51,4
+44,Dviračių takų problemos,,(other municipality),0,0,1,50,2
+79,Komunalinių atliekų tvarkymas,,(other municipality),0,0,0,48,4
+162,Tvarkymo ir švaros taisyklių pažeidimas,,(other municipality),0,0,0,47,8
+145,Šaligatvių remontas,,(other municipality),0,0,0,46,6
+46,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,1,42,2
+87,Statinių priežiūra,,(other municipality),0,0,0,36,4
+131,Transporto priemonių stovėjimo tvarkos pažeidimai,,(other municipality),0,0,1,35,6
+41,Transporto priemonių stovėjimo tvarkos pažeidimai,,(other municipality),0,0,1,34,2
+84,Viešasis transportas,,(other municipality),0,0,0,33,4
+170,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,0,33,8
+90,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,0,31,4
+158,Komunalinių atliekų tvarkymas,,(other municipality),0,0,0,31,8
+253,Kiemų dangos remontas,,(other municipality),0,0,0,30,4
+135,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,0,30,6
+36,"Tiltų, viadukų, tunelių ir estakadų priežiūra",,(other municipality),0,0,1,25,2
+29,Gatvių apšvietimas,,(other municipality),0,0,1,23,2
+119,Gatvių apšvietimas,,(other municipality),0,0,0,22,6
+129,Viešasis transportas,,(other municipality),0,0,0,22,6
+180,"Tiltų, viadukų, tunelių ir estakadų priežiūra",,(other municipality),0,0,0,22,10
+227,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,0,21,11
+166,Statinių priežiūra,,(other municipality),0,0,0,21,8
+174,Gatvių priežiūra ir tvarkymas,,(other municipality),0,0,0,21,10
+163,Viešasis transportas,,(other municipality),0,0,0,21,8
+124,Komunalinių atliekų tvarkymas,,(other municipality),0,0,0,20,6
+39,Viešasis transportas,,(other municipality),0,0,1,20,2
+220,Tvarkymo ir švaros taisyklių pažeidimas,,(other municipality),0,0,0,19,11
+171,Eismo organizavimas,,(other municipality),0,0,0,19,10
+251,"Duobės, įgriuvos, šuliniai",,(other municipality),0,0,0,19,11
+184,Aplinkos tvarkymas,,(other municipality),0,0,0,18,10
+169,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,0,18,8
+125,Pastatų administravimas,,(other municipality),0,0,0,17,6
+154,Gatvių apšvietimas,,(other municipality),0,0,0,17,8
+38,Tvarkymo ir švaros taisyklių pažeidimas,,(other municipality),0,0,1,15,2
+132,Statinių priežiūra,,(other municipality),0,0,0,14,6
+173,Gatvių apšvietimas,,(other municipality),0,0,0,14,10
+144,Privačių teritorijų tvarkymo ir švaros taisyklių pažeidimas,,(other municipality),0,0,1,14,6
+45,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,1,12,2
+34,Komunalinių atliekų tvarkymas,,(other municipality),0,0,1,12,2
+160,"Tiltų, viadukų, tunelių ir estakadų priežiūra",,(other municipality),0,0,0,11,8
+165,Transporto priemonių stovėjimo tvarkos pažeidimai,,(other municipality),0,0,1,11,8
+77,Išorinės reklamos įrengimo taisyklių pažeidimai,,(other municipality),0,0,0,11,4
+80,Pastatų administravimas,,(other municipality),0,0,0,10,4
+141,Kiemų dangos remontas,,(other municipality),0,0,0,9,6
+88,Beglobių gyvūnų gaudymas,,(other municipality),0,0,0,8,4
+234,Statinių priežiūra,,(other municipality),0,0,0,8,11
+130,Žvyrkeliai,,(other municipality),0,0,0,8,6
+250,Gatvių ir kiemų dangų problemos,,(other municipality),0,0,1,8,12
+159,Pastatų administravimas,,(other municipality),0,0,0,7,8
+122,Išorinės reklamos įrengimo taisyklių pažeidimai,,(other municipality),0,0,0,7,6
+230,Komunalinių atliekų tvarkymas,,(other municipality),0,0,0,6,11
+82,Triukšmo prevencijos viešosiose vietose taisyklių pažeidimas,,(other municipality),0,0,0,6,4
+161,Triukšmo prevencijos viešosiose vietose taisyklių pažeidimas,,(other municipality),0,0,0,5,8
+221,Transporto priemonių stovėjimo tvarkos pažeidimai,,(other municipality),0,0,1,5,11
+35,Pastatų administravimas,,(other municipality),0,0,1,5,2
+224,Gatvių apšvietimas,,(other municipality),0,0,0,4,11
+231,Dviračių takų problemos,,(other municipality),0,0,0,4,11
+190,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,0,4,10
+233,Pastatų administravimas,,(other municipality),0,0,0,4,11
+167,Beglobių gyvūnų gaudymas,,(other municipality),0,0,0,4,8
+182,Tvarkymo ir švaros taisyklių pažeidimas,,(other municipality),0,0,0,4,10
+228,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,0,4,11
+123,Kapinių priežiūra,,(other municipality),0,0,0,3,6
+242,Želdynų priežiūra (medžių ir krūmų genėjimas bei kirtimas),,(other municipality),0,0,0,3,12
+243,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,0,3,12
+78,Kapinių priežiūra,,(other municipality),0,0,0,3,4
+142,Laiptai,,(other municipality),0,0,0,3,6
+249,Statinių priežiūra,,(other municipality),0,0,0,3,12
+32,Išorinės reklamos įrengimo taisyklių pažeidimai,,(other municipality),0,0,1,2,2
+33,Kapinių priežiūra,,(other municipality),0,0,1,2,2
+225,Viešasis transportas,,(other municipality),0,0,0,2,11
+189,Vaikų žaidimo ir sporto aikštelių priežiūra bei įrengimas,,(other municipality),0,0,0,2,10
+232,"Tiltų, viadukų, tunelių ir estakadų priežiūra",,(other municipality),0,0,0,2,11
+186,Statinių priežiūra,,(other municipality),0,0,0,2,10
+168,Dviračių takų problemos,,(other municipality),0,0,0,2,8
+172,Energetika ir inžineriniai tinklai,,(other municipality),0,0,0,2,10
+126,"Tiltų, viadukų, tunelių ir estakadų priežiūra",,(other municipality),0,0,0,2,6
+85,Aplinkos tvarkymas,,(other municipality),0,0,0,1,4
+134,Dviračių takų problemos,,(other municipality),0,0,0,1,6
+7,Energetika ir inžineriniai tinklai,,(legacy Vilnius type),0,0,1,1,1
+239,Gatvių apšvietimas,,(other municipality),0,0,0,1,12
+244,Kapinių priežiūra,,(other municipality),0,0,0,1,12
+185,Transporto priemonių stovėjimo tvarkos pažeidimai,,(other municipality),0,0,1,1,10
+37,Triukšmo prevencijos viešosiose vietose taisyklių pažeidimas,,(other municipality),0,0,1,1,2
+223,Išorinės reklamos įrengimo taisyklių pažeidimai,,(other municipality),0,0,0,1,11
+188,Dviračių takų problemos,,(other municipality),0,0,0,1,10
+43,Beglobių gyvūnų gaudymas,,(other municipality),0,0,1,1,2
+133,Beglobių gyvūnų gaudymas,,(other municipality),0,0,0,1,6
+209,Sezoninė dangų priežiūra,,(legacy Vilnius type),0,,,1,
