@@ -16,24 +16,19 @@
   opacity: 0.7;
 }
 
-.chip.fnew i,
-.chip.fchecked i {
-  width: 16px;
-  height: 16px;
+/* Same swatch as the map legend (.legend i), so a tab reads as its pins. */
+.chip i.mark {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
   border-radius: 5px 0 5px 5px;
-  background: var(--red-deep);
   color: #fff;
   font-style: normal;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-/* Same gray as the "Jūs atsakėte" pins. */
-.chip.fchecked i {
-  background: #9a9a9a;
 }
 
 .prompt {

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { PinIcon } from "../components/icons";
 import { LazyMap, MapLegend } from "../components/map/LazyMap";
+import { MARKS } from "../components/map/marks";
 import { ProblemItem } from "../components/ProblemItem";
 import { weekChecks } from "../lib/activity";
 import { distanceMeters, formatDistance, isNear, NEAR_RADIUS_M, type LngLat } from "../lib/geo";
@@ -109,12 +110,15 @@ export function MapPage() {
               <button
                 key={id}
                 type="button"
-                className={`chip${id === "new" ? " fnew" : id === "checked" ? " fchecked" : ""}`}
+                className="chip"
                 aria-pressed={filter === id}
                 onClick={() => setFilter(id)}
               >
-                {id === "new" && <i>?</i>}
-                {id === "checked" && <i>✓</i>}
+                {id !== "all" && (
+                  <i className="mark" style={MARKS[id].style} aria-hidden="true">
+                    {MARKS[id].glyph}
+                  </i>
+                )}
                 {label} <span className="cnt">{counts[id]}</span>
               </button>
             ))}

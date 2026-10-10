@@ -2,6 +2,7 @@
 
 import { lazy, Suspense } from "react";
 import type { VilniusMapProps } from "./VilniusMap";
+import { MARKS, type MarkKind } from "./marks";
 import "./map.css";
 
 const VilniusMap = lazy(() => import("./VilniusMap"));
@@ -14,29 +15,23 @@ export function LazyMap(props: VilniusMapProps) {
   );
 }
 
+const LEGEND: [MarkKind, string][] = [
+  ["new", "Nepatvirtinta"],
+  ["confirmed", "Patvirtinta"],
+  ["work", "Sprendžiama"],
+  ["fixed", "Sutvarkyta"],
+  ["checked", "Jūs atsakėte"],
+];
+
 export function MapLegend() {
   return (
     <div className="legend" aria-label="Žymių reikšmės">
-      <span>
-        <i style={{ background: "var(--red-deep)", boxShadow: "0 0 0 3px rgba(126,35,36,.25)" }}>?</i>
-        Nepatvirtinta
-      </span>
-      <span>
-        <i style={{ background: "var(--red)" }} />
-        Patvirtinta
-      </span>
-      <span>
-        <i style={{ background: "var(--yellow)" }} />
-        Sprendžiama
-      </span>
-      <span>
-        <i style={{ background: "var(--green)" }} />
-        Sutvarkyta
-      </span>
-      <span>
-        <i style={{ background: "#9A9A9A" }} />
-        Jūs atsakėte
-      </span>
+      {LEGEND.map(([kind, label]) => (
+        <span key={kind}>
+          <i style={MARKS[kind].style}>{MARKS[kind].glyph}</i>
+          {label}
+        </span>
+      ))}
     </div>
   );
 }
