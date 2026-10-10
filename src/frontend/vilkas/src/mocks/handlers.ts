@@ -3,7 +3,6 @@
 
 import { http, HttpResponse, type PathParams } from "msw";
 import type {
-  GeoPoint,
   ModerationFlagUpdate,
   Problem,
   ProblemStatusUpdate,
@@ -78,6 +77,16 @@ function mediaFrom(form: FormData, by: User) {
       created_at: new Date().toISOString(),
       uploaded_by: { id: by.id, name: by.name || "Jūs" },
     }));
+}
+
+/** Read a report's flat latitude/longitude form fields, if it carries them. */
+function coordinates(form: FormData): [number, number] | undefined {
+  const latitude = Number(form.get("latitude"));
+  const longitude = Number(form.get("longitude"));
+  if (!form.has("latitude") || !form.has("longitude") || Number.isNaN(latitude) || Number.isNaN(longitude)) {
+    return undefined;
+  }
+  return [longitude, latitude];
 }
 
 function me() {
@@ -209,14 +218,14 @@ export const handlers = [
     if (!problem) {
       const category = fx.categories.find((c) => c.id === form.get("category")) ?? fx.categories.at(-1)!;
       const urgency = (form.get("urgency") as ProblemUrgency | null) ?? category.default_urgency;
-      const location = form.get("location");
+      const at = coordinates(form);
       const now = new Date().toISOString();
       problem = {
         id: newId("p"),
         status: "unconfirmed",
         urgency,
         legitimacy_score: 70,
-        location: location ? (JSON.parse(String(location)) as GeoPoint) : db.problems[0].location,
+        location: at ? { type: "Point", coordinates: at } : db.problems[0].location,
         category,
         institution: null,
         created_at: now,

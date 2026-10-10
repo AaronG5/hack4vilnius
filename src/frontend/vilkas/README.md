@@ -1,32 +1,48 @@
-# React + TypeScript + Vite
+# Vilkas — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The resident app and the municipality dashboards (Vite + React + TypeScript).
+`src/api/` is a typed client for `api/openapi.yaml`; the screens and phases are
+described in `planning/FRONTEND_PLAN.md`.
 
-Currently, two official plugins are available:
+## Run it against the backend
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+# terminal 1 — the API (from the repository root)
+uv --directory ./src/backend run python manage.py runserver
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# terminal 2 — the app
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open http://localhost:5173. The dev server proxies `/api` and `/media` to the
+Django dev server at `http://127.0.0.1:8000`, so the browser sees one origin
+and no CORS setup is needed. Point it elsewhere with `VITE_BACKEND_URL`:
+
+```bash
+VITE_BACKEND_URL=http://192.168.1.10:8000 npm run dev
+```
+
+A fresh database has no categories or districts, which leaves an empty map and
+no way to report anything — seed it first:
+
+```bash
+uv --directory ./src/backend run python manage.py seed_demo --with-examples
+```
+
+## Run it without a backend
+
+```bash
+npm run dev:mocks
+```
+
+Serves every endpoint in the contract from [MSW](https://mswjs.io/) fixtures
+(`src/mocks/`), including the api-gap extensions the backend doesn't have yet.
+Pages always call the real `src/api` functions either way.
+
+## Checks
+
+```bash
+npm run lint    # oxlint
+npm run build   # tsc -b && vite build
+```

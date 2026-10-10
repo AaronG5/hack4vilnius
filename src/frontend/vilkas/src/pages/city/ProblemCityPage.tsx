@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { updateProblemStatus } from "../../api";
+import { ApiError, updateProblemStatus } from "../../api";
 import { LazyMap } from "../../components/map/LazyMap";
 import { BackIcon } from "../../components/icons";
 import { INSTITUTIONS, suggestedInstitution } from "../../data/institutions";
@@ -125,14 +125,21 @@ export function ProblemCityPage() {
     store.setAssignments(all);
   };
 
+  // TODO(api-gap): there is no city-staff login yet, so the anonymous session
+  // these pages run on is refused by PUT /problems/{id}/status.
+  const statusError = (err: unknown, fallback: string) =>
+    err instanceof ApiError && (err.status === 401 || err.status === 403)
+      ? "Reikia savivaldybės darbuotojo paskyros"
+      : fallback;
+
   const assign = async (a: Assignment) => {
     try {
       await updateProblemStatus(v.id, { status: "pending" });
       saveAssignment(a);
       await reload();
       toast(`Užduotis išsiųsta: ${a.institutions.join(" + ")}`);
-    } catch {
-      toast("Nepavyko priskirti — pabandykite dar kartą");
+    } catch (err) {
+      toast(statusError(err, "Nepavyko priskirti — pabandykite dar kartą"));
     }
   };
 
@@ -141,8 +148,8 @@ export function ProblemCityPage() {
       await updateProblemStatus(v.id, { status: "confirmed" });
       saveAssignment(undefined);
       await reload();
-    } catch {
-      toast("Nepavyko — pabandykite dar kartą");
+    } catch (err) {
+      toast(statusError(err, "Nepavyko — pabandykite dar kartą"));
     }
   };
 

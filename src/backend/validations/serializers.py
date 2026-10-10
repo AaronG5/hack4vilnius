@@ -49,7 +49,9 @@ class ValidationCreateSerializer(serializers.Serializer[Validation]):
     # reachable at runtime.
     is_valid = serializers.BooleanField()  # pyright: ignore[reportAssignmentType]
     description = serializers.CharField()
+    # Optional: answering "still there" / "fixed" must stay a single tap.
     media = serializers.ListField(
         child=serializers.FileField(),
-        allow_empty=False,
+        required=False,
+        default=list,
     )

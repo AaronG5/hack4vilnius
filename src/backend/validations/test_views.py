@@ -195,22 +195,28 @@ class TestValidationCreate:
         problem.refresh_from_db()
         assert problem.status == previous_status
 
-    def test_requires_media(self, auth_client: APIClient, problem: Problem) -> None:
-        """The contract makes media mandatory on a validation."""
+    def test_allows_an_answer_without_media(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Media is optional: answering "still there" / "fixed" is a single tap."""
         response = auth_client.post(
             _url(problem),
             {"is_valid": True, "description": "Still here."},
             format="multipart",
         )
 
-        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert response.status_code == HTTPStatus.CREATED
+        assert _body(response)["media"] == []
+        assert Validation.objects.get().media.count() == 0
 
     def test_requires_a_description(
         self,
         auth_client: APIClient,
         problem: Problem,
     ) -> None:
-        """A validation needs a text description alongside its media."""
+        """A validation needs a text description, with or without media."""
         response = auth_client.post(
             _url(problem),
             {"is_valid": True, "media": [_photo()]},

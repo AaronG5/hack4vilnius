@@ -82,8 +82,11 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
       await voteUrgency(m.id, { urgency });
       await reload();
       toast(urgency === "dangerous_to_life" ? "Pažymėta: pavojinga gyvybei" : "Ačiū už balsą!");
-    } catch {
-      toast("Nepavyko išsaugoti — pabandykite dar kartą");
+    } catch (err) {
+      // TODO(api-gap): POST /problems/{id}/urgency-votes is only served by the
+      // mock API, so against Django this is a 404 rather than a failure.
+      const missing = err instanceof ApiError && (err.status === 404 || err.status === 405);
+      toast(missing ? "Skubumo balsavimas dar neveikia" : "Nepavyko išsaugoti — pabandykite dar kartą");
     }
   };
 

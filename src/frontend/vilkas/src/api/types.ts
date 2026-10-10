@@ -216,11 +216,12 @@ export interface ReportCreate {
   /** Existing problem id if the user confirmed it's a duplicate. Omit for a new problem. */
   problem?: Uuid | null;
   media: Blob[];
+  /** Where the new problem is; sent as the contract's flat `latitude`/`longitude`. */
+  location?: GeoPoint;
 
   // TODO(api-gap): not in openapi.yaml yet; sent as extra multipart fields.
   title?: string;
   address?: string;
-  location?: GeoPoint;
   urgency?: ProblemUrgency;
   near_sensitive?: boolean;
 }

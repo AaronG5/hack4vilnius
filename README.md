@@ -43,3 +43,47 @@ uv --directory ./src/backend run pytest
 uv --directory ./src/backend run python manage.py makemigrations
 uv --directory ./src/backend run python manage.py migrate
 ```
+
+### Seed data
+The app can't work on an empty database: `GET /categories` and `GET /districts`
+back the report form and the map, and a problem can't exist without a category.
+
+```bash
+uv --directory ./src/backend run python manage.py seed_demo
+```
+
+That creates the institutions, the nine problem categories, the 21 Vilnius
+seniūnijos, the badges and the challenges. Add `--with-examples` to also create
+the nine example problems (the same ones the frontend's mock API serves) with
+their reports and answers. Everything is keyed by name, so re-running updates
+in place instead of duplicating.
+
+## Frontend
+
+A Vite + React + TypeScript app in `src/frontend/vilkas`, with a typed client
+for this API in `src/api/` (see `planning/FRONTEND_PLAN.md`).
+
+### Run it against the backend
+```bash
+# terminal 1 — the API
+uv --directory ./src/backend run python manage.py runserver
+
+# terminal 2 — the app
+cd src/frontend/vilkas
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. The dev server proxies `/api` and `/media` to
+`http://127.0.0.1:8000`, so the browser sees a single origin and no CORS setup
+is needed; set `VITE_BACKEND_URL` to point at a backend somewhere else.
+
+To work on the frontend without a backend, `npm run dev:mocks` serves the same
+endpoints from [MSW](https://mswjs.io/) fixtures instead.
+
+### Checks
+```bash
+cd src/frontend/vilkas
+npm run lint
+npm run build
+```

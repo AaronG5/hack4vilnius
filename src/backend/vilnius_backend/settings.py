@@ -50,6 +50,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "drf_spectacular",
+    # The project package itself: it holds no models, only the project-level
+    # `manage.py` commands (`seed_demo`), which Django finds via INSTALLED_APPS.
+    "vilnius_backend",
     "users",
     "districts",
     "institutions",

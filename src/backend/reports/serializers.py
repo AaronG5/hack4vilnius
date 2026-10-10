@@ -61,6 +61,7 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
     report a new problem rather than attach to an existing one. `latitude`
     and `longitude` locate a new problem and are required unless `problem`
     is given — see the `location` note on `ReportCreate` in api/openapi.yaml.
+    `media` is optional: a text-only report is allowed.
     """
 
     description = serializers.CharField()
@@ -76,9 +77,11 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
     )
     latitude = serializers.FloatField(required=False)
     longitude = serializers.FloatField(required=False)
+    # Optional: the app also lets a resident describe a problem in words only.
     media = serializers.ListField(
         child=serializers.FileField(),
-        allow_empty=False,
+        required=False,
+        default=list,
     )
 
     @override

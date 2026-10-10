@@ -201,12 +201,12 @@ class TestReportCreate:
 
         assert response.status_code == HTTPStatus.BAD_REQUEST
 
-    def test_requires_media(
+    def test_allows_a_text_only_report(
         self,
         auth_client: APIClient,
         category: Category,
     ) -> None:
-        """The contract makes media mandatory: a photo proves the problem exists."""
+        """Media is optional: the app lets a resident describe a problem in words."""
         response = auth_client.post(
             REPORTS_URL,
             {
@@ -218,7 +218,9 @@ class TestReportCreate:
             format="multipart",
         )
 
-        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert response.status_code == HTTPStatus.CREATED
+        assert _body(response)["media"] == []
+        assert Report.objects.get().media.count() == 0
 
     def test_requires_a_description(
         self,

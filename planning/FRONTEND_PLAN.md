@@ -10,7 +10,7 @@ App: `src/frontend/vilkas` (Vite + React + TypeScript). API client: `src/api/` (
 ## Principles
 
 - **One slice at a time, viewable at every step.** Each phase ends with a checkpoint: the screens render, match the reference, and every control works or is visibly disabled.
-- **Mock first, wire second.** Pages always call the real `src/api` functions. In development, [MSW](https://mswjs.io/) intercepts them and serves typed fixtures (the demo's example problems), so pages work before the backend endpoints exist. `VITE_API_MOCKS=false` sends calls to Django instead.
+- **Mock first, wire second.** Pages always call the real `src/api` functions. `npm run dev` sends those calls to Django (the dev server proxies `/api` and `/media`); `npm run dev:mocks` (`VITE_API_MOCKS=true`) has [MSW](https://mswjs.io/) intercept them and serve typed fixtures instead — the demo's example problems — for working without a backend. `manage.py seed_demo --with-examples` puts the same data in the real database.
 - **API gaps are explicit.** Data the demo needs that `openapi.yaml` lacks is either an optional field marked `TODO(api-gap)` in `src/api/types.ts`, a stand-in in `src/lib/gaps.ts`, or computed client-side (e.g. priority score) — each listed under [API gaps](#api-gaps). Pages fall back gracefully when a gap field is missing.
 - Lithuanian UI copy is taken verbatim from the demo.
 
@@ -89,7 +89,7 @@ MapLibre GL JS + OpenFreeMap vector tiles (OpenStreetMap data), lazy-loaded. The
 - `session.ts`: `createSession`/`login` store the token, `logout` clears it even on failure, `ensureSession` dedupes concurrent calls.
 - Multipart: `createReport`/`createProblemValidation` send each file under `media`, omit absent optional fields.
 - Contract check: a script that walks `api/openapi.yaml` and fails if an operation has no client function.
-- Optional live smoke test against `manage.py runserver` (`VITE_API_MOCKS=false`).
+- Optional live smoke test against `manage.py runserver` (the default target; `npm run dev:mocks` is the mocked one).
 
 ---
 
@@ -99,7 +99,6 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 
 | Need | Where | Frontend today | Suggested API |
 |---|---|---|---|
-| Report location | report sheet | optional `location` sent with `ReportCreate` (gap field) | `location` (GeoPoint) on `ReportCreate` |
 | Title, address, "near school" | everywhere | optional gap fields on `ReportCreate` / `Problem`; fall back to category / coordinates | add to `ReportCreate` and `Problem` |
 | Urgency chosen when reporting | report sheet | optional `urgency` on `ReportCreate` | add field |
 | Urgency votes | problem sheet | `voteUrgency()` gap function + `urgency_votes` on `Problem` | `POST /problems/{id}/urgency-votes`, `urgency_votes` on `Problem` |
@@ -114,6 +113,8 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | City KPIs, district stats | dashboards | fixtures | `GET /stats/city`, `GET /districts/{id}/stats` |
 | City staff login / role check | dashboards | city pages use the anonymous session | auth for `city_administrator` |
 | Institutions + assignment | board 10 | fixtures | `GET /institutions`, `POST /problems/{id}/assignments` |
+| District of a problem | map list, dashboards | computed client-side (`districtOf`); `GET /problems?district=` matches nothing | implement `districts.services.get_district_for_point` (stub) |
+| Points for reporting/answering | header chip, profile | `points_awarded` from the response; `User.points` stays 0 on the real API | credit `User.points` when a report or validation is accepted |
 
 ## Maybe later
 
@@ -160,4 +161,10 @@ Ideas parked until the frontend phases are done; none are commitments.
   - Used on the map page, report "Kur tai?" step, dashboard hotspots and the problem card location.
   - Fixtures now use real coordinates (geocoded with Nominatim) and the 21 real seniūnijos (OSM, simplified); several samples moved to their true districts (e.g. Kalvarijų g. 98 → Šnipiškės).
   - Distances, duplicate radius (270 m) and landmark unlocks (120 m) use real metres.
+- [x] Wired to Django (2026-10-10)
+  - `npm run dev` now talks to the backend; the MSW mocks moved to `npm run dev:mocks`. The dev server proxies `/media` too, with `changeOrigin: false` so the absolute `Media.file_url` Django builds resolves back through the proxy.
+  - `createReport` sends the contract's flat `latitude`/`longitude` instead of a `location` JSON blob (the mock handler reads the same fields now).
+  - `media` became optional on `POST /reports` and `POST /problems/{id}/validations` (contract, serializers, tests): the demo's text-only report and one-tap "vis dar yra" answer carry no photo.
+  - Endpoints the backend doesn't serve now say so: urgency voting (404) → "Skubumo balsavimas dar neveikia"; assignment on the city pages (403, no staff login) → "Reikia savivaldybės darbuotojo paskyros".
+  - `manage.py seed_demo` seeds the reference data (and `--with-examples` the nine example problems), since `GET /categories` / `GET /districts` back the report form and the map.
 - [ ] Phase 11 — API client tests

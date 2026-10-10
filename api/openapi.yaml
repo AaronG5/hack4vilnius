@@ -1012,7 +1012,10 @@ components:
           items:
             type: string
             format: binary
-      required: [description, media]
+          description: >-
+            Photos or videos proving the problem exists. Optional: the app
+            also lets a resident describe a problem in words only.
+      required: [description]
 
     Validation:
       type: object
@@ -1065,7 +1068,10 @@ components:
           items:
             type: string
             format: binary
-      required: [is_valid, description, media]
+          description: >-
+            A fresh photo backing the answer. Optional: answering
+            "still there" / "fixed" must stay a single tap.
+      required: [is_valid, description]
 
     # -- Notifications / Moderation --------------------------------------------
 

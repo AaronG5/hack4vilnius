@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** "false" disables the MSW mock API in development. */
+  /** "true" serves the API from the MSW mocks instead of the Django backend. */
   readonly VITE_API_MOCKS?: string;
 }
 

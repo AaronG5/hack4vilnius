@@ -30,9 +30,17 @@ class MediaRelation(Protocol):
     uses -- widen it as more of the manager API gets used.
     """
 
-    def all(self) -> "models.QuerySet[Media]": ...
-    def count(self) -> int: ...
-    def create(self, **kwargs: object) -> "Media": ...
+    def all(self) -> "models.QuerySet[Media]":
+        """Return every attachment, as a queryset."""
+        ...
+
+    def count(self) -> int:
+        """Return how many attachments there are."""
+        ...
+
+    def create(self, **kwargs: object) -> "Media":
+        """Create one attachment against the related object."""
+        ...
 
 
 @final
