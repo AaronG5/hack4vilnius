@@ -1,6 +1,6 @@
 // Low-level HTTP client shared by all API modules.
 
-import type { ApiErrorBody } from "./types";
+import type { ApiErrorBody, AuthResponse } from "./types";
 
 const TOKEN_STORAGE_KEY = "hack4vilnius.authToken";
 
@@ -86,7 +86,7 @@ function buildUrl(path: string, query?: object): string {
   return url;
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function send<T>(path: string, options: RequestOptions): Promise<T> {
   const { method = "GET", query, body, signal } = options;
   const headers: Record<string, string> = { Accept: "application/json" };
 
@@ -129,6 +129,48 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     throw new ApiError(response.status, data);
   }
   return data as T;
+}
+
+// A token the API doesn't know — left over from the mock API, or from a
+// database that has since been reset — makes DRF reject *every* request with
+// 401, the public endpoints included: it authenticates before it checks
+// permissions. So a 401 on a request that carried a token means "this token is
+// no good" rather than "you may not do this": drop it, start a fresh anonymous
+// session and try once more.
+const SESSION_PATHS = new Set(["/session", "/auth/login", "/auth/logout"]);
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const sentToken = getToken() !== null;
+  try {
+    return await send<T>(path, options);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 401 || !sentToken || SESSION_PATHS.has(path)) {
+      throw error;
+    }
+    await renewSession();
+    return send<T>(path, options);
+  }
+}
+
+/** POST /session — start an anonymous session and store its token. */
+export async function createAnonymousSession(signal?: AbortSignal): Promise<AuthResponse> {
+  // The stored token goes first: POST /session carrying an invalid one is itself a 401.
+  setToken(null);
+  const auth = await send<AuthResponse>("/session", { method: "POST", body: {}, signal });
+  setToken(auth.token);
+  return auth;
+}
+
+let pendingSession: Promise<void> | null = null;
+
+/** Replace whatever token is stored with a new anonymous session. Concurrent calls share one request. */
+export function renewSession(): Promise<void> {
+  pendingSession ??= createAnonymousSession()
+    .then(() => undefined)
+    .finally(() => {
+      pendingSession = null;
+    });
+  return pendingSession;
 }
 
 /** Build multipart form data, appending each array item under the same key. */

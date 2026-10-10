@@ -166,5 +166,6 @@ Ideas parked until the frontend phases are done; none are commitments.
   - `createReport` sends the contract's flat `latitude`/`longitude` instead of a `location` JSON blob (the mock handler reads the same fields now).
   - `media` became optional on `POST /reports` and `POST /problems/{id}/validations` (contract, serializers, tests): the demo's text-only report and one-tap "vis dar yra" answer carry no photo.
   - Endpoints the backend doesn't serve now say so: urgency voting (404) → "Skubumo balsavimas dar neveikia"; assignment on the city pages (403, no staff login) → "Reikia savivaldybės darbuotojo paskyros".
+  - A token the API doesn't know (left over from the mock API, or from a reset database) made DRF reject *every* request with 401 — public endpoints included, since it authenticates before checking permissions — which left the report form with no categories and its button disabled. `request()` now drops such a token, starts a fresh anonymous session and retries once; concurrent 401s share the one `POST /session`.
   - `manage.py seed_demo` seeds the reference data (and `--with-examples` the nine example problems), since `GET /categories` / `GET /districts` back the report form and the map.
 - [ ] Phase 11 — API client tests
