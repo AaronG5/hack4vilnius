@@ -9,35 +9,30 @@ This project is made for the [Hack4Vilnius 2026](https://hack4vilnius.lt/) hacka
 #### Setup
 Have python, uv installed and run
 ```bash
-cd ./src/backend
 uv sync
 ```
 
 #### Usage
 To start the server
 ```bash
-cd ./src/backend
-uv run python manage.py runserver
+uv --directory ./src/backend run python ./src/backed/manage.py runserver
 ```
 
 ### Development
 #### Setup
 ```bash
-cd ./src/backend
 uv sync --group dev
 ```
 
 #### Run tests and formatters
 ```bash
-cd ./src/backend
-uv run ruff format
-uv run ruff check
-uv run basedpyright
+uv --directory ./src/backend run ruff format
+uv --directory ./src/backend run ruff check
+uv --directory ./src/backend run basedpyright
 ```
 
 #### Run migrations and apply them
 ```bash
-cd ./src/backend
-uv run python manage.py makemigrations
-uv run python manage.py migrate
+uv --directory ./src/backend run python manage.py makemigrations
+uv --directory ./src/backend run python manage.py migrate
 ```
