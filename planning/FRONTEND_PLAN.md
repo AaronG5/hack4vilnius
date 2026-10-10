@@ -39,13 +39,12 @@ Router, MSW mocks for all 25 operations, `useApi` hook, session bootstrap (`ensu
 
 ## Phase 2 — Report sheet (FAB)
 
-- Step 1 source: **Nufotografuoti opens the camera directly** (`<input capture>` inside the row), Įkelti nuotrauką, Aprašyti tekstu, disabled "Vaizdo ir garso įrašai".
-- Photo → "Pridėti komentarą?" (preview + optional address/comment). Text → "Aprašykite problemą".
+- Step 1 compose — one way in, no choice of path: photos (**Nufotografuoti opens the camera directly**, `<input capture>` inside the row; or Įkelti nuotraukas), a **required** description (≥ 10 chars, so AI always has text to suggest the type from before the form shows), and an optional audio/video clip.
 - Analyzing spinner with "Sustabdyti ir pildyti ranka" → form: AI tag + confidence, category chips, urgency segmented control, title, address, description, "Šalia mokyklos…" checkbox.
 - Place: tap the map to mark the spot (district shown) → duplicate candidates (same district, ≤ ~270 m, match %) → confirm existing (= "vis dar yra" validation) or submit new (`createReport`).
 - Success: toast "+20 tšk.", points refresh.
 
-**Checkpoint:** photo, upload and text paths all end in a new pin; confirming a duplicate adds a confirmation instead.
+**Checkpoint:** a report with a description (with or without photos) ends in a new pin; confirming a duplicate adds a confirmation instead.
 
 ## Phase 3 — Problem sheet · `/problems/:id`
 
