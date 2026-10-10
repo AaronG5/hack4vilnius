@@ -26,7 +26,6 @@ export function createReport(report: ReportCreate, signal?: AbortSignal): Promis
       latitude,
       longitude,
       media: report.media,
-      // TODO(api-gap): extra fields not in openapi.yaml yet; the backend ignores them.
       title: report.title,
       address: report.address,
       urgency: report.urgency,

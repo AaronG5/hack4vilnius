@@ -9,6 +9,7 @@ from problems.models import Problem
 from reports.models import Report
 from rest_framework import serializers
 from users.serializers import UserRefSerializer
+from vilnius_backend.choices import ProblemUrgency
 
 
 @final
@@ -78,7 +79,9 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
     report a new problem rather than attach to an existing one. `latitude`
     and `longitude` locate a new problem and are required unless `problem`
     is given — see the `location` note on `ReportCreate` in api/openapi.yaml.
-    `media` is optional: a text-only report is allowed.
+    `media` is optional: a text-only report is allowed. `title`, `address`,
+    `urgency` and `near_sensitive` describe a new problem and are ignored
+    when attaching to an existing one.
     """
 
     description = serializers.CharField()
@@ -94,6 +97,24 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
     )
     latitude = serializers.FloatField(required=False)
     longitude = serializers.FloatField(required=False)
+    title = serializers.CharField(
+        max_length=120,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    address = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    # The reporter's own urgency vote; without it, the category default applies.
+    urgency = serializers.ChoiceField(
+        choices=ProblemUrgency.choices,
+        required=False,
+    )
+    near_sensitive = serializers.BooleanField(required=False, default=False)
     # Optional: the app also lets a resident describe a problem in words only.
     media = serializers.ListField(
         child=serializers.FileField(),

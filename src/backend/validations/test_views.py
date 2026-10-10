@@ -155,6 +155,42 @@ class TestValidationCreate:
         assert _body(response)["points_awarded"] == FLAT_AWARD
         assert Validation.objects.get().points_awarded == FLAT_AWARD
 
+    def test_adds_the_points_to_the_user(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        user: User,
+    ) -> None:
+        """The answer's points land on the user's own total."""
+        before = user.points
+        _ = auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": "Still here.", "media": []},
+            format="multipart",
+        )
+
+        user.refresh_from_db()
+        assert user.points == before + FLAT_AWARD
+
+    def test_a_refused_second_answer_earns_nothing(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        user: User,
+    ) -> None:
+        """Answering the same problem twice is refused, and so are its points."""
+        body: dict[str, object] = {
+            "is_valid": True,
+            "description": "Still here.",
+            "media": [],
+        }
+        _ = auth_client.post(_url(problem), body, format="multipart")
+        response = auth_client.post(_url(problem), body, format="multipart")
+
+        user.refresh_from_db()
+        assert response.status_code == HTTPStatus.CONFLICT
+        assert user.points == FLAT_AWARD
+
     def test_attaches_uploaded_media(
         self,
         auth_client: APIClient,

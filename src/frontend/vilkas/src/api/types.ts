@@ -178,9 +178,7 @@ export interface Problem {
   /** The current user's urgency vote, null if they haven't voted. */
   my_urgency_vote: ProblemUrgency | null;
 
-  // TODO(api-gap): fields below are not in openapi.yaml yet (planning/FRONTEND_PLAN.md › API gaps).
-  // The mock API returns them; pages fall back when they are missing.
-  /** Short human title, e.g. "Gili duobė dešinėje juostoje". */
+  /** Short human title, e.g. "Gili duobė dešinėje juostoje"; "" when the reporter gave none. */
   title?: string;
   /** Street address or landmark. */
   address?: string;
@@ -229,7 +227,7 @@ export interface ReportCreate {
   /** Where the new problem is; sent as the contract's flat `latitude`/`longitude`. */
   location?: GeoPoint;
 
-  // TODO(api-gap): not in openapi.yaml yet; sent as extra multipart fields.
+  /** What the reporter said about a new problem; ignored when `problem` is given. */
   title?: string;
   address?: string;
   urgency?: ProblemUrgency;

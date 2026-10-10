@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING, cast, final, override
 
+import users.services as user_services
 import validations.services as validation_services
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import UploadedFile
@@ -99,6 +100,7 @@ class ValidationListCreateView(DefaultListCreateAPIView[Validation]):
             validation,
         )
         validation.save(update_fields=["points_awarded"])
+        user_services.award_points(user, validation.points_awarded)
         _attach_media(validation, user, files)
         validation_services.apply_urgency_votes(problem)
         validation_services.evaluate_problem_validations(problem)

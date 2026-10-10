@@ -171,10 +171,7 @@ _CHALLENGES: Final[tuple[_ChallengeSeed, ...]] = (
     ),
 )
 
-# The demo's example problems, at their real (geocoded) coordinates. `Problem`
-# carries no title, address or "near a school" flag yet (planning/
-# FRONTEND_PLAN.md > API gaps), so the title opens the report's description and
-# the address closes it — which is where the frontend reads them from.
+# The demo's example problems, at their real (geocoded) coordinates.
 _EXAMPLES: Final[tuple[_ExampleSeed, ...]] = (
     _ExampleSeed(
         "Gili duobė dešinėje juostoje",
@@ -461,13 +458,13 @@ class Command(BaseCommand):
         for index, example in enumerate(_EXAMPLES):
             category = categories[example.category]
             created_at = now - dt.timedelta(hours=example.age_hours)
-            description = (
-                f"{example.title}. {example.detail} Adresas: {example.address}."
-            )
+            description = example.detail
             problem = Problem.objects.create(
                 status=example.status,
                 urgency=example.urgency,
                 reported_urgency=example.urgency,
+                title=example.title,
+                address=example.address,
                 legitimacy_score=problem_services.estimate_legitimacy_score(
                     category,
                     description,

@@ -1006,6 +1006,19 @@ components:
           $ref: "#/components/schemas/ProblemStatus"
         urgency:
           $ref: "#/components/schemas/ProblemUrgency"
+        title:
+          type: string
+          maxLength: 120
+          description: >-
+            Short title from the first report, e.g. "Gili duobė dešinėje
+            juostoje". Empty when the reporter gave none.
+        address:
+          type: string
+          maxLength: 255
+          description: Street address or landmark, as the reporter gave it. May be empty.
+        near_sensitive:
+          type: boolean
+          description: Near a school, kindergarten, hospital or playground.
         legitimacy_score:
           type: number
           minimum: 0
@@ -1148,6 +1161,26 @@ components:
         longitude:
           type: number
           description: Required when `problem` is omitted; see `latitude`.
+        title:
+          type: string
+          maxLength: 120
+          description: Short title for a new problem. Ignored when `problem` is given.
+        address:
+          type: string
+          maxLength: 255
+          description: Address or landmark of a new problem. Ignored when `problem` is given.
+        urgency:
+          allOf:
+            - $ref: "#/components/schemas/ProblemUrgency"
+          description: >-
+            The reporter's own urgency vote for a new problem. Omit to use the
+            category's default. Ignored when `problem` is given.
+        near_sensitive:
+          type: boolean
+          default: false
+          description: >-
+            Whether a new problem is near a school, kindergarten, hospital or
+            playground. Ignored when `problem` is given.
         media:
           type: array
           items:

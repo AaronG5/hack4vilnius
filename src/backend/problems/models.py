@@ -41,6 +41,22 @@ class Problem(UUIDModel, TimestampedModel):
             "Never changes, so re-tallying can't drift."
         ),
     )
+    title: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="Short human title from the first report, e.g. 'Gili duobė'.",
+    )
+    address: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Street address or landmark, as the reporter gave it.",
+    )
+    near_sensitive: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
+        default=False,
+        help_text="Near a school, kindergarten, hospital or playground.",
+    )
     legitimacy_score: models.FloatField[float | Combinable, float] = models.FloatField(
         help_text="AI-estimated percentage, 0-100.",
     )

@@ -13,6 +13,7 @@ from reports.models import Report
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 from users.models import User
+from users.services import REPORT_POINTS
 from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
 
 REPORTS_URL = "/api/reports"
@@ -338,6 +339,81 @@ class TestReportCreate:
         assert body["ai_abuse_flag"] is False
         assert body["has_moderation_flag"] is False
         assert body["ai_category_suggestion"] is None
+
+    def test_awards_report_points_to_the_reporter(
+        self,
+        auth_client: APIClient,
+        category: Category,
+        user: User,
+    ) -> None:
+        """Each report adds the report reward to the reporter's points."""
+        before = user.points
+        _ = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "A pothole.",
+                "category": str(category.id),
+                "latitude": 54.69,
+                "longitude": 25.28,
+            },
+            format="multipart",
+        )
+
+        user.refresh_from_db()
+        assert user.points == before + REPORT_POINTS
+
+    def test_stores_what_the_reporter_said_about_a_new_problem(
+        self,
+        auth_client: APIClient,
+        category: Category,
+    ) -> None:
+        """Title, address, urgency and the sensitive-place flag reach the problem."""
+        _ = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "Automobiliai apvažiuoja duobę.",
+                "category": str(category.id),
+                "latitude": 54.69,
+                "longitude": 25.28,
+                "title": " Gili duobė ",
+                "address": "Kalvarijų g. 98",
+                "urgency": ProblemUrgency.DANGEROUS_TO_LIFE,
+                "near_sensitive": True,
+            },
+            format="multipart",
+        )
+
+        problem = Problem.objects.get()
+        assert problem.title == "Gili duobė"
+        assert problem.address == "Kalvarijų g. 98"
+        assert problem.urgency == ProblemUrgency.DANGEROUS_TO_LIFE
+        assert problem.reported_urgency == ProblemUrgency.DANGEROUS_TO_LIFE
+        assert problem.near_sensitive is True
+
+    def test_new_problem_details_are_optional(
+        self,
+        auth_client: APIClient,
+        category: Category,
+    ) -> None:
+        """Without them: no title or address, and the category's urgency."""
+        _ = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "A pothole.",
+                "category": str(category.id),
+                "latitude": 54.69,
+                "longitude": 25.28,
+            },
+            format="multipart",
+        )
+
+        problem = Problem.objects.get()
+        assert (problem.title, problem.address, problem.near_sensitive) == (
+            "",
+            "",
+            False,
+        )
+        assert problem.urgency == category.default_urgency
 
 
 @pytest.mark.django_db
