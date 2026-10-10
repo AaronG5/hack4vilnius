@@ -23,10 +23,11 @@ Different badges that the users can aquire.
 - `name` — badge title
 - `description` — what it represents / how it's earned
 - `icon` — image shown in the badge showcase
-- `criteria` — rule that triggers awarding it (e.g. points threshold, challenge completion)
+- `required_validation_count` — optional; number of validations needed to earn the badge, scoped to `district` when one is set (e.g. "validate 10 problems in Senamiestis")
 
 **Relationships:**
 - `users` — many-to-many with Users (through an `earned_at` timestamp)
+- `district` — optional ForeignKey to Districts; when set, only validations on problems located in that district count toward `required_validation_count` (a problem's district is computed dynamically from its `location`, per the Districts note below). Null means the count is district-agnostic (any district counts).
 
 ### Categories
 Classification assigned to a problem/report (e.g. pothole, plant disease, "other").
@@ -66,6 +67,7 @@ Geographical bounds of districs of the city, that users can belong to.
 
 **Relationships:**
 - `users` — one-to-many with Users (residents)
+- `badges` — one-to-many with Badges (district-scoped validation badges, optional)
 
 *Note: no stored link to Problems — a problem's district is computed dynamically from its `location` coordinates against district boundaries, not persisted.*
 

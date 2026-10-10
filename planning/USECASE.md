@@ -5,14 +5,20 @@
 ### User Pages
 The user design is mobile oriented, so that users can report problems while on the go. It is simple and has an intuitive and faster UX.
 
+#### Loading Page
+A loading page that is displayed while the app data is not fully loaded.
+
 #### Map
-Interactive map, where the users can see the unconfirmed, confirmed, ongoing and  pending problems. The user can filter which problems they see.
+Interactive map, where the users can see the unconfirmed, confirmed, ongoing and  pending problems. The user can filter which problems they see. It has a plus sign symbol where a use can initiate a new report.
 
 #### Challange list
 A list of city created challanges that the users can participate in.
 
 #### Challange details
 A page that provides details about a specific challange. This page provides progress milestones, participant count, district contribution numbers.
+
+#### Profile page
+A page where the user can view his details. This page leads to the badges page. In this page the user can redeem their points for prizes.
 
 #### Badge showcase
 A page where the user can view the badges that he has earned.
@@ -22,7 +28,6 @@ The city administrator design is computer oriented. It has more complex data pre
 
 #### List of problems
 A list of problems where the city administrator can mark problems as ongoing. The problems can be sorted by urgency, age and filtered by district and urgency.
-
 
 ## User Flow
 
@@ -37,7 +42,10 @@ A list of problems where the city administrator can mark problems as ongoing. Th
 7. Sometimes users who are passing though the confirmed problem are prompted by a notification to update the status (A.K.A. check if the problem has progressed, has the urgency changed).
 8. Responsible insitution announces that it is currently working on fixing the problem, the problem is marked as ongoing. Users who reported or validated the problem are informed via notifications of the problems status change. The problem is marked as a yellow marker on the full map.
 9. Responsible insitution announces that the problem is fixed, the problem is marked as pending. Users who reported or validated the problem are informed via notifications of the problems status change. The problem is marked as a green question mark on the map.
-10. If enough users validate that the problem is fixed it is marked as completed and disappears from the map, if users say that the problem is not fixed it is marked as valid. Users who reported or validated the problem are informed via notifications of the problems status change.
+10. If enough users validate that the problem is fixed it is marked as completed and disappears from the map, if users say that the problem is not fixed it is marked as confirmed. Users who reported or validated the problem are informed via notifications of the problems status change.
+
+### Badges
+If a user validates enough problems in a district he gets that districts badge.
 
 ## City Administrators flow
 
