@@ -80,7 +80,7 @@ export function districtTable(views: ProblemView[], districts: string[]): Distri
 export type Stage = "nep" | "pat" | "per" | "tvk" | "sut";
 
 export const STAGES: { id: Stage; name: string; color: string }[] = [
-  { id: "nep", name: "Nepatvirtinta", color: "rgba(237,28,36,0.4)" },
+  { id: "nep", name: "Nepatvirtinta", color: "#7E2324" },
   { id: "pat", name: "Patvirtinta", color: "var(--red)" },
   { id: "per", name: "Perduota vykdytojams", color: "var(--navy)" },
   { id: "tvk", name: "Tvarkoma", color: "var(--yellow)" },

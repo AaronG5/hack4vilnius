@@ -104,7 +104,7 @@ function pinImage(fill: string, size: number, border = "#ffffff") {
 
 function addPinImages(map: MLMap) {
   const images: [string, string, number, string?][] = [
-    ["pin-new", "rgba(237,28,36,0.45)", 26, "rgba(255,255,255,0.9)"],
+    ["pin-new", "#7E2324", 26, "rgba(255,255,255,0.9)"],
     ["pin-red", "#ED1C24", 26],
     ["pin-work", "#FFC629", 26],
     ["pin-fixed", "#1C4B1D", 26],

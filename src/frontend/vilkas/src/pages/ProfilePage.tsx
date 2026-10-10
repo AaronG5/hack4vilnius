@@ -96,7 +96,7 @@ export function ProfilePage() {
       )}
 
       <section className="redcard">
-        <span className="tag" style={{ background: "var(--pink)", alignSelf: "flex-start" }}>
+        <span className="tag" style={{ background: "#fff", color: "var(--red)", alignSelf: "flex-start" }}>
           Jūsų indėlis
         </span>
         <b style={{ fontSize: 22, lineHeight: 1.2 }}>

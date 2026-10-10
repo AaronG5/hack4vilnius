@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
+import { PinIcon } from "../components/icons";
 import { LazyMap, MapLegend } from "../components/map/LazyMap";
 import { ProblemItem } from "../components/ProblemItem";
 import { weekChecks } from "../lib/activity";
@@ -112,30 +113,35 @@ export function MapPage() {
             ))}
           </div>
 
-          {onSite && (
+          {onSite ? (
             <button type="button" className="prompt onsite" onClick={() => open(onSite.id)}>
-              <span className="dot" />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <b>Jūs prie problemos!</b> {onSite.category} — patvirtinkite, ar ji vis dar yra
+              <span className="pulse" aria-hidden="true">
+                <PinIcon size={18} />
               </span>
-              <span className="tag lime">+10</span>
+              <span className="txt">
+                <small>Jūs šalia · {formatDistance(distanceMeters(onSite.at, here ?? onSite.at))}</small>
+                <b>{onSite.category} — vis dar yra?</b>
+              </span>
+              <span className="go">Patikrinti +10</span>
             </button>
-          )}
-          {!located.fix && (
-            <div className="locate-hint">
-              {located.error ? (
-                <span role="alert">{located.error}</span>
-              ) : located.watching ? (
-                <span>Nustatoma vieta…</span>
-              ) : (
-                <>
-                  <span style={{ flex: 1 }}>Problemas tikrinti galima tik būnant šalia — iki {NEAR_RADIUS_M} m.</span>
-                  <button type="button" className="chip" onClick={located.start}>
-                    Įjungti vietą
-                  </button>
-                </>
-              )}
-            </div>
+          ) : (
+            !located.fix && (
+              <button type="button" className="prompt locate" onClick={located.start} disabled={located.watching}>
+                <PinIcon size={18} />
+                <span className="txt">
+                  {located.error ? (
+                    <span role="alert">{located.error}</span>
+                  ) : located.watching ? (
+                    <b>Nustatoma vieta…</b>
+                  ) : (
+                    <>
+                      <b>Įjunkite vietą</b>
+                      <small>Problemas patvirtinti galima tik būnant šalia — iki {NEAR_RADIUS_M} m</small>
+                    </>
+                  )}
+                </span>
+              </button>
+            )
           )}
 
           {onSite ? null : filter === "new" ? (

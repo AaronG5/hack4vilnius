@@ -279,8 +279,8 @@
 }
 
 .pill-reopened {
-  background: var(--pink);
-  color: var(--chip-ink);
+  background: var(--red);
+  color: #fff;
   font-weight: 600;
   border-radius: 8px 0 8px 8px;
   padding: 3px 8px;
@@ -347,8 +347,8 @@
 }
 
 .speed.slow {
-  background: var(--pink);
-  color: var(--chip-ink);
+  background: var(--red);
+  color: #fff;
 }
 
 .stage-key {
@@ -772,8 +772,8 @@
 }
 
 .inst-tag.ai {
-  background: var(--pink);
-  color: var(--chip-ink);
+  background: var(--red);
+  color: #fff;
 }
 
 .inst-tag.role {

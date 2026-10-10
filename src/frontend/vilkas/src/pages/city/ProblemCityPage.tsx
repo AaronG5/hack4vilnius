@@ -36,7 +36,7 @@ function caseNumber(v: ProblemView): string {
 
 const PILL: Record<string, [string, string, string]> = {
   unconfirmed: ["Nepatvirtinta · laukia gyventojų", "var(--surface-2)", "var(--ink)"],
-  confirmed: ["Nauja · laukia priskyrimo", "var(--pink)", "var(--chip-ink)"],
+  confirmed: ["Nauja · laukia priskyrimo", "var(--red)", "#fff"],
   pending: ["Perduota · laukiama, kol priims", "var(--yellow)", "var(--chip-ink)"],
   ongoing: ["Sprendžiama · priskirta", "var(--yellow)", "var(--chip-ink)"],
   completed: ["Sutvarkyta", "var(--green)", "#fff"],

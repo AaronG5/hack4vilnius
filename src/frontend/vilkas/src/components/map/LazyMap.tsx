@@ -18,7 +18,7 @@ export function MapLegend() {
   return (
     <div className="legend" aria-label="Žymių reikšmės">
       <span>
-        <i style={{ background: "rgba(237,28,36,.45)", boxShadow: "0 0 0 3px rgba(237,28,36,.2)" }}>?</i>
+        <i style={{ background: "var(--red-deep)", boxShadow: "0 0 0 3px rgba(126,35,36,.25)" }}>?</i>
         Nepatvirtinta
       </span>
       <span>

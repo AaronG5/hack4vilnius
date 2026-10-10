@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { ApiError, createProblemValidation, type ProblemUrgency } from "../api";
 import { AttachmentStrip } from "../components/AttachmentStrip";
-import { CameraIcon, GalleryIcon } from "../components/icons";
+import { CameraIcon, GalleryIcon, PinIcon } from "../components/icons";
 import { Sheet } from "../components/Sheet";
 import { ago, count } from "../lib/format";
 import { distanceMeters, formatDistance, isNear, NEAR_RADIUS_M } from "../lib/geo";
@@ -374,22 +374,24 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
               </div>
 
               {!onSite && (
-                <div className="note warn" role="status">
-                  Atsakyti galite tik būdami šalia problemos — iki {NEAR_RADIUS_M} m.{" "}
-                  {fix ? (
-                    <>
-                      Dabar esate už <b>{formatDistance(distanceMeters(fix.at, m.at))}</b>.
-                    </>
-                  ) : located?.error ? (
-                    located.error
-                  ) : located?.watching ? (
-                    "Nustatoma vieta…"
-                  ) : (
-                    <button type="button" className="chip" onClick={located?.start}>
-                      Įjungti vietą
-                    </button>
-                  )}
+                <div className="onsite-gate" role="status">
+                  <PinIcon size={20} />
+                  <div className="txt">
+                    <b>{fix ? `Esate už ${formatDistance(distanceMeters(fix.at, m.at))}` : "Atsakyti galima tik vietoje"}</b>
+                    <span>
+                      {fix
+                        ? `Priėję iki ${NEAR_RADIUS_M} m galėsite atsakyti.`
+                        : located?.error ??
+                          (located?.watching ? "Nustatoma vieta…" : `Įjunkite vietą — atsakyti galima būnant iki ${NEAR_RADIUS_M} m nuo problemos.`)}
+                    </span>
+                  </div>
                 </div>
+              )}
+              {!onSite && !fix && !located?.watching && located && (
+                <button type="button" className="btn ghost" onClick={located.start}>
+                  <PinIcon size={18} />
+                  Įjungti vietą
+                </button>
               )}
               {/* Both answers are worth the same, so neither is dressed up as
                   the expected one. */}

@@ -64,7 +64,7 @@ const META: Record<ChallengeKey, ChallengeMeta> = {
     cta: ["Dalyvauti už savo rajoną", "Dalyvaujate"],
   },
   mokiniai: {
-    tag: "Mokykloms", color: "var(--pink)", ink: "#3C3C3C",
+    tag: "Mokykloms", color: "var(--red-deep)", ink: "#fff",
     teams: { board: "Klasių lentelė", empty: "Klasių lentelė atsiras, kai prisijungs pirmosios klasės.", how: "Klasių kodai bus įjungti netrukus. Kol kas skaičiuojami jūsų veiksmai." },
     rules: ["Mokytojas sukuria klasės kodą, mokiniai prisijungia.", "Tikrinkite problemas pakeliui į mokyklą — tik būdami šalia vietos."],
     prize: "Laimėjusi klasė — ekskursija į Savivaldybę ir susitikimas su meru.", cta: ["Dalyvauti", "Dalyvaujate"],

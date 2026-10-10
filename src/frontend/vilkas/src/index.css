@@ -15,7 +15,6 @@
   --on-navy-muted: #ced2df;
   --lime: #bdd947;
   --yellow: #ffc629;
-  --pink: #ff9fda;
   --peach: #f09f86;
   --green: #1c4b1d;
   --lav: #b1b7c9;
@@ -173,7 +172,8 @@ a {
 }
 
 .tag.ai {
-  background: var(--pink);
+  background: var(--red);
+  color: #fff;
 }
 .tag.lime {
   background: var(--lime);
@@ -255,8 +255,8 @@ h2.sec {
   color: var(--chip-ink);
 }
 .s-new {
-  background: rgba(237, 28, 36, 0.18);
-  color: var(--ink);
+  background: var(--red-deep);
+  color: #fff;
 }
 .s-mid {
   background: var(--peach);
@@ -351,8 +351,42 @@ h2.sec {
 }
 
 .note.warn {
-  background: var(--pink);
-  color: var(--chip-ink);
+  background: var(--red);
+  color: #fff;
+}
+
+/* "Answer only on site": how far the resident is from the problem. */
+.onsite-gate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px 0 12px 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  border-left: 4px solid var(--red);
+}
+
+.onsite-gate svg {
+  color: var(--red);
+  flex-shrink: 0;
+}
+
+.onsite-gate .txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.onsite-gate .txt b {
+  font-size: 15px;
+}
+
+.onsite-gate .txt span {
+  color: var(--muted);
 }
 
 .spin {
