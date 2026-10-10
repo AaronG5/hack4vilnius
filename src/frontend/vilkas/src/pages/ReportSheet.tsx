@@ -1,13 +1,13 @@
 // Report flow sheet from the demo (FAB): source → comment → AI → form → place → duplicates → send.
 // "Nufotografuoti" is a file input with capture, so tapping it opens the camera directly.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProblemValidation, createReport, type ProblemUrgency } from "../api";
-import { CityMap } from "../components/CityMap";
+import { LazyMap } from "../components/map/LazyMap";
 import { CameraIcon, GalleryIcon, MicIcon, PencilIcon } from "../components/icons";
 import { Sheet, Steps } from "../components/Sheet";
-import { districtOf, mapMeters, toLngLat, type XY } from "../lib/cityMap";
+import { distanceMeters, districtOf, type LngLat } from "../lib/geo";
 import { analyzeReport } from "../lib/gaps";
 import { URGENCIES, URGENCY_LABEL } from "../lib/labels";
 import type { ProblemView } from "../lib/problemModel";
@@ -30,6 +30,8 @@ interface Candidate {
   meters: number;
 }
 
+const DUPLICATE_RADIUS_M = 270;
+
 const BLANK: Form = { categoryId: "", urgency: "urgent", title: "", address: "", description: "", nearSensitive: false };
 
 export function ReportSheet() {
@@ -43,7 +45,9 @@ export function ReportSheet() {
   const [form, setForm] = useState<Form>(BLANK);
   const [ai, setAi] = useState<{ confidence: number; source: "photo" | "text" }>();
   const [aiNote, setAiNote] = useState("");
-  const [xy, setXy] = useState<XY>();
+  const [at, setAt] = useState<LngLat>();
+  // Where the map should move to after "Mano vieta".
+  const [focus, setFocus] = useState<LngLat>();
   const [cands, setCands] = useState<Candidate[]>([]);
   const [dupSel, setDupSel] = useState<number | null>(null);
   const aiCtl = useRef<AbortController>(undefined);
@@ -68,6 +72,8 @@ export function ReportSheet() {
     },
     [],
   );
+
+  const placePins = useMemo(() => views.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score })), [views]);
 
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
 
@@ -117,17 +123,18 @@ export function ReportSheet() {
     setStep("form");
   };
 
+  // TODO(api-gap): GET /problems/nearby. Same district within ~270 m; match from category and distance.
   const checkDuplicates = () => {
-    if (!xy) return;
-    const district = districtOf(xy, districts)?.name;
+    if (!at) return;
+    const district = districtOf(at, districts)?.name;
     const found = views
       .filter((v) => !v.isFixed && v.district === district)
       .map((v) => {
-        const d = Math.hypot(v.xy[0] - xy[0], v.xy[1] - xy[1]);
+        const meters = distanceMeters(v.at, at);
         const same = v.detail.category.id === form.categoryId;
-        return { view: v, d, match: Math.round((same ? 55 : 15) + (1 - d / 45) * 40), meters: Math.max(5, Math.round(mapMeters(v.xy, xy))) };
+        return { view: v, meters: Math.max(5, Math.round(meters)), match: Math.round((same ? 55 : 15) + (1 - meters / DUPLICATE_RADIUS_M) * 40) };
       })
-      .filter((c) => c.d <= 45 && c.match >= 50)
+      .filter((c) => c.meters <= DUPLICATE_RADIUS_M && c.match >= 50)
       .sort((a, b) => b.match - a.match)
       .slice(0, 3);
     if (found.length) {
@@ -140,7 +147,7 @@ export function ReportSheet() {
   };
 
   const submit = async () => {
-    if (!xy) return;
+    if (!at) return;
     setStep("saving");
     const title = form.title.trim() || categories.find((c) => c.id === form.categoryId)?.name || "";
     try {
@@ -150,7 +157,7 @@ export function ReportSheet() {
         media: file ? [file] : [],
         title,
         address: form.address.trim(),
-        location: { type: "Point", coordinates: toLngLat(xy) },
+        location: { type: "Point", coordinates: at },
         urgency: form.urgency,
         near_sensitive: form.nearSensitive,
       });
@@ -365,7 +372,7 @@ export function ReportSheet() {
           <Steps n={3} />
           <h1>Kur tai?</h1>
           <p className="lead">
-            Palieskite žemėlapį ten, kur yra problema.
+            Palieskite žemėlapį ten, kur yra problema, arba paspauskite „Mano vieta“.
             {form.address && (
               <>
                 {" "}
@@ -373,10 +380,21 @@ export function ReportSheet() {
               </>
             )}
           </p>
-          <CityMap districts={districts} pins={views} onPick={setXy} mark={xy} />
-          <p style={{ fontWeight: 600 }}>{xy ? `Rajonas: ${districtOf(xy, districts)?.name ?? "—"}` : "Vieta dar nepažymėta"}</p>
+          <LazyMap
+            label="Pažymėkite problemos vietą"
+            height={300}
+            pins={placePins}
+            onPick={setAt}
+            mark={at}
+            onLocate={(here) => {
+              setAt(here);
+              setFocus(here);
+            }}
+            center={focus}
+          />
+          <p style={{ fontWeight: 600 }}>{at ? `Rajonas: ${districtOf(at, districts)?.name ?? "—"}` : "Vieta dar nepažymėta"}</p>
           <div className="row">
-            <button type="button" className="btn" style={{ flex: 1 }} disabled={!xy} onClick={checkDuplicates}>
+            <button type="button" className="btn" style={{ flex: 1 }} disabled={!at} onClick={checkDuplicates}>
               Toliau
             </button>
             <button type="button" className="btn ghost" onClick={() => setStep("form")}>

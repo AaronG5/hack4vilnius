@@ -19,7 +19,9 @@ import type {
   UserRef,
   Validation,
 } from "../api";
-import { toLngLat, type XY } from "../lib/cityMap";
+import type { LngLat } from "../lib/geo";
+// Vilnius seniūnijos boundaries © OpenStreetMap contributors (ODbL), simplified.
+import districtShapes from "./data/vilnius-districts.json";
 
 /** Deterministic uuid for fixtures, e.g. mockId("p", 1) → 00000000-0000-4000-0070-000000000001. */
 export function mockId(kind: string, n: number): string {
@@ -61,21 +63,12 @@ export const categories: Category[] = CATEGORY_DEFS.map(([name, urgency, institu
 
 const category = (name: string) => categories.find((c) => c.name === name)!;
 
-// Schematic district polygons from the demo, stored as real coordinates.
-const DISTRICT_POLYS: [string, XY[]][] = [
-  ["Pašilaičiai", [[0, 0], [130, 0], [130, 215], [0, 235]]],
-  ["Šnipiškės", [[130, 0], [250, 0], [250, 205], [200, 228], [130, 215]]],
-  ["Žirmūnai", [[250, 0], [400, 0], [400, 210], [320, 200], [250, 205]]],
-  ["Antakalnis", [[320, 200], [400, 210], [400, 440], [300, 440], [300, 260]]],
-  ["Senamiestis", [[130, 215], [200, 228], [250, 205], [320, 200], [300, 260], [300, 440], [170, 440], [170, 240]]],
-  ["Naujamiestis", [[0, 235], [130, 215], [170, 240], [170, 440], [0, 440]]],
-];
-
-export const districts: District[] = DISTRICT_POLYS.map(([name, poly], i) => ({
+// The 21 Vilnius seniūnijos, named by their neighbourhood (e.g. "Žirmūnai").
+export const districts: District[] = (districtShapes as { name: string; ring: LngLat[] }[]).map((d, i) => ({
   id: mockId("d", i + 1),
-  name,
+  name: d.name,
   city: "Vilnius",
-  boundary: { type: "Polygon", coordinates: [[...poly, poly[0]].map(toLngLat)] },
+  boundary: { type: "Polygon", coordinates: [d.ring] },
 }));
 
 export const currentUser: User = {
@@ -99,7 +92,8 @@ interface Example {
   address: string;
   urgN?: Partial<Record<ProblemUrgency, number>>;
   nearSensitive: boolean;
-  at: XY;
+  /** Real coordinates of the address (geocoded with OpenStreetMap Nominatim). */
+  at: LngLat;
   age: number;
   still: number;
   fixed: number;
@@ -108,15 +102,15 @@ interface Example {
 
 // The demo's example problems (severity maža/vidutinė/didelė → can_wait/urgent/dangerous_to_life).
 const EXAMPLES: Example[] = [
-  { title: "Gili duobė dešinėje juostoje", category: "Duobė", urgency: "dangerous_to_life", description: "Automobiliai apvažiuoja duobę prie autobusų stotelės.", address: "Kalvarijų g. 98", urgN: { dangerous_to_life: 3, urgent: 2 }, nearSensitive: true, at: [300, 120], age: 3 * DAY, still: 5, fixed: 0, status: "confirmed" },
-  { title: "Pavojinga perėja be apšvietimo", category: "Eismo saugumas", urgency: "dangerous_to_life", description: "Vakare pėsčiųjų beveik nesimato.", address: "Kalvarijų g. 23", urgN: { dangerous_to_life: 5, urgent: 1 }, nearSensitive: true, at: [200, 150], age: 9 * DAY, still: 7, fixed: 0, status: "confirmed" },
-  { title: "Perpildyti konteineriai", category: "Šiukšlės", urgency: "urgent", description: "Šiukšlės krenta ant šaligatvio.", address: "Antakalnio g. 17", nearSensitive: false, at: [350, 280], age: 2 * DAY, still: 3, fixed: 0, status: "ongoing" },
-  { title: "Neveikiantis gatvės žibintas", category: "Apšvietimas", urgency: "urgent", description: "Žibintas neveikia jau kelias savaites.", address: "Ateities g. 31", urgN: { can_wait: 1, urgent: 1 }, nearSensitive: false, at: [60, 80], age: 14 * DAY, still: 2, fixed: 1, status: "confirmed" },
-  { title: "Išdaužyta grindinio danga", category: "Kelio įtrūkimas", urgency: "urgent", description: "Trūksta kelių grindinio akmenų.", address: "Pilies g. 22", nearSensitive: false, at: [250, 300], age: 6 * DAY, still: 4, fixed: 0, status: "ongoing" },
-  { title: "Nuvirtęs kelio ženklas", category: "Eismo saugumas", urgency: "urgent", description: "Ženklas guli ant šaligatvio.", address: "Konstitucijos pr. 7", nearSensitive: false, at: [215, 60], age: 3 * HOUR, still: 0, fixed: 0, status: "unconfirmed" },
-  { title: "Išmėtytos statybinės atliekos", category: "Šiukšlės", urgency: "can_wait", description: "Krūva plytų ir maišų prie kelio.", address: "Ozo g. 25", nearSensitive: false, at: [150, 395], age: 20 * HOUR, still: 0, fixed: 0, status: "unconfirmed" },
-  { title: "Duobių sankaupa", category: "Duobė", urgency: "dangerous_to_life", description: "Keletas duobių iš eilės.", address: "Savanorių pr. 40–60", nearSensitive: false, at: [95, 330], age: 11 * DAY, still: 6, fixed: 0, status: "confirmed" },
-  { title: "Grafitis ant mokyklos tvoros", category: "Vandalizmas", urgency: "can_wait", description: "Užpaišyta tvora.", address: "Žirmūnų g. 70", nearSensitive: true, at: [330, 60], age: 5 * DAY, still: 1, fixed: 3, status: "completed" },
+  { title: "Gili duobė dešinėje juostoje", category: "Duobė", urgency: "dangerous_to_life", description: "Automobiliai apvažiuoja duobę prie autobusų stotelės.", address: "Kalvarijų g. 98", urgN: { dangerous_to_life: 3, urgent: 2 }, nearSensitive: true, at: [25.28334, 54.70495], age: 3 * DAY, still: 5, fixed: 0, status: "confirmed" },
+  { title: "Pavojinga perėja be apšvietimo", category: "Eismo saugumas", urgency: "dangerous_to_life", description: "Vakare pėsčiųjų beveik nesimato.", address: "Kalvarijų g. 23", urgN: { dangerous_to_life: 5, urgent: 1 }, nearSensitive: true, at: [25.28197, 54.69559], age: 9 * DAY, still: 7, fixed: 0, status: "confirmed" },
+  { title: "Perpildyti konteineriai", category: "Šiukšlės", urgency: "urgent", description: "Šiukšlės krenta ant šaligatvio.", address: "Antakalnio g. 17", nearSensitive: false, at: [25.3116, 54.70005], age: 2 * DAY, still: 3, fixed: 0, status: "ongoing" },
+  { title: "Neveikiantis gatvės žibintas", category: "Apšvietimas", urgency: "urgent", description: "Žibintas neveikia jau kelias savaites.", address: "Ateities g. 31", urgN: { can_wait: 1, urgent: 1 }, nearSensitive: false, at: [25.25396, 54.73467], age: 14 * DAY, still: 2, fixed: 1, status: "confirmed" },
+  { title: "Išdaužyta grindinio danga", category: "Kelio įtrūkimas", urgency: "urgent", description: "Trūksta kelių grindinio akmenų.", address: "Pilies g. 22", nearSensitive: false, at: [25.28939, 54.68264], age: 6 * DAY, still: 4, fixed: 0, status: "ongoing" },
+  { title: "Nuvirtęs kelio ženklas", category: "Eismo saugumas", urgency: "urgent", description: "Ženklas guli ant šaligatvio.", address: "Konstitucijos pr. 7", nearSensitive: false, at: [25.27794, 54.69642], age: 3 * HOUR, still: 0, fixed: 0, status: "unconfirmed" },
+  { title: "Išmėtytos statybinės atliekos", category: "Šiukšlės", urgency: "can_wait", description: "Krūva plytų ir maišų prie kelio.", address: "Ozo g. 25", nearSensitive: false, at: [25.26314, 54.71051], age: 20 * HOUR, still: 0, fixed: 0, status: "unconfirmed" },
+  { title: "Duobių sankaupa", category: "Duobė", urgency: "dangerous_to_life", description: "Keletas duobių iš eilės.", address: "Savanorių pr. 40–60", nearSensitive: false, at: [25.24805, 54.6724], age: 11 * DAY, still: 6, fixed: 0, status: "confirmed" },
+  { title: "Grafitis ant mokyklos tvoros", category: "Vandalizmas", urgency: "can_wait", description: "Užpaišyta tvora.", address: "Žirmūnų g. 70", nearSensitive: true, at: [25.3026, 54.71882], age: 5 * DAY, still: 1, fixed: 3, status: "completed" },
 ];
 
 function urgencyVotes(ex: Example): Partial<Record<ProblemUrgency, number>> {
@@ -132,7 +126,7 @@ export const problems: Problem[] = EXAMPLES.map((ex, i) => ({
   status: ex.status,
   urgency: ex.urgency,
   legitimacy_score: 80,
-  location: { type: "Point", coordinates: toLngLat(ex.at) },
+  location: { type: "Point", coordinates: ex.at },
   category: category(ex.category),
   institution: ex.status === "ongoing" ? (category(ex.category).institution ?? null) : null,
   created_at: ago(ex.age),

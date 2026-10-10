@@ -1,10 +1,12 @@
-// Map view from the demo: filters, "vis dar yra?" prompt, schematic map, legend, ranked list.
+// Map view from the demo: filters, "vis dar yra?" prompt, real map, legend, ranked list.
 // Sheets (report flow, problem details) render through the <Outlet />.
 
+import { useMemo, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { CityMap, MapLegend } from "../components/CityMap";
+import { LazyMap, MapLegend } from "../components/map/LazyMap";
 import { ProblemItem } from "../components/ProblemItem";
 import { weekChecks } from "../lib/activity";
+import { distanceMeters, formatDistance, type LngLat } from "../lib/geo";
 import { myActivity, type ProblemView } from "../lib/problemModel";
 import { useAppState, type MapFilter } from "../state/appState";
 import "./MapPage.css";
@@ -39,10 +41,13 @@ function listFor(filter: MapFilter, views: ProblemView[], shown: ProblemView[]):
 
 export function MapPage() {
   const navigate = useNavigate();
-  const { views, districts, filter, setFilter, loaded, error, me } = useAppState();
+  const { views, filter, setFilter, loaded, error, me } = useAppState();
   const open = (id: string) => navigate(`/problems/${id}`);
+  // Set when the user taps "Mano vieta" on the map.
+  const [here, setHere] = useState<LngLat>();
 
-  const shown = views.filter((v) => passes(filter, v));
+  const shown = useMemo(() => views.filter((v) => passes(filter, v)), [views, filter]);
+  const pins = useMemo(() => shown.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score })), [shown]);
   const counts: Record<MapFilter, number> = {
     all: views.length,
     new: views.filter((v) => v.status === "new").length,
@@ -51,10 +56,15 @@ export function MapPage() {
   };
   const [title, list] = listFor(filter, views, shown);
 
-  // Prompt: unconfirmed first, then highest priority, skipping your own and already answered.
+  // Prompt: skip your own and already answered; nearest first once the location is known,
+  // otherwise unconfirmed first, then priority.
   const near = views
     .filter((v) => !v.isFixed && v.status !== "work" && !v.mine && !v.myVote)
-    .sort((a, b) => Number(a.status !== "new") - Number(b.status !== "new") || b.score - a.score)[0];
+    .sort((a, b) =>
+      here
+        ? distanceMeters(here, a.at) - distanceMeters(here, b.at)
+        : Number(a.status !== "new") - Number(b.status !== "new") || b.score - a.score,
+    )[0];
   const todo = shown.filter((v) => !v.mine && !v.myVote).length;
   const week = Math.min(5, weekChecks(myActivity(views, me?.id)));
 
@@ -92,14 +102,15 @@ export function MapPage() {
             <button type="button" className="prompt" onClick={() => open(near.id)}>
               <span className="dot" />
               <span style={{ flex: 1, minWidth: 0 }}>
-                {near.category} · {near.address || near.district} — <b>vis dar yra?</b>
+                {near.category} · {here ? `už ${formatDistance(distanceMeters(here, near.at))}` : near.address || near.district} —{" "}
+                <b>vis dar yra?</b>
               </span>
               <span className="tag lime">+10</span>
             </button>
           )
         )}
 
-        <CityMap districts={districts} pins={shown} onOpen={open} />
+        <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={setHere} />
         <MapLegend />
 
         <h2 className="sec">{title}</h2>

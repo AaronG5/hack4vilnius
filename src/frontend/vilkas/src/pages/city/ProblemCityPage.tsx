@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { updateProblemStatus } from "../../api";
-import { MapBaseLayers } from "../../components/CityMap";
+import { LazyMap } from "../../components/map/LazyMap";
 import { BackIcon } from "../../components/icons";
 import { INSTITUTIONS, suggestedInstitution } from "../../data/institutions";
-import { pinPath } from "../../lib/cityMap";
 import { activeResidents, duplicatesMerged, scoreTone, trend } from "../../lib/cityStats";
 import { ago, count, shortDate } from "../../lib/format";
 import { URGENCIES_DESC, URGENCY_LABEL } from "../../lib/labels";
@@ -155,7 +154,7 @@ export function ProblemCityPage() {
   const severity = v.urgency === "dangerous_to_life" ? 3 : v.urgency === "urgent" ? 2 : 1;
   const ai = v.detail.reports[0]?.ai_category_suggestion;
   const [lng, lat] = v.detail.location.coordinates;
-  const [x, y] = v.xy;
+  const locPin = [{ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score }];
 
   const assignedNames = assignment?.institutions.join(" + ") ?? v.detail.institution?.name ?? "vykdytojas";
   const dueText = assignment ? shortDate(assignment.due) : null;
@@ -269,12 +268,7 @@ export function ProblemCityPage() {
           <div className="pc-grid2">
             <section className="ccard">
               <h2 style={{ fontSize: 16 }}>Vieta</h2>
-              <div className="pc-loc">
-                <svg viewBox={`${x - 110} ${y - 55} 220 110`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={`Vieta: ${v.address || v.district}`}>
-                  <MapBaseLayers districts={districts} labels={false} />
-                  <path d={pinPath(x, y, 7)} fill="var(--red)" stroke="#fff" strokeWidth="2" />
-                </svg>
-              </div>
+              <LazyMap label={`Vieta: ${v.address || v.district}`} height={210} still cluster={false} center={v.at} zoom={15} pins={locPin} />
               <span className="hint">
                 {v.district} · {lat.toFixed(4)}, {lng.toFixed(4)}
               </span>

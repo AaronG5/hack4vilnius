@@ -1,0 +1,71 @@
+.vmap {
+  position: relative;
+  width: 100%;
+  border-radius: 20px 0 20px 20px;
+  overflow: hidden;
+  background: var(--map-land);
+}
+
+.vmap-loading {
+  animation: vmap-wait 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes vmap-wait {
+  from {
+    opacity: 0.6;
+  }
+}
+
+.vmap .maplibregl-canvas:focus-visible {
+  outline: 3px solid var(--red);
+  outline-offset: -3px;
+}
+
+/* Controls in the app's notched style. */
+.vmap .maplibregl-ctrl-group {
+  border-radius: 10px 0 10px 10px;
+  box-shadow: 0 2px 8px rgba(60, 60, 60, 0.15);
+  overflow: hidden;
+}
+
+/* Compact OpenStreetMap credit ("ⓘ"), kept small and out of the way. */
+.vmap .maplibregl-ctrl-attrib.maplibregl-compact {
+  font-family: var(--font);
+  font-size: 11px;
+  margin: 0 6px 6px 0;
+}
+
+.vmap .maplibregl-cooperative-gesture-screen {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 8px 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend i {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px 0 5px 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+}

@@ -77,9 +77,9 @@ Router, MSW mocks for all 25 operations, `useApi` hook, session bootstrap (`ensu
 
 As designed on the boards (filters, KPI tiles, priority table, district charts, institution assignment → `updateProblemStatus`). Desktop layout.
 
-## Phase 10 — Real map (optional)
+## Phase 10 — Real map
 
-Swap the schematic SVG for Leaflet + OSM tiles if the team wants geographic accuracy; the projection in `src/lib/cityMap.ts` is the only place that changes.
+MapLibre GL JS + OpenFreeMap vector tiles (OpenStreetMap data), lazy-loaded. The OSM credit is a license requirement, so it stays as a collapsed "ⓘ" button. Real Vilnius seniūnijos and real fixture coordinates replace the schematic map.
 
 ## Phase 11 — API client tests
 
@@ -106,6 +106,7 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | Priority score | map list, sheet, dashboard | computed client-side (`src/lib/priority.ts`, the demo formula) | `priority_score` + factors on `Problem` |
 | List summaries | map list | `getProblem()` per problem | title, thumb, confirmation counts in `GET /problems` |
 | AI analysis before submit | report sheet | keyword stand-in in `src/lib/gaps.ts` | `POST /reports/analyze` |
+| Reverse geocoding (point → address) | report sheet | address typed by the user | backend proxy to a geocoder (Nominatim policy: max 1 req/s, no bulk use from browsers) |
 | Notification title vs body, deep-link target | notifications | split `message` at the first sentence | `title` + `body` on `Notification` |
 | Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
 | Partner prizes + redeem | profile | static list | `GET /rewards`, `POST /rewards/{id}/redeem` |
@@ -118,6 +119,7 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 
 Ideas parked until the frontend phases are done; none are commitments.
 
+- **Self-hosted map tiles** — OpenFreeMap has no SLA; for production the city could host the same tiles (or switch to a paid provider) by changing only the style URL in `VilniusMap.tsx`.
 - **Historical sample data** — seed the mock API with a few dozen older (mostly fixed) problems so the district charts and resolve-time KPIs look realistic. Trade-off: extra green pins on the resident map. Decided 2026-10-10: not now, no fabricated data.
 
 ## Progress
@@ -153,5 +155,9 @@ Ideas parked until the frontend phases are done; none are commitments.
   - Assigning sets status `pending` ("Perduota vykdytojams"), so the resident pin turns yellow; "Perskirti" sets it back to `confirmed`. The suggestion comes from the category's API institution.
   - Institutions list, deadline, note and notification toggles are stand-ins (`src/data/institutions.ts`, browser-local assignment records). "Rašyti vykdytojui" opens an email.
   - Fixed on the way: the splash replayed when moving from city pages into the resident app.
-- [ ] Phase 10 — Real map (optional)
+- [x] Phase 10 — Real map
+  - `src/components/map/VilniusMap.tsx`: notched status pins drawn on canvas, clustering (count marker), pulse on unconfirmed, hotspot circles, district outlines, tap-to-pick, "Mano vieta" (geolocation), light/dark style, Lithuanian place names and control labels, two-finger panning on phones.
+  - Used on the map page, report "Kur tai?" step, dashboard hotspots and the problem card location.
+  - Fixtures now use real coordinates (geocoded with Nominatim) and the 21 real seniūnijos (OSM, simplified); several samples moved to their true districts (e.g. Kalvarijų g. 98 → Šnipiškės).
+  - Distances, duplicate radius (270 m) and landmark unlocks (120 m) use real metres.
 - [ ] Phase 11 — API client tests

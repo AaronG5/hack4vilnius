@@ -1,8 +1,7 @@
 // Board 8 · Šios savaitės prioritetai — the municipality's prioritised, deduplicated problem list.
 
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { MapBaseLayers } from "../../components/CityMap";
-import { districtLabelAt, districtPolygon, MAP_H, MAP_W } from "../../lib/cityMap";
+import { LazyMap } from "../../components/map/LazyMap";
 import {
   cityStatus,
   duplicatesMerged,
@@ -16,10 +15,6 @@ import {
 } from "../../lib/cityStats";
 import type { ProblemView } from "../../lib/problemModel";
 import { useAppState } from "../../state/appState";
-
-function spotColor(score: number): string {
-  return score >= 80 ? "var(--red)" : score >= 50 ? "var(--peach)" : "var(--lav)";
-}
 
 function subline(v: ProblemView): string {
   const parts = [v.address || v.district];
@@ -61,9 +56,15 @@ export function DashboardPage() {
   const byDistrict = new Map<string, ProblemView[]>();
   for (const v of open) byDistrict.set(v.district, [...(byDistrict.get(v.district) ?? []), v]);
   const hot = [...byDistrict.entries()]
-    .map(([name, list]) => ({ name, total: list.reduce((n, v) => n + v.score, 0) }))
+    .map(([name, list]) => ({ name, list, total: list.reduce((n, v) => n + v.score, 0) }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 2);
+  // Label each hot district at the average position of its open problems.
+  const hotLabels = hot.map(({ name, list }) => ({
+    text: name,
+    at: [list.reduce((n, v) => n + v.at[0], 0) / list.length, list.reduce((n, v) => n + v.at[1], 0) / list.length] as [number, number],
+  }));
+  const spots = open.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score }));
 
   const open$ = (id: string) => navigate(`/city/problems/${id}`);
   const firstDistrict = district || districts[0]?.id;
@@ -145,49 +146,7 @@ export function DashboardPage() {
             <h2>Karštieji taškai</h2>
             <span className="hint">dydis = prioritetas</span>
           </div>
-          <div className="hotspots">
-            <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} role="img" aria-label="Vilniaus žemėlapis su prioritetiniais karštaisiais taškais">
-              <MapBaseLayers districts={districts} labels={false} />
-              {open.map((v) => {
-                const [x, y] = v.xy;
-                const color = spotColor(v.score);
-                return (
-                  <g
-                    key={v.id}
-                    className="spot"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${v.title}, prioritetas ${v.score}`}
-                    onClick={() => open$(v.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        open$(v.id);
-                      }
-                    }}
-                  >
-                    <circle cx={x} cy={y} r={8 + v.score / 4} fill={color} fillOpacity={0.3} />
-                    <circle cx={x} cy={y} r={4 + v.score / 12} fill={color} stroke="var(--surface)" strokeWidth="2" />
-                  </g>
-                );
-              })}
-              {hot.map(({ name }) => {
-                const d = districts.find((x) => x.name === name);
-                if (!d) return null;
-                const [x, y] = districtLabelAt(districtPolygon(d));
-                const w = name.length * 7 + 16;
-                const ly = y - 40;
-                return (
-                  <g key={name} pointerEvents="none">
-                    <rect x={x - w / 2} y={ly - 12} width={w} height={20} rx={6} fill="var(--surface)" />
-                    <text x={x} y={ly + 2} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink)">
-                      {name}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
+          <LazyMap label="Vilniaus žemėlapis su prioritetiniais karštaisiais taškais" height={440} hotspots pins={spots} labels={hotLabels} districts={districts} onOpen={open$} />
         </section>
 
         <section className="ccard" style={{ flex: "999 1 560px" }}>
