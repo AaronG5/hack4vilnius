@@ -1,23 +1,15 @@
-// Placeholder for pages not built yet; shows which design board it maps to.
+// Placeholder for screens not built yet; shows which reference screen it maps to.
 
 import { Link } from "react-router-dom";
-import { BottomNav } from "./BottomNav";
-import "./Stub.css";
 
-interface StubProps {
-  board: string;
-  title: string;
-  withNav?: boolean;
-}
-
-export function Stub({ board, title, withNav = false }: StubProps) {
+export function Stub({ board, title }: { board: string; title: string }) {
   return (
-    <main className="stub">
-      <span className="stub__board">Board {board}</span>
-      <h1>{title}</h1>
-      <p>Šis puslapis dar kuriamas.</p>
-      <Link to="/map">← Į žemėlapį</Link>
-      {withNav && <BottomNav />}
+    <main className="app-main">
+      <h1 className="pg">{title}</h1>
+      <p className="pgsub">Šis ekranas dar kuriamas (dizaino lenta {board}).</p>
+      <Link to="/map" className="btn ghost">
+        Į žemėlapį
+      </Link>
     </main>
   );
 }

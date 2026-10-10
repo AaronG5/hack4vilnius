@@ -163,6 +163,19 @@ export interface Problem {
   institution?: Institution | null;
   created_at: DateTime;
   updated_at: DateTime;
+
+  // TODO(api-gap): fields below are not in openapi.yaml yet (planning/FRONTEND_PLAN.md › API gaps).
+  // The mock API returns them; pages fall back when they are missing.
+  /** Short human title, e.g. "Gili duobė dešinėje juostoje". */
+  title?: string;
+  /** Street address or landmark. */
+  address?: string;
+  /** Near a school, kindergarten, hospital or playground. */
+  near_sensitive?: boolean;
+  /** Residents' urgency votes (including the reporter's choice). */
+  urgency_votes?: Partial<Record<ProblemUrgency, number>>;
+  /** The current user's urgency vote, if any. */
+  my_urgency_vote?: ProblemUrgency | null;
 }
 
 export interface ProblemDetail extends Problem {
@@ -203,6 +216,13 @@ export interface ReportCreate {
   /** Existing problem id if the user confirmed it's a duplicate. Omit for a new problem. */
   problem?: Uuid | null;
   media: Blob[];
+
+  // TODO(api-gap): not in openapi.yaml yet; sent as extra multipart fields.
+  title?: string;
+  address?: string;
+  location?: GeoPoint;
+  urgency?: ProblemUrgency;
+  near_sensitive?: boolean;
 }
 
 export interface Validation {
@@ -214,6 +234,11 @@ export interface Validation {
   problem: Uuid;
   media: Media[];
   created_at: DateTime;
+}
+
+/** TODO(api-gap): body of the proposed POST /problems/{id}/urgency-votes. */
+export interface UrgencyVoteCreate {
+  urgency: ProblemUrgency;
 }
 
 export interface ValidationCreate {

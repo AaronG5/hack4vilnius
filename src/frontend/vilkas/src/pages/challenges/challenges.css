@@ -1,0 +1,113 @@
+.chcard {
+  width: 100%;
+  border: none;
+  background: var(--surface);
+  border-radius: 18px 0 18px 18px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  color: var(--ink);
+}
+
+.chic {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px 0 14px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chic.big {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px 0 18px 18px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #3c3c3c;
+  margin-top: 4px;
+}
+
+.joined {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.dashbtn {
+  width: 100%;
+  min-height: 58px;
+  margin-top: 10px;
+  border: 2px dashed var(--line);
+  background: transparent;
+  border-radius: 18px 0 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.chhero {
+  margin: 0 -16px 14px;
+  padding: 16px 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 0 0 26px 26px;
+}
+
+.lrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 10px;
+  border-radius: 12px 0 12px 12px;
+  background: var(--surface-2);
+  border: 2px solid transparent;
+  font-size: 14px;
+}
+
+.lrow.me {
+  border-color: var(--btn);
+}
+
+.rk {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px 0 8px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--line);
+}
+
+.rk.first {
+  background: var(--red);
+  color: #fff;
+}
+
+.rk.mine {
+  background: var(--btn);
+  color: var(--btn-ink);
+}
+
+.invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px 0 12px 12px;
+  padding: 10px 12px;
+}

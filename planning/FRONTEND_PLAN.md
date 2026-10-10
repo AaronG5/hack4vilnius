@@ -1,184 +1,134 @@
 # Frontend implementation plan
 
-Source design: [Vilkas — programėlės ekranai](https://claude.ai/artifact/2DKLJHgNoiZoY69icLtmSQ) (14 boards).
 App: `src/frontend/vilkas` (Vite + React + TypeScript). API client: `src/api/` (from `api/openapi.yaml`).
+
+## References (in order of precedence)
+
+1. **Working demo** — [Vilkas demo](https://claude.ai/artifact/RhShj7wFRDbNKNdA9SbNy5). The resident app replicates its behaviour, layout and copy: header with points, schematic district map + ranked list, report flow and problem details as bottom sheets, challenges, profile with the Vilnius landmark collection, light/dark theme.
+2. **Design boards** — [Vilkas — programėlės ekranai](https://claude.ai/artifact/2DKLJHgNoiZoY69icLtmSQ). Used where the demo has nothing: push notifications (board 5) and the municipality dashboards (boards 8–10).
 
 ## Principles
 
-- **One page at a time, viewable at every step.** Each phase ends with a checkpoint: the page renders in the browser, looks like its design board, and every link/button on it either works or goes to a visible stub.
-- **Mock first, wire second.** Pages always call the real `src/api` functions. In development, [MSW](https://mswjs.io/) intercepts those calls and returns typed fixtures, so pages work before the backend endpoints exist. Set `VITE_API_MOCKS=false` to hit Django instead.
-- **Design data the API can't provide yet** (priority score, district stats, prizes, landmark collection…) lives in page-local fixtures marked `// TODO(api-gap)`. See [API gaps](#api-gaps).
-- Lithuanian UI copy is taken verbatim from the design.
+- **One slice at a time, viewable at every step.** Each phase ends with a checkpoint: the screens render, match the reference, and every control works or is visibly disabled.
+- **Mock first, wire second.** Pages always call the real `src/api` functions. In development, [MSW](https://mswjs.io/) intercepts them and serves typed fixtures (the demo's example problems), so pages work before the backend endpoints exist. `VITE_API_MOCKS=false` sends calls to Django instead.
+- **API gaps are explicit.** Data the demo needs that `openapi.yaml` lacks is either an optional field marked `TODO(api-gap)` in `src/api/types.ts`, a stand-in in `src/lib/gaps.ts`, or computed client-side (e.g. priority score) — each listed under [API gaps](#api-gaps). Pages fall back gracefully when a gap field is missing.
+- Lithuanian UI copy is taken verbatim from the demo.
 
 ## Checkpoint routine (every phase)
 
-1. `npm run build` and `npm run lint` pass.
-2. `npm run dev`, open the phase's routes. Mobile pages are checked at 390×844 (the app renders inside a phone-width column on desktop); municipality pages at 1440 wide.
-3. Compare side by side with the design board; note deviations in the phase's checklist.
-4. Click every interactive element: it works or navigates to a stub.
+1. `npm run build` and `npm run lint` pass (from Phase 11 also `npm test`).
+2. `npm run dev`; open the phase's screens at phone width (390×844) and at desktop width; check light and dark theme.
+3. Compare side by side with the demo (or design board); note deviations in the Progress section.
+4. Click through every control.
 5. Commit the phase.
-
-## Design tokens (from the boards)
-
-| Token | Value | Use |
-|---|---|---|
-| `--red` | `#ED1C24` | Primary, FAB, confirmed markers, active nav |
-| `--red-soft` | `rgba(237,28,36,.42)` | Unconfirmed markers `?` |
-| `--ink` | `#414454` | Dark buttons, active filter, user location |
-| `--text` / `--text-2` | `#3C3C3C` / `#5C5C5C` | Body / secondary text |
-| `--lime` | `#BDD947` | Points chips (`+10`) |
-| `--yellow` | `#FFC629` | In progress (Sprendžiama) |
-| `--green` | `#1C4B1D` | Fixed (Sutvarkyta) |
-| `--pink` | `#ED2891` | Video action |
-| `--map` / `--surface-2` | `#E4E4E4` / `#EBEBEB` | Map background / option rows |
-| Font | Montserrat 400–800 | |
-| Shape | `border-radius: R 0 R R` | Signature "notched" corner (top-right square) on cards, buttons, markers |
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation ✅
 
-- Add `react-router-dom`, `msw` (dev).
-- Global CSS: tokens, Montserrat, reset, `.notch` radius helpers.
-- `AppShell`: phone-width column (max 390px, centered on desktop), `BottomNav` (Žemėlapis / Iššūkiai / Profilis).
-- `CityShell`: desktop layout for municipality pages.
-- Shared bits: `Logo` (wolf SVG), icon set, `Button`, `Chip`, `PointsBadge`, `Marker`.
-- Routes for **all** pages below, each rendering a titled stub.
-- MSW setup (`src/mocks/`): browser worker started in `main.tsx` when `VITE_API_MOCKS !== "false"`; typed fixtures for problems, categories, districts, user, challenges, badges, notifications.
+Router, MSW mocks for all 25 operations, `useApi` hook, session bootstrap (`ensureSession`), splash route.
 
-**Checkpoint:** every route is reachable from the nav or by URL; stubs show the board name.
+## Phase 1 — App shell + Map view · `/map`
 
-## Phase 1 — Splash (board 0) + Map (board 1) · `/`, `/map`
+- Demo tokens incl. dark theme; app column (max 520px, full height); header: red "vilkas" brand pill, "Vilniaus problemų radaras", lime points chip (from `getCurrentUser().points`).
+- Bottom nav (Žemėlapis / Iššūkiai / Profilis), FAB only on the map, top toast.
+- Map view: filter chips with counts; "vis dar yra? +10" prompt (or weekly 3/5 card on the "Nepatvirtintos" filter); schematic Vilnius SVG (districts from `listDistricts()` boundaries, roads, Neris, labels) with notched pins; legend; ranked list ("Svarbiausios neišspręstos" etc.) with thumb, district · category · status and priority score.
+- Data: `listProblems()` + `getProblem()` per problem → a `ProblemView` model (title, district, confirmations, votes, score, status).
 
-- Splash: red screen, logo, "vilkas", progress bar. Calls `createSession()` if there's no token, then goes to `/map`.
-- Map: search bar + filter button, filter chips with counts (Visos / Nepatvirtintos / Sprendžiamos / Sutvarkytos), "vis dar yra?" nearby banner (+10), legend, user dot, markers by status, cluster count marker.
-- FAB (80px, red, notched) toggles the report sheet: Nufotografuoti / Nufilmuoti / Įrašyti garsą / Aprašyti tekstu.
-- Data: `listProblems({ status })`. Status → marker: `unconfirmed` = soft red `?` (pulsing), `confirmed` = red, `ongoing`/`pending` = yellow, `completed` = green.
-- Map is a static SVG backdrop with markers positioned from coordinates (real map tiles in Phase 10).
+**Checkpoint:** filters change pins, counts, prompt and list; pins and list items open the problem sheet.
 
-**Checkpoint:** filters change visible markers and counts; FAB opens/closes the sheet; marker tap opens `/problems/:id` stub.
+## Phase 2 — Report sheet (FAB)
 
-## Phase 2 — Report flow (boards 2, 3) · `/report/new`, `/report/review`, `/report/duplicates`
+- Step 1 source: **Nufotografuoti opens the camera directly** (`<input capture>` inside the row), Įkelti nuotrauką, Aprašyti tekstu, disabled "Vaizdo ir garso įrašai".
+- Photo → "Pridėti komentarą?" (preview + optional address/comment). Text → "Aprašykite problemą".
+- Analyzing spinner with "Sustabdyti ir pildyti ranka" → form: AI tag + confidence, category chips, urgency segmented control, title, address, description, "Šalia mokyklos…" checkbox.
+- Place: tap the map to mark the spot (district shown) → duplicate candidates (same district, ≤ ~270 m, match %) → confirm existing (= "vis dar yra" validation) or submit new (`createReport`).
+- Success: toast "+20 tšk.", points refresh.
 
-- Step 1: capture via `<input type="file" accept="image/*|video/*|audio/*" capture>` or a text-only form, depending on the sheet option.
-- Step 2 Review: media preview, "DI atpažino" card, category chips, urgency chips, address row, description textarea (**prompt for a comment if empty**, per AGENTS.md UX requirement), step dots.
-- Step 3 Duplicates: summary card, candidate list with match %, "Taip — patvirtinti pažymėtą" / "Ne, tai nauja problema", points note.
-- Submit: `createReport({ description, category, problem, media })`; confirming a duplicate sends `problem: <id>`.
-- Draft state kept in a `ReportDraft` context across the 3 steps.
+**Checkpoint:** photo, upload and text paths all end in a new pin; confirming a duplicate adds a confirmation instead.
 
-**Checkpoint:** full flow from FAB → submitted report → back on map with the new marker (mock).
+## Phase 3 — Problem sheet · `/problems/:id`
 
-## Phase 3 — Problem detail (board 4) · `/problems/:id`
+- Photo (latest) + "Nuotrauka atnaujinta prieš…", title, address · district, score badge, description, facts list (tipas, skubumas + votes, patvirtinimai, pranešta, jautri vieta, būsena), photo history.
+- Notes: own report / your previous answer / "Sprendžia savivaldybė".
+- Urgency voting cards with bars; Vis dar yra / Sutvarkyta / Nežinau → `createProblemValidation`. For problems older than a day, ask for a fresh photo first (camera / gallery / Praleisti).
 
-- Photo header with media count, title + address, priority score tile, "Kodėl ji N-a rajone" bars, status timeline (`ol`), Patvirtinti / Sekti naujienas.
-- Data: `getProblem(id)`; timeline derived from `status` + validations; priority breakdown is an api-gap fixture.
+**Checkpoint:** voting updates counts, points and the pin; photo history grows.
 
-**Checkpoint:** opening different markers shows different problems; "Patvirtinti" goes to the verify flow.
+## Phase 4 — Notifications (board 5)
 
-## Phase 4 — Verification (boards 5, 5a, 5b) · `/notifications`, `/problems/:id/verify`, `/problems/:id/verify/photo`
+- In-app list from `listNotifications()`, `markNotificationRead()`; entry point in the header. Tapping opens the problem sheet.
 
-- Notifications: board 5's notification cards rendered as an in-app list from `listNotifications()`; tap → `markNotificationRead()` + navigate.
-- Verify: map backdrop, bottom sheet "Ar ši duobė vis dar yra?", urgency vote buttons with counts, Vis dar yra / Sutvarkyta / Nežinau.
-- Photo step (only if problem is older than 1 day): photo history strip, Nufotografuoti dabar / Įkelti iš galerijos / Praleisti.
-- Submit: `createProblemValidation(id, { is_valid, description, media })`.
+## Phase 5 — Challenges · `/challenges`, `/challenges/:id`, `/challenges/new`
 
-**Checkpoint:** banner on the map → verify → photo → back to problem detail showing the new validation.
+- Demo list: title + "Dalyvaujate N iš M", seasonal hero, challenge cards with progress, "Sukurti savo iššūkį", friend code (DRG-XXXX), weekly 5-checks card.
+- Detail: colored hero, progress, leaderboard, rules, prize, join/leave (`joinChallenge`), private challenge invite code + copy.
+- Create: name, your name, goal, target, duration.
+- Data: `listChallenges()`, `getChallenge()`, `joinChallenge()`; district table from problem views; private challenges are a gap (local stand-in).
 
-## Phase 5 — Challenges (board 6) · `/challenges`, `/challenges/:id`, `/challenges/new`
+## Phase 6 — Profile · `/profile`
 
-- List: header with points, Aktyvūs / Mano / Baigti tabs, season challenge card with progress, other challenge cards, weekly challenge strip, "Sukurti savo iššūkį", friend code entry.
-- Detail: hero, progress, leaderboard, rules, prize, invite block for private challenges, CTA → `joinChallenge(id)`.
-- Create: name, goal, target, duration, privacy note (api-gap: no create endpoint).
-- Data: `listChallenges()`, `getChallenge(id)`.
-
-**Checkpoint:** open each challenge, join one, its card shows "● Dalyvaujate".
-
-## Phase 6 — Profile (board 7) + Collection (board 7a) · `/profile`, `/profile/collection`
-
-- Profile: avatar initials, level title, district + points, impact card, stats (Pranešimai / Patikrinimai / Patikimumas = `trust_score`), badges row, collection preview, partner prizes.
-- Collection: grouped landmark badges, earned vs locked.
-- Data: `getCurrentUser()`, `getCurrentUserBadges()`, `listBadges()`; landmarks and prizes are api-gap fixtures. Landmark images in the design are not exportable: use placeholder illustrations until assets are supplied.
-
-**Checkpoint:** numbers on Profile match the mock user; "Visi →" opens the collection.
+- Avatar initials, level, district, points; red impact card; stats (pranešimai, patikrinimai, patikimumas); badges; **Vilniaus kolekcija** (15 landmark SVGs from the demo, unlocked by acting within reach); partner prizes; "Mano pranešimai".
+- Data: `getCurrentUser()`, `getCurrentUserBadges()`, problem views; editing the name uses `updateCurrentUser()`.
 
 ## Phase 7 — Municipality dashboard (board 8) · `/city`
-
-- Header, filters (Rajonas / Kategorija / Laikotarpis), KPI tiles, hotspots map, priority table with Priskirti / Atidaryti.
-- Data: `listProblems({ district, category })`, `listDistricts()`, `listCategories()`; KPIs and score are api-gap fixtures.
-
-**Checkpoint:** filters update the table; rows open `/city/problems/:id`.
-
 ## Phase 8 — District dashboard (board 9) · `/city/districts/:id`
-
-- District tabs, KPI tiles vs city average, stacked weekly chart with chart/table toggle, top categories, longest-waiting list, summary.
-- Data: `listDistricts()`; stats are api-gap fixtures.
-
-**Checkpoint:** switching tabs changes all numbers; chart and table show the same data.
-
 ## Phase 9 — Problem card + assignment (board 10) · `/city/problems/:id`
 
-- Breadcrumbs, title, status pill, priority, media strip, description, community check, urgency votes, priority breakdown, AI note, location, history.
-- Sidebar: institution multi-select (first = responsible), due date chips, note, notify toggles, assign button → "Užduotis išsiųsta" state, "Gyventojai mato" preview.
-- Data: `getProblem(id)`, `updateProblemStatus(id, { status: "ongoing" })` on assign; institution assignment is an api-gap.
+As designed on the boards (filters, KPI tiles, priority table, district charts, institution assignment → `updateProblemStatus`). Desktop layout.
 
-**Checkpoint:** assigning flips the sidebar to the sent state; the problem shows yellow on the resident map.
+## Phase 10 — Real map (optional)
 
-## Phase 10 — Real map
-
-- Replace the SVG backdrop with Leaflet + OpenStreetMap tiles (`react-leaflet`), keep the notched markers as `divIcon`s, clustering, user geolocation.
-- Used on Map, Verify and the municipality hotspots.
-
-**Checkpoint:** markers sit on real Vilnius streets; panning/zooming works on phone width.
+Swap the schematic SVG for Leaflet + OSM tiles if the team wants geographic accuracy; the projection in `src/lib/cityMap.ts` is the only place that changes.
 
 ## Phase 11 — API client tests
 
-- Add Vitest + MSW (node) and reuse the Phase 0 handlers.
-- `client.ts`: base URL + query building (skips `undefined`/`null`), `Authorization: Token …` header only when a token exists, JSON vs `FormData` bodies (no manual `Content-Type` for multipart), 204 → `undefined`, non-JSON bodies, `ApiError` status and `detail`, token storage fallback when `localStorage` throws.
-- One test per endpoint function: correct method, path (with encoded id), query/body shape, typed response.
-- `session.ts`: `createSession`/`login` store the token; `logout` clears it even when the request fails.
-- Multipart: `createReport`/`createProblemValidation` send each media file under `media`, omit absent optional fields.
-- Contract check: a script that walks `api/openapi.yaml` and fails if an operation has no matching client function.
-- Live smoke test (optional, `VITE_API_MOCKS=false`): run the page flows against `manage.py runserver` once backend endpoints land.
-- Add `npm test` to the checkpoint routine from here on.
-
-**Checkpoint:** `npm test` green; coverage report shows every function in `src/api/` exercised.
+- Vitest + MSW (node), reusing the Phase 0 handlers.
+- `client.ts`: base URL + query building (skips `undefined`/`null`), `Authorization: Token …` only when a token exists, JSON vs `FormData` bodies (no manual multipart `Content-Type`), 204 → `undefined`, non-JSON bodies, `ApiError` status and `detail`, token fallback when `localStorage` throws.
+- One test per endpoint function: method, path (encoded id), query/body shape, typed response.
+- `session.ts`: `createSession`/`login` store the token, `logout` clears it even on failure, `ensureSession` dedupes concurrent calls.
+- Multipart: `createReport`/`createProblemValidation` send each file under `media`, omit absent optional fields.
+- Contract check: a script that walks `api/openapi.yaml` and fails if an operation has no client function.
+- Optional live smoke test against `manage.py runserver` (`VITE_API_MOCKS=false`).
 
 ---
 
 ## API gaps
 
-Data the design needs that `api/openapi.yaml` doesn't provide. Mocked in the frontend until the backend adds them:
-
-| Need | Screens | Suggested API |
-|---|---|---|
-| Priority score + breakdown | 4, 8, 10 | `priority_score`, `priority_factors` on `Problem` |
-| AI analysis before submit | 2 | `POST /reports/analyze` (media → category, urgency, address, transcript) |
-| Nearby duplicate candidates | 3 | `GET /problems/nearby?lat=&lng=&radius=` with match % |
-| Urgency votes | 4, 5a, 10 | `urgency_votes` on `Problem`, vote in `ValidationCreate` |
-| Status history | 4, 10 | `GET /problems/{id}/history` |
-| Follow a problem | 4 | `POST /problems/{id}/follow` |
-| Address / district on problem | most | `address`, `district` on `Problem` |
-| Challenge progress, leaderboard, create, join by code | 6 | extend `ChallengeDetail`; `POST /challenges`; `POST /challenges/join-by-code` |
-| User stats (reports, validations, level, impact) | 7 | fields on `User` |
-| Landmark collection | 7, 7a | `GET /users/me/collection` |
-| Partner prizes + redeem | 7 | `GET /rewards`, `POST /rewards/{id}/redeem` |
-| City KPIs + district stats | 8, 9 | `GET /stats/city`, `GET /districts/{id}/stats` |
-| Institutions + assignment | 10 | `GET /institutions`, `POST /problems/{id}/assignments` |
+| Need | Where | Frontend today | Suggested API |
+|---|---|---|---|
+| Report location | report sheet | optional `location` sent with `ReportCreate` (gap field) | `location` (GeoPoint) on `ReportCreate` |
+| Title, address, "near school" | everywhere | optional gap fields on `ReportCreate` / `Problem`; fall back to category / coordinates | add to `ReportCreate` and `Problem` |
+| Urgency chosen when reporting | report sheet | optional `urgency` on `ReportCreate` | add field |
+| Urgency votes | problem sheet | `voteUrgency()` gap function + `urgency_votes` on `Problem` | `POST /problems/{id}/urgency-votes`, `urgency_votes` on `Problem` |
+| Priority score | map list, sheet, dashboard | computed client-side (`src/lib/priority.ts`, the demo formula) | `priority_score` + factors on `Problem` |
+| List summaries | map list | `getProblem()` per problem | title, thumb, confirmation counts in `GET /problems` |
+| AI analysis before submit | report sheet | keyword stand-in in `src/lib/gaps.ts` | `POST /reports/analyze` |
+| Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
+| Partner prizes + redeem | profile | static list | `GET /rewards`, `POST /rewards/{id}/redeem` |
+| City KPIs, district stats | dashboards | fixtures | `GET /stats/city`, `GET /districts/{id}/stats` |
+| Institutions + assignment | board 10 | fixtures | `GET /institutions`, `POST /problems/{id}/assignments` |
 
 ## Progress
 
 - [x] Phase 0 — Foundation
-- [x] Phase 1 — Splash + Map
-  - Deviation: the "vis dar yra?" banner shows the truly nearest problem to the (fixed) user location, so copy differs from the board ("Šiukšlės už 140 m").
-  - Deviation: no cluster-count marker yet (comes with clustering in Phase 10).
-  - Search input is visual only.
-- [ ] Phase 2 — Report flow
-- [ ] Phase 3 — Problem detail
-- [ ] Phase 4 — Verification
-- [ ] Phase 5 — Challenges
-- [ ] Phase 6 — Profile + Collection
+- [x] Phase 1 — App shell + Map view
+  - Matches the demo screenshot for screenshot (light + dark). The demo's "Pavyzdžiai" toggle is omitted: sample data comes from the mock API.
+- [x] Phase 2 — Report sheet
+  - Camera opens straight from "Nufotografuoti" (no separate capture page).
+  - AI step is a keyword stand-in (`src/lib/gaps.ts`); photo recognition waits for the backend and says so in the form.
+  - Confirming a duplicate sends a "still there" validation with the user's photo (the demo dropped the photo).
+- [x] Phase 3 — Problem sheet
+  - For problems older than a day, the answer is sent together with the optional fresh photo (one validation instead of two).
+  - "Nežinau" is not sent to the API (no field for it).
+- [ ] Phase 4 — Notifications
+- [x] Phase 5 — Challenges
+  - Leaving a public challenge and private challenges are browser-local; joining by a friend's code shows a "not yet available" message.
+- [x] Phase 6 — Profile
+  - Landmark icons come from the demo (`src/data/landmarks.json`); "Naujas ženklelis" toast when an action unlocks one.
+  - Badges are computed client-side like the demo, not from `GET /users/me/badges`.
 - [ ] Phase 7 — Municipality dashboard
 - [ ] Phase 8 — District dashboard
 - [ ] Phase 9 — Problem card + assignment
-- [ ] Phase 10 — Real map
+- [ ] Phase 10 — Real map (optional)
 - [ ] Phase 11 — API client tests

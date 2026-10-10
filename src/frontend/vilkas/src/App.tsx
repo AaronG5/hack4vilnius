@@ -2,38 +2,30 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { CityShell } from "./components/CityShell";
 import { Stub } from "./components/Stub";
+import { ChallengeCreatePage } from "./pages/challenges/ChallengeCreatePage";
+import { ChallengeDetailPage } from "./pages/challenges/ChallengeDetailPage";
+import { ChallengesPage } from "./pages/challenges/ChallengesPage";
 import { MapPage } from "./pages/MapPage";
-import { SplashPage } from "./pages/SplashPage";
+import { ProblemSheet } from "./pages/ProblemSheet";
+import { ProfilePage } from "./pages/ProfilePage";
+import { ReportSheet } from "./pages/ReportSheet";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<SplashPage />} />
-          <Route path="map" element={<MapPage />} />
+          <Route index element={<Navigate to="/map" replace />} />
+          <Route element={<MapPage />}>
+            <Route path="map" element={null} />
+            <Route path="map/report" element={<ReportSheet />} />
+            <Route path="problems/:id" element={<ProblemSheet />} />
+          </Route>
 
-          <Route path="report/new" element={<Stub board="2" title="Naujas pranešimas" />} />
-          <Route path="report/review" element={<Stub board="2" title="DI atpažinimas" />} />
-          <Route path="report/duplicates" element={<Stub board="3" title="Dublikatų patikra" />} />
-
-          <Route path="problems/:id" element={<Stub board="4" title="Problema" />} />
-          <Route path="problems/:id/verify" element={<Stub board="5a" title="Ar vis dar yra?" />} />
-          <Route
-            path="problems/:id/verify/photo"
-            element={<Stub board="5b" title="Naujausia nuotrauka" />}
-          />
-          <Route path="notifications" element={<Stub board="5" title="Pranešimai" />} />
-
-          <Route path="challenges" element={<Stub board="6" title="Iššūkiai" withNav />} />
-          <Route path="challenges/new" element={<Stub board="6" title="Naujas iššūkis" />} />
-          <Route path="challenges/:id" element={<Stub board="6" title="Iššūkis" />} />
-
-          <Route path="profile" element={<Stub board="7" title="Profilis" withNav />} />
-          <Route
-            path="profile/collection"
-            element={<Stub board="7a" title="Vilniaus kolekcija" />}
-          />
+          <Route path="challenges" element={<ChallengesPage />} />
+          <Route path="challenges/new" element={<ChallengeCreatePage />} />
+          <Route path="challenges/:id" element={<ChallengeDetailPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         <Route path="city" element={<CityShell />}>

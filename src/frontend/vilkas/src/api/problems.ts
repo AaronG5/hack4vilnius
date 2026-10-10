@@ -6,6 +6,7 @@ import type {
   ProblemDetail,
   ProblemFilters,
   ProblemStatusUpdate,
+  UrgencyVoteCreate,
   Uuid,
   Validation,
   ValidationCreate,
@@ -52,6 +53,15 @@ export function createProblemValidation(
       description: validation.description,
       media: validation.media,
     }),
+    signal,
+  });
+}
+
+/** TODO(api-gap): POST /problems/{id}/urgency-votes — not in openapi.yaml yet. */
+export function voteUrgency(id: Uuid, vote: UrgencyVoteCreate, signal?: AbortSignal): Promise<Problem> {
+  return request<Problem>(`/problems/${encodeURIComponent(id)}/urgency-votes`, {
+    method: "POST",
+    body: vote,
     signal,
   });
 }

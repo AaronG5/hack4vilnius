@@ -108,3 +108,17 @@ export const BackIcon = (p: IconProps) => (
     <path d="M15 5 L8 12 L15 19" />
   </Icon>
 );
+
+export const GalleryIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <circle cx="9" cy="10" r="2" />
+    <path d="M21 16l-6-5-10 8" />
+  </Icon>
+);
+
+export const ChevronIcon = (p: IconProps) => (
+  <Icon strokeWidth={2.4} {...p}>
+    <path d="M9 5l7 7-7 7" />
+  </Icon>
+);
