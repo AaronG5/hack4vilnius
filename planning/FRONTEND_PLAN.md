@@ -95,6 +95,8 @@ Swap the schematic SVG for Leaflet + OSM tiles if the team wants geographic accu
 
 ## API gaps
 
+Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they are addressed together once all phases are done.
+
 | Need | Where | Frontend today | Suggested API |
 |---|---|---|---|
 | Report location | report sheet | optional `location` sent with `ReportCreate` (gap field) | `location` (GeoPoint) on `ReportCreate` |
