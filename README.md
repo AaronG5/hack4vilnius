@@ -15,7 +15,7 @@ uv sync
 #### Usage
 To start the server
 ```bash
-uv --directory ./src/backend run python ./src/backed/manage.py runserver
+uv --directory ./src/backend run python manage.py runserver
 ```
 
 ### Development
