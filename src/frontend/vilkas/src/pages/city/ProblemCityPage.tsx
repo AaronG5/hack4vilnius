@@ -379,9 +379,6 @@ function AssignPanel({ view: v, followers, now, onAssign }: { view: ProblemView;
                   {on && <span className="inst-tag role">{i === 0 ? "Atsakinga" : "Bendravykdytoja"}</span>}
                 </span>
                 <span className="hint">{it.scope}</span>
-                <span className="hint" style={{ fontSize: 11, fontWeight: 600 }}>
-                  {it.load}
-                </span>
               </span>
             </button>
           );

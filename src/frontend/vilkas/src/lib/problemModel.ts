@@ -71,6 +71,20 @@ export function priorityScore(urgency: ProblemUrgency, confirms: number, nearSen
   return Math.max(1, Math.min(99, Math.round(raw)));
 }
 
+/**
+ * Django builds absolute `file_url`s from the request it saw, which behind the
+ * dev proxy is `http://` even when the page is `https://` (`npm run dev:lan`),
+ * so browsers block them as mixed content. Same-origin `/media/` paths load in both.
+ */
+function mediaSrc(url: string): string {
+  try {
+    const u = new URL(url, location.href);
+    return u.pathname.startsWith("/media/") ? u.pathname + u.search : url;
+  } catch {
+    return url;
+  }
+}
+
 function firstSentence(text: string): string {
   const sentence = text.split(/(?<=[.!?])\s/)[0].replace(/[.!?]$/, "");
   return sentence.length <= 45 ? sentence : `${sentence.slice(0, 44)}…`;
@@ -93,12 +107,12 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
 
   const photos: PhotoEntry[] = [
     ...p.reports.flatMap((r) =>
-      r.media.filter((m) => m.type === "photo").map((m) => ({ src: m.file_url, at: Date.parse(m.created_at), kind: "report" as const })),
+      r.media.filter((m) => m.type === "photo").map((m) => ({ src: mediaSrc(m.file_url), at: Date.parse(m.created_at), kind: "report" as const })),
     ),
     ...p.validations.flatMap((v) =>
       v.media
         .filter((m) => m.type === "photo")
-        .map((m) => ({ src: m.file_url, at: Date.parse(m.created_at), kind: v.is_valid ? ("still" as const) : ("fixed" as const) })),
+        .map((m) => ({ src: mediaSrc(m.file_url), at: Date.parse(m.created_at), kind: v.is_valid ? ("still" as const) : ("fixed" as const) })),
     ),
   ].sort((a, b) => a.at - b.at);
   const latest = photos.at(-1);

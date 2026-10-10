@@ -122,6 +122,7 @@ Ideas parked until the frontend phases are done; none are commitments.
 
 - **Self-hosted map tiles** — OpenFreeMap has no SLA; for production the city could host the same tiles (or switch to a paid provider) by changing only the style URL in `VilniusMap.tsx`.
 - **Historical sample data** — seed the mock API with a few dozen older (mostly fixed) problems so the district charts and resolve-time KPIs look realistic. Trade-off: extra green pins on the resident map. Decided 2026-10-10: not now, no fabricated data.
+- **Institution workload** — "N aktyvių užduočių · vid. X d." under each institution in the municipality assign step (design board 10). Removed 2026-10-10 because the numbers were made up; bring back once the API reports active tasks and average resolve time per institution.
 
 ## Progress
 
