@@ -1,4 +1,6 @@
-// Report flow sheet from the demo (FAB): source → comment → AI → form → place → duplicates → send.
+// Report flow sheet (FAB): compose → AI → form → place → duplicates → send.
+// One way in: every report needs a description, which is what AI reads to suggest the type
+// before the form shows; photos are strongly encouraged, audio/video optional.
 // "Nufotografuoti" is a file input with capture, so tapping it opens the camera directly.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
@@ -6,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { ApiError, createProblemValidation, createReport, nearbyProblems, searchPlaces, type Place, type ProblemUrgency } from "../api";
 import { AttachmentStrip } from "../components/AttachmentStrip";
 import { LazyMap } from "../components/map/LazyMap";
-import { CameraIcon, GalleryIcon, MicIcon, PencilIcon, PinIcon } from "../components/icons";
+import { CameraIcon, GalleryIcon, MicIcon, PinIcon } from "../components/icons";
 import { Sheet, Steps } from "../components/Sheet";
 import { currentPosition, distanceMeters, districtOf, type Fix, type LngLat } from "../lib/geo";
 import { analyzeReport } from "../lib/gaps";
@@ -15,7 +17,7 @@ import type { ProblemView } from "../lib/problemModel";
 import { MAX_ATTACHMENTS, useAttachments } from "../lib/attachments";
 import { useAppState } from "../state/appState";
 
-type Step = "source" | "text" | "photoText" | "analyzing" | "form" | "place" | "dupes" | "saving";
+type Step = "compose" | "analyzing" | "form" | "place" | "dupes" | "saving";
 
 interface Form {
   categoryId: string;
@@ -42,6 +44,9 @@ const MAX_CANDIDATES = 3;
 const SEARCH_DEBOUNCE_MS = 350;
 const MIN_QUERY = 3;
 const MAX_MATCHES = 5;
+
+/** Enough text for AI (and the city) to tell what the problem is. */
+const MIN_DESCRIPTION = 10;
 
 const BLANK: Form = { categoryId: "", urgency: "urgent", title: "", address: "", description: "", nearSensitive: false };
 
@@ -70,7 +75,7 @@ export function ReportSheet() {
   const navigate = useNavigate();
   const { categories, districts, views, reload, toast } = useAppState();
 
-  const [step, setStep] = useState<Step>("source");
+  const [step, setStep] = useState<Step>("compose");
   const [text, setText] = useState("");
   const [form, setForm] = useState<Form>(BLANK);
   // What pre-filled the type: AI's suggested ids (best first) or keywords. The picker shows only the suggestions until "Kiti tipai".
@@ -99,8 +104,7 @@ export function ReportSheet() {
   const aiCtl = useRef<AbortController>(undefined);
 
   const onFull = useCallback((max: number) => toast(`Daugiausia ${max} failai`), [toast]);
-  const { files, add: addFiles, remove: removeFile, clear: clearFiles, previewFor } = useAttachments(MAX_ATTACHMENTS, onFull);
-  // The AI stand-in reads photos, not clips.
+  const { files, add: addFiles, remove: removeFile, previewFor } = useAttachments(MAX_ATTACHMENTS, onFull);
 
   const close = useCallback(() => {
     aiCtl.current?.abort();
@@ -112,12 +116,6 @@ export function ReportSheet() {
   const placePins = useMemo(() => views.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score })), [views]);
 
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
-
-  const onFile = (picked: FileList | null) => {
-    if (!picked?.length) return;
-    addFiles(picked);
-    setStep("photoText");
-  };
 
   // Look up what is typed, after a pause. A match means the map step can be
   // skipped; no match (or no geocoder) falls back to placing the pin by hand.
@@ -226,14 +224,9 @@ export function ReportSheet() {
     setMatched(undefined);
   };
 
-  const back = () => {
-    clearFiles();
-    setStep("source");
-  };
-
   const analyze = async () => {
-    if (!files.length && !text.trim()) {
-      toast("Aprašykite problemą arba pridėkite nuotrauką");
+    if (text.trim().length < MIN_DESCRIPTION) {
+      toast("Aprašykite problemą bent keliais žodžiais");
       return;
     }
     setStep("analyzing");
@@ -270,7 +263,8 @@ export function ReportSheet() {
   // Before filing, offer open problems nearby: the same type within 270 m,
   // another type only when it's right here. The backend ranks them; when it
   // can't be reached, the problems already on the map are searched instead.
-  const checkDuplicates = async () => {
+  // `from` is the step the user pressed "Toliau" on; a failed send returns them there.
+  const checkDuplicates = async (from: Step) => {
     if (!at) return;
     const [lng, lat] = at;
     let near: { id: string; meters: number; category: string }[];
@@ -297,11 +291,11 @@ export function ReportSheet() {
       setDupSel(0);
       setStep("dupes");
     } else {
-      void submit();
+      void submit(from);
     }
   };
 
-  const submit = async () => {
+  const submit = async (from: Step) => {
     if (!at) return;
     setStep("saving");
     const title = form.title.trim() || categories.find((c) => c.id === form.categoryId)?.name || "";
@@ -326,7 +320,7 @@ export function ReportSheet() {
         toast("Pranešimas išsiųstas! +20 tšk. gausite, kai kaimynai jį patvirtins");
       }
     } catch {
-      setStep(cands.length ? "dupes" : "place");
+      setStep(from);
       toast("Nepavyko išsiųsti — pabandykite dar kartą");
     }
   };
@@ -360,12 +354,23 @@ export function ReportSheet() {
     }
   };
 
-  const textArea = (label: string, placeholder: string) => (
-    <label className="fld">
-      {label}
-      <textarea className="inp" autoFocus placeholder={placeholder} value={text} onChange={(e) => setText(e.target.value)} />
-    </label>
+  // Each picker adds to the same attachment list; the value is reset so the same file can be picked again.
+  const picker = (accept: string, label: string, capture?: boolean) => (
+    <input
+      type="file"
+      accept={accept}
+      multiple={!capture}
+      capture={capture ? "environment" : undefined}
+      aria-label={label}
+      onChange={(e) => {
+        addFiles(e.target.files);
+        e.target.value = "";
+      }}
+    />
   );
+  const hasPhoto = files.some((f) => f.type.startsWith("image/"));
+  const hasClip = files.some((f) => !f.type.startsWith("image/"));
+  const described = text.trim().length >= MIN_DESCRIPTION;
 
   // With AI suggestions the picker offers just those (best first) until the user asks for the rest.
   const suggested = (ai?.suggestions ?? [])
@@ -376,149 +381,79 @@ export function ReportSheet() {
 
   let body;
   switch (step) {
-    case "source":
+    case "compose":
       body = (
         <>
           <Steps n={1} />
           <h1>Pranešti apie problemą</h1>
-          <p className="lead">Parodykite arba aprašykite — tipą ir skubumą pasiūlysime, o jūs patikrinsite.</p>
-          <label className="src">
-            <span className="ic" style={{ background: "var(--red)" }}>
-              <CameraIcon />
-            </span>
-            <span>
-              <b>Nufotografuoti</b>
-              <small>Nuotrauka ir keli žodžiai — to užtenka</small>
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              aria-label="Nufotografuoti"
-              onChange={(e) => {
-                onFile(e.target.files);
-                e.target.value = "";
-              }}
+          <p className="lead">Nufotografuokite ir aprašykite — tipą ir skubumą pasiūlysime, o jūs patikrinsite.</p>
+          <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
+          {hasPhoto ? (
+            <div className="row">
+              <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
+                <CameraIcon size={18} />
+                Dar viena
+                {picker("image/*", "Nufotografuoti dar vieną", true)}
+              </label>
+              <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
+                <GalleryIcon size={18} />
+                Iš galerijos
+                {picker("image/*", "Pridėti nuotraukų iš galerijos")}
+              </label>
+            </div>
+          ) : (
+            <>
+              <label className="src">
+                <span className="ic" style={{ background: "var(--red)" }}>
+                  <CameraIcon />
+                </span>
+                <span>
+                  <b>Nufotografuoti</b>
+                  <small>Su nuotrauka pranešimas patvirtinamas greičiau</small>
+                </span>
+                {picker("image/*", "Nufotografuoti", true)}
+              </label>
+              <label className="src">
+                <span className="ic" style={{ background: "var(--btn)", color: "var(--btn-ink)" }}>
+                  <GalleryIcon />
+                </span>
+                <span>
+                  <b>Įkelti nuotraukas</b>
+                  <small>Kelias iš karto — iš telefono galerijos ar kompiuterio</small>
+                </span>
+                {picker("image/*", "Įkelti nuotraukas")}
+              </label>
+            </>
+          )}
+          <label className="fld">
+            Aprašymas
+            <textarea
+              className="inp"
+              required
+              placeholder="Pvz.: Kalvarijų g. 98 prie stotelės didelė duobė, mašinos ją apvažiuoja"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
             />
           </label>
-          <label className="src">
-            <span className="ic" style={{ background: "var(--btn)", color: "var(--btn-ink)" }}>
-              <GalleryIcon />
-            </span>
-            <span>
-              <b>Įkelti nuotraukas</b>
-              <small>Kelias iš karto — iš telefono galerijos ar kompiuterio</small>
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              aria-label="Įkelti nuotraukas"
-              onChange={(e) => {
-                onFile(e.target.files);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <button type="button" className="src" onClick={() => setStep("text")}>
-            <span className="ic" style={{ background: "var(--green)" }}>
-              <PencilIcon size={22} />
-            </span>
-            <span>
-              <b>Aprašyti tekstu</b>
-              <small>Negalite fotografuoti, pvz., autobuse? Nuotrauką pridėsite vėliau</small>
-            </span>
-          </button>
           <label className="src">
             <span className="ic" style={{ background: "var(--lav)", color: "var(--chip-ink)" }}>
               <MicIcon size={22} />
             </span>
             <span>
-              <b>Vaizdo ir garso įrašai</b>
-              <small>Kai nuotraukos neužtenka — triukšmas, tekantis vanduo, eismas</small>
+              <b>{hasClip ? "Pridėti dar įrašą" : "Garso ar vaizdo įrašas"}</b>
+              <small>Nebūtina — kai nuotraukos neužtenka: triukšmas, tekantis vanduo, eismas</small>
             </span>
-            <input
-              type="file"
-              accept="video/*,audio/*"
-              multiple
-              aria-label="Įkelti vaizdo ar garso įrašų"
-              onChange={(e) => {
-                onFile(e.target.files);
-                e.target.value = "";
-              }}
-            />
+            {picker("audio/*,video/*", "Įkelti garso ar vaizdo įrašų")}
           </label>
-        </>
-      );
-      break;
-
-    case "text":
-      body = (
-        <>
-          <Steps n={1} />
-          <h1>Aprašykite problemą</h1>
-          <p className="lead">Kas, kur ir kaip rimta? Iš teksto pasiūlysime tipą, skubumą ir adresą.</p>
-          {textArea("Aprašymas", "Pvz.: Kalvarijų g. 98 prie stotelės didelė duobė, mašinos ją apvažiuoja")}
-          <div className="row">
-            <button type="button" className="btn" style={{ flex: 1 }} onClick={() => void analyze()}>
-              Toliau
-            </button>
-            <button type="button" className="btn ghost" onClick={back}>
-              Atgal
-            </button>
-          </div>
-        </>
-      );
-      break;
-
-    case "photoText":
-      body = (
-        <>
-          <Steps n={1} />
-          <h1>Pridėti komentarą?</h1>
-          <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
-          <div className="row">
-            <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
-              <CameraIcon size={18} />
-              Dar viena
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                aria-label="Nufotografuoti dar vieną"
-                onChange={(e) => {
-                  addFiles(e.target.files);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-            <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
-              <GalleryIcon size={18} />
-              Pridėti failų
-              <input
-                type="file"
-                accept="image/*,video/*,audio/*"
-                multiple
-                aria-label="Pridėti nuotraukų, vaizdo ar garso įrašų"
-                onChange={(e) => {
-                  addFiles(e.target.files);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-          </div>
-          {textArea(
-            "Problemos apibūdinimas",
-            "Pvz.: 0.2 metrų diametro kelio duobė.",
+          <button type="button" className="btn" disabled={!described} onClick={() => void analyze()}>
+            Toliau
+          </button>
+          {!described && (
+            <span className="sm" style={{ textAlign: "center" }}>
+              Aprašymas privalomas — bent keli žodžiai, kas ir kur
+              {!hasPhoto && ". Nuotrauka nebūtina, bet labai padeda"}
+            </span>
           )}
-          <div className="row">
-            <button type="button" className="btn" style={{ flex: 1 }} onClick={() => void analyze()}>
-              Toliau
-            </button>
-            <button type="button" className="btn ghost" onClick={back}>
-              Atgal
-            </button>
-          </div>
         </>
       );
       break;
@@ -664,7 +599,7 @@ export function ReportSheet() {
             type="button"
             className="btn"
             disabled={!form.categoryId || !form.title.trim()}
-            onClick={() => (at ? void checkDuplicates() : setStep("place"))}
+            onClick={() => (at ? void checkDuplicates("form") : setStep("place"))}
           >
             {at ? "Toliau — peržiūrėti" : "Toliau — pažymėti vietą"}
           </button>
@@ -673,6 +608,10 @@ export function ReportSheet() {
               Patikslinti vietą žemėlapyje
             </button>
           )}
+          {/* Going back re-runs the suggestion on "Toliau", so a changed description is read again. */}
+          <button type="button" className="btn link" onClick={() => setStep("compose")}>
+            Atgal — nuotraukos ir aprašymas
+          </button>
         </>
       );
       break;
@@ -705,7 +644,7 @@ export function ReportSheet() {
           />
           <p style={{ fontWeight: 600 }}>{at ? `Rajonas: ${districtOf(at, districts)?.name ?? "—"}` : "Vieta dar nepažymėta"}</p>
           <div className="row">
-            <button type="button" className="btn" style={{ flex: 1 }} disabled={!at} onClick={() => void checkDuplicates()}>
+            <button type="button" className="btn" style={{ flex: 1 }} disabled={!at} onClick={() => void checkDuplicates("place")}>
               Toliau
             </button>
             <button type="button" className="btn ghost" onClick={() => setStep("form")}>
@@ -742,7 +681,7 @@ export function ReportSheet() {
           <button type="button" className="btn" disabled={dupSel === null} onClick={() => void confirmDuplicate()}>
             Taip — patvirtinti pažymėtą
           </button>
-          <button type="button" className="btn link" onClick={() => void submit()}>
+          <button type="button" className="btn link" onClick={() => void submit("dupes")}>
             Ne, tai nauja problema
           </button>
         </>

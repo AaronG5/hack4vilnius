@@ -56,7 +56,7 @@ async function aiSuggestions(text: string, categories: Category[], signal: Abort
  * Pre-fill the report form from the user's text.
  *
  * Categories come from POST /reports/analyze, which asks Claude. When it
- * suggests none (no API key on the server, AI down, photo-only report)
+ * suggests none (no API key on the server, AI down)
  * keyword matching picks one. Photos aren't analysed.
  * TODO(api-gap): title, address, urgency and the sensitive-place flag are
  * still extracted here with regexes.
