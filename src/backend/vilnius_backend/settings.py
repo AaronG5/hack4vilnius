@@ -49,7 +49,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
+    "users",
 ]
+
+AUTH_USER_MODEL = "users.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -137,3 +141,65 @@ MAILERS = {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+
+# Django REST Framework
+# https://www.django-rest-framework.org/api-guide/settings/
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+
+# drf-spectacular (OpenAPI schema + Swagger UI)
+# https://drf-spectacular.readthedocs.io/en/latest/settings.html
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Hack4Vilnius API",
+    "DESCRIPTION": "A gamified platform for reporting and tracking city problems.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "TAGS": [
+        {
+            "name": "auth",
+            "description": "Registration, login, logout and Google sign-in.",
+        },
+    ],
+    # Tells Speakeasy-generated SDKs to retry on 5xx responses with backoff.
+    # https://www.speakeasy.com/openapi/frameworks/django
+    "EXTENSIONS_ROOT": {
+        "x-speakeasy-retries": {
+            "strategy": "backoff",
+            "backoff": {
+                "initialInterval": 500,
+                "maxInterval": 60000,
+                "maxElapsedTime": 3600000,
+                "exponent": 1.5,
+            },
+            "statusCodes": ["5XX"],
+            "retryConnectionErrors": True,
+        },
+    },
+}
+
+
+# Google sign-in
+# ID of the OAuth 2.0 client registered in Google Cloud Console; ID tokens
+# presented to the Google auth endpoint must be issued for this audience.
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+
+
+# Anonymous identity tracking
+# A signed cookie that lets a not-yet-registered visitor's activity be
+# attributed to the account they register or log into. The frontend is
+# responsible for making sure cookies are accepted before relying on this.
+ANONYMOUS_IDENTITY_COOKIE_NAME = "anon_id"
+ANONYMOUS_IDENTITY_COOKIE_MAX_AGE = 400 * 24 * 60 * 60  # ~400 days (Chrome's cap)
