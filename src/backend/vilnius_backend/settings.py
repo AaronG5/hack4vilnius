@@ -212,6 +212,12 @@ SPECTACULAR_SETTINGS = {
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
 
 
+# AI category suggestion
+# Anthropic API key used to rank categories for new reports. Leave unset to
+# skip the AI call; reports then fall back to a deterministic default.
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
+
 # Anonymous identity tracking
 # A signed cookie that lets a not-yet-registered visitor's activity be
 # attributed to the account they register or log into. The frontend is

@@ -41,6 +41,12 @@ def _media_root(settings: "Settings", tmp_path: Path) -> None:
     settings.MEDIA_ROOT = tmp_path / "media"
 
 
+@pytest.fixture(autouse=True)
+def _no_anthropic_api_key(settings: "Settings") -> None:
+    """Never call the real Anthropic API, even if the developer's env has a key."""
+    settings.ANTHROPIC_API_KEY = ""
+
+
 @pytest.fixture
 def api_client() -> APIClient:
     """Return an unauthenticated DRF test client."""

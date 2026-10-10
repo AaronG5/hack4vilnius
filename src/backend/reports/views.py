@@ -54,12 +54,13 @@ def _get_or_create_problem(
     Resolve the problem a new report belongs to.
 
     Attaches to `existing` when the caller confirmed a duplicate; otherwise
-    creates a new `Problem` at the given coordinates.
+    creates a new `Problem` at the given coordinates, in `category` or, if
+    that is `None`, the deterministic default category.
     """
     if existing is not None:
         return existing
 
-    resolved_category = category or report_services.suggest_category(description)
+    resolved_category = category or report_services.default_category()
     if resolved_category is None:
         msg = "No category could be determined for this report."
         raise ValueError(msg)
@@ -102,10 +103,14 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
         user = cast("User", request.user)
         description = cast("str", data["description"])
         files = cast("list[UploadedFile[bytes]]", data["media"])
+        # One AI call per report: it picks the category when the user didn't,
+        # and is recorded as `ai_category_suggestion` either way.
+        suggestions = report_services.suggest_category(description)
+        chosen_category = cast("Category | None", data.get("category"))
 
         problem = _get_or_create_problem(
             existing=cast("Problem | None", data.get("problem")),
-            category=cast("Category | None", data.get("category")),
+            category=chosen_category or next(iter(suggestions), None),
             description=description,
             latitude=cast("float | None", data.get("latitude")),
             longitude=cast("float | None", data.get("longitude")),
@@ -113,7 +118,7 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
 
         report = Report.objects.create(
             description=description,
-            ai_category_suggestion=report_services.suggest_category_label(description)
+            ai_category_suggestion=report_services.suggest_category_label(suggestions)
             or "",
             ai_abuse_flag=report_services.detect_abuse(description, files),
             user=user,

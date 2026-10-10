@@ -161,7 +161,7 @@ class TestReportCreate:
         self,
         auth_client: APIClient,
     ) -> None:
-        """Omitting `category` uses the stubbed suggestion: a category named Other."""
+        """Without a category or AI suggestion, use the one named Other."""
         other = Category.objects.create(
             name="Other",
             description="Anything else.",
@@ -182,6 +182,42 @@ class TestReportCreate:
 
         assert response.status_code == HTTPStatus.CREATED
         assert Problem.objects.get().category == other
+
+    def test_uses_the_top_ai_suggestion_without_a_category(
+        self,
+        auth_client: APIClient,
+        category: Category,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The AI's first pick files the problem and is recorded on the report."""
+        _ = Category.objects.create(
+            name="Other",
+            description="Anything else.",
+            icon="https://example.com/icons/other.svg",
+            default_urgency=ProblemUrgency.CAN_WAIT,
+        )
+        calls: list[str] = []
+
+        def _suggest(description: str) -> list[Category]:
+            calls.append(description)
+            return [category]
+
+        monkeypatch.setattr("reports.views.report_services.suggest_category", _suggest)
+
+        response = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "Duobe kelyje.",
+                "latitude": 54.69,
+                "longitude": 25.28,
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert Problem.objects.get().category == category
+        assert _body(response)["ai_category_suggestion"] == category.name
+        assert calls == ["Duobe kelyje."]
 
     def test_requires_coordinates_for_a_new_problem(
         self,
