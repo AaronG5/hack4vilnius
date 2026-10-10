@@ -98,7 +98,7 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           $ref: "#/components/responses/Unauthorized"
-    patch:
+    put:
       tags: [users]
       summary: Update profile fields
       security:
@@ -204,7 +204,7 @@ paths:
         schema:
           type: string
           format: uuid
-    patch:
+    put:
       tags: [problems]
       summary: Admin/institution updates status (ongoing, fixed, etc.)
       security:
@@ -451,7 +451,7 @@ paths:
         schema:
           type: string
           format: uuid
-    patch:
+    put:
       tags: [notifications]
       summary: Mark a notification as read
       security:
@@ -496,7 +496,7 @@ paths:
         schema:
           type: string
           format: uuid
-    patch:
+    put:
       tags: [moderation]
       summary: Approve or dismiss a flag
       security:
