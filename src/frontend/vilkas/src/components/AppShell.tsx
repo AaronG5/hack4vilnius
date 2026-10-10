@@ -107,7 +107,7 @@ function Header() {
         aria-current={onNotifications ? "page" : undefined}
         onClick={() => navigate(onNotifications ? "/map" : "/notifications")}
       >
-        <BellIcon size={20} />
+        <BellIcon size={22} />
         {unread > 0 && <span className="bell-count">{unread}</span>}
       </button>
       <span className="pts">{me?.points ?? 0} tšk.</span>

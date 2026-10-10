@@ -215,6 +215,13 @@ nav.bottom button[aria-current="page"] svg {
   justify-content: center;
 }
 
+/* Fixed size, so a crowded header can't shrink the icon. */
+.bell svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
 .bell[aria-current="page"] {
   background: var(--btn);
   color: var(--btn-ink);

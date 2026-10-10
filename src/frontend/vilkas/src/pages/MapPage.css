@@ -16,7 +16,8 @@
   opacity: 0.7;
 }
 
-.chip.fnew i {
+.chip.fnew i,
+.chip.fchecked i {
   width: 16px;
   height: 16px;
   border-radius: 5px 0 5px 5px;
@@ -28,6 +29,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Same gray as the "Jūs atsakėte" pins. */
+.chip.fchecked i {
+  background: #9a9a9a;
 }
 
 .prompt {

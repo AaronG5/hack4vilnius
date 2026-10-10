@@ -23,6 +23,11 @@
   animation: sheet-up 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* The sheet scrolls instead, so children keep their full height (buttons stay 52px). */
+.sheet > * {
+  flex-shrink: 0;
+}
+
 @keyframes sheet-up {
   from {
     transform: translateY(24px);

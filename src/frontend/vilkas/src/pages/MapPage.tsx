@@ -16,6 +16,7 @@ import "./MapPage.css";
 const FILTERS: [MapFilter, string][] = [
   ["all", "Visos"],
   ["new", "Nepatvirtintos"],
+  ["checked", "Patvirtintos"],
   ["work", "Sprendžiamos"],
   ["fixed", "Sutvarkytos"],
 ];
@@ -23,6 +24,7 @@ const FILTERS: [MapFilter, string][] = [
 function passes(filter: MapFilter, v: ProblemView): boolean {
   if (filter === "all") return true;
   if (filter === "new") return v.status === "new";
+  if (filter === "checked") return v.myVote !== undefined;
   if (filter === "work") return v.status === "work";
   return v.isFixed;
 }
@@ -30,6 +32,7 @@ function passes(filter: MapFilter, v: ProblemView): boolean {
 function listFor(filter: MapFilter, views: ProblemView[], shown: ProblemView[]): [string, ProblemView[]] {
   if (filter === "new")
     return ["Laukia patvirtinimo", [...shown].sort((a, b) => Number(!!a.myVote) - Number(!!b.myVote) || b.score - a.score)];
+  if (filter === "checked") return ["Jūsų patikrintos", [...shown].sort((a, b) => b.created - a.created)];
   if (filter === "work") return ["Sprendžiamos", [...shown].sort((a, b) => b.score - a.score)];
   if (filter === "fixed") return ["Sutvarkytos", [...shown].sort((a, b) => b.created - a.created)];
   return [
@@ -75,6 +78,7 @@ export function MapPage() {
   const counts: Record<MapFilter, number> = {
     all: views.length,
     new: views.filter((v) => v.status === "new").length,
+    checked: views.filter((v) => v.myVote !== undefined).length,
     work: views.filter((v) => v.status === "work").length,
     fixed: views.filter((v) => v.isFixed).length,
   };
@@ -105,11 +109,12 @@ export function MapPage() {
               <button
                 key={id}
                 type="button"
-                className={`chip${id === "new" ? " fnew" : ""}`}
+                className={`chip${id === "new" ? " fnew" : id === "checked" ? " fchecked" : ""}`}
                 aria-pressed={filter === id}
                 onClick={() => setFilter(id)}
               >
                 {id === "new" && <i>?</i>}
+                {id === "checked" && <i>✓</i>}
                 {label} <span className="cnt">{counts[id]}</span>
               </button>
             ))}
@@ -137,7 +142,7 @@ export function MapPage() {
                     <b>Nustatoma vieta…</b>
                   ) : (
                     <>
-                      <b>Įjunkite vietą</b>
+                      <b>Įjunkite lokaciją</b>
                       <small>Problemas patvirtinti galima tik būnant šalia — iki {NEAR_RADIUS_M} m</small>
                     </>
                   )}

@@ -406,7 +406,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                       {fix
                         ? `Priėję iki ${NEAR_RADIUS_M} m galėsite atsakyti.`
                         : located?.error ??
-                          (located?.watching ? "Nustatoma vieta…" : `Įjunkite vietą — atsakyti galima būnant iki ${NEAR_RADIUS_M} m nuo problemos.`)}
+                          (located?.watching ? "Nustatoma vieta…" : `Įjunkite lokaciją — atsakyti galima būnant iki ${NEAR_RADIUS_M} m nuo problemos.`)}
                     </span>
                   </div>
                 </div>
@@ -414,7 +414,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
               {!onSite && !fix && !located?.watching && located && (
                 <button type="button" className="btn ghost" onClick={located.start}>
                   <PinIcon size={18} />
-                  Įjungti vietą
+                  Įjungti lokaciją
                 </button>
               )}
               {/* Both answers are worth the same, so neither is dressed up as
