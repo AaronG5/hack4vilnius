@@ -4,12 +4,14 @@
 // answers carry equal weight, so they look alike. One answer per person.
 
 import { useCallback, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { ApiError, createProblemValidation, type ProblemUrgency } from "../api";
 import { AttachmentStrip } from "../components/AttachmentStrip";
 import { CameraIcon, GalleryIcon } from "../components/icons";
 import { Sheet } from "../components/Sheet";
 import { ago, count } from "../lib/format";
+import { distanceMeters, formatDistance, isNear, NEAR_RADIUS_M } from "../lib/geo";
+import type { WatchedFix } from "../lib/useWatchedFix";
 import { URGENCIES, URGENCY_HINT, URGENCY_LABEL } from "../lib/labels";
 import { scoreClass, STATUS_TEXT, type ProblemView, type Vote } from "../lib/problemModel";
 import { MAX_ATTACHMENTS, useAttachments } from "../lib/attachments";
@@ -51,6 +53,10 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
   const [urgency, setUrgency] = useState<ProblemUrgency>();
   const [account, setAccount] = useState("");
   const answered = m.myVote !== undefined;
+  // Answers count only from residents on site: the map page watches the position.
+  const located = useOutletContext<WatchedFix | undefined>();
+  const fix = located?.fix;
+  const onSite = fix !== undefined && isNear(fix, m.at);
 
   const onFull = useCallback((max: number) => toast(`Daugiausia ${max} failai`), [toast]);
   const { files, add: addFiles, remove: removeFile, clear: clearFiles, previewFor } = useAttachments(MAX_ATTACHMENTS, onFull);
@@ -84,7 +90,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
   };
 
   const answer = (vote: Vote) => {
-    if (answered) return;
+    if (answered || !onSite) return;
     // Older than a day and nothing attached yet: ask for a fresh photo first.
     if (m.ageDays >= 1 && files.length === 0) setPhotoAsk(vote);
     else void submitVote(vote);
@@ -367,13 +373,31 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                 <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
               </div>
 
+              {!onSite && (
+                <div className="note warn" role="status">
+                  Atsakyti galite tik būdami šalia problemos — iki {NEAR_RADIUS_M} m.{" "}
+                  {fix ? (
+                    <>
+                      Dabar esate už <b>{formatDistance(distanceMeters(fix.at, m.at))}</b>.
+                    </>
+                  ) : located?.error ? (
+                    located.error
+                  ) : located?.watching ? (
+                    "Nustatoma vieta…"
+                  ) : (
+                    <button type="button" className="chip" onClick={located?.start}>
+                      Įjungti vietą
+                    </button>
+                  )}
+                </div>
+              )}
               {/* Both answers are worth the same, so neither is dressed up as
                   the expected one. */}
               <div className="row">
-                <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy} onClick={() => answer("yes")}>
+                <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy || !onSite} onClick={() => answer("yes")}>
                   Problema yra
                 </button>
-                <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy} onClick={() => answer("no")}>
+                <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy || !onSite} onClick={() => answer("no")}>
                   Problemos nėra
                 </button>
               </div>

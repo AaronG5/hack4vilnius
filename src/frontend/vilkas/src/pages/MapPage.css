@@ -55,6 +55,37 @@
   flex-shrink: 0;
 }
 
+/* Standing at an unchecked problem: the answer button comes to you. */
+.prompt.onsite {
+  min-height: 60px;
+  background: var(--red);
+  color: #fff;
+  font-size: 15px;
+}
+
+.prompt.onsite .dot {
+  background: #fff;
+  animation: onsite-pulse 1.4s ease-out infinite;
+}
+
+@keyframes onsite-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+  }
+}
+
+.locate-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* -- Desktop: list column on the left, map filling the rest -------------- */
 
 @media (min-width: 900px) {

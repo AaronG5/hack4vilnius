@@ -6,8 +6,9 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { LazyMap, MapLegend } from "../components/map/LazyMap";
 import { ProblemItem } from "../components/ProblemItem";
 import { weekChecks } from "../lib/activity";
-import { distanceMeters, formatDistance, type LngLat } from "../lib/geo";
+import { distanceMeters, formatDistance, isNear, NEAR_RADIUS_M, type LngLat } from "../lib/geo";
 import { myActivity, type ProblemView } from "../lib/problemModel";
+import { useWatchedFix } from "../lib/useWatchedFix";
 import { useAppState, type MapFilter } from "../state/appState";
 import "./MapPage.css";
 
@@ -43,8 +44,16 @@ export function MapPage() {
   const navigate = useNavigate();
   const { views, filter, setFilter, loaded, error, me } = useAppState();
   const open = (id: string) => navigate(`/problems/${id}`);
-  // Set when the user taps "Mano vieta" on the map.
-  const [here, setHere] = useState<LngLat>();
+  // Live position: answers are only taken on site, so it's watched rather than read once.
+  // It's shared with the problem sheet through the outlet context.
+  const located = useWatchedFix();
+  // Set when the user taps "Mano vieta" on the map; also starts the watch.
+  const [tapped, setTapped] = useState<LngLat>();
+  const here = located.fix?.at ?? tapped;
+  const onLocate = (at: LngLat) => {
+    setTapped(at);
+    located.start();
+  };
 
   const shown = useMemo(() => views.filter((v) => passes(filter, v)), [views, filter]);
   const pins = useMemo(
@@ -70,13 +79,17 @@ export function MapPage() {
 
   // Prompt: skip your own and already answered; nearest first once the location is known,
   // otherwise unconfirmed first, then priority.
-  const near = views
+  const toCheck = views
     .filter((v) => !v.isFixed && v.status !== "work" && !v.mine && !v.myVote)
     .sort((a, b) =>
       here
         ? distanceMeters(here, a.at) - distanceMeters(here, b.at)
         : Number(a.status !== "new") - Number(b.status !== "new") || b.score - a.score,
-    )[0];
+    );
+  const near = toCheck[0];
+  // Within NEAR_RADIUS_M of an unchecked problem: offer the answer without tapping its pin.
+  const fix = located.fix;
+  const onSite = fix ? toCheck.find((v) => isNear(fix, v.at)) : undefined;
   const todo = shown.filter((v) => !v.mine && !v.myVote).length;
   const week = Math.min(5, weekChecks(myActivity(views, me?.id)));
 
@@ -99,7 +112,33 @@ export function MapPage() {
             ))}
           </div>
 
-          {filter === "new" ? (
+          {onSite && (
+            <button type="button" className="prompt onsite" onClick={() => open(onSite.id)}>
+              <span className="dot" />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <b>Jūs prie problemos!</b> {onSite.category} — patvirtinkite, ar ji vis dar yra
+              </span>
+              <span className="tag lime">+10</span>
+            </button>
+          )}
+          {!located.fix && (
+            <div className="locate-hint">
+              {located.error ? (
+                <span role="alert">{located.error}</span>
+              ) : located.watching ? (
+                <span>Nustatoma vieta…</span>
+              ) : (
+                <>
+                  <span style={{ flex: 1 }}>Problemas tikrinti galima tik būnant šalia — iki {NEAR_RADIUS_M} m.</span>
+                  <button type="button" className="chip" onClick={located.start}>
+                    Įjungti vietą
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {onSite ? null : filter === "new" ? (
             <div className="card wk" style={{ marginBottom: 10 }}>
               <span className="wkn">{week}/5</span>
               <span style={{ flex: 1 }}>
@@ -116,7 +155,7 @@ export function MapPage() {
                 <span className="dot" />
                 <span style={{ flex: 1, minWidth: 0 }}>
                   {near.category} · {here ? `už ${formatDistance(distanceMeters(here, near.at))}` : near.address || near.district} —{" "}
-                  <b>vis dar yra?</b>
+                  <b>vis dar yra?</b> Nueikite iki jos ir patikrinkite.
                 </span>
                 <span className="tag lime">+10</span>
               </button>
@@ -125,7 +164,7 @@ export function MapPage() {
         </div>
 
         <div className="map-pane">
-          <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={setHere} />
+          <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={onLocate} />
           <MapLegend />
         </div>
 
@@ -152,7 +191,7 @@ export function MapPage() {
           )}
         </div>
       </main>
-      <Outlet />
+      <Outlet context={located} />
     </>
   );
 }

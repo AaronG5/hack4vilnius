@@ -22,6 +22,17 @@ export interface Fix {
   accuracy: number;
 }
 
+/** How close a resident must be to a problem to answer "still there?" — on site, geocaching-style. */
+export const NEAR_RADIUS_M = 10;
+// Phone GPS is often only good to 10–20 m, so a fix's own uncertainty counts in
+// the resident's favour, up to this much; a vaguer fix can't prove they're there.
+const MAX_ACCURACY_SLACK_M = 20;
+
+/** Whether `fix` puts the device within `NEAR_RADIUS_M` of `at`. */
+export function isNear(fix: Fix, at: LngLat): boolean {
+  return distanceMeters(fix.at, at) - Math.min(fix.accuracy, MAX_ACCURACY_SLACK_M) <= NEAR_RADIUS_M;
+}
+
 /** The device's current position. Rejects with a `GeolocationPositionError`. */
 export function currentPosition(): Promise<Fix> {
   return new Promise((resolve, reject: (reason: unknown) => void) => {
