@@ -110,3 +110,9 @@
 .lm i {
   color: var(--muted);
 }
+
+@media (min-width: 900px) {
+  .lmgrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

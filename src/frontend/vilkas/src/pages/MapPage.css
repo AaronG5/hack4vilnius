@@ -54,3 +54,59 @@
   background: var(--red);
   flex-shrink: 0;
 }
+
+/* -- Desktop: list column on the left, map filling the rest -------------- */
+
+@media (min-width: 900px) {
+  .app-main.map-page {
+    overflow: hidden;
+    padding: 20px 24px 24px;
+    display: grid;
+    grid-template-columns: minmax(300px, min(420px, 38%)) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0 24px;
+  }
+
+  .map-top {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .map-page .filters {
+    margin: 0 0 10px;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+
+  .map-list {
+    grid-column: 1;
+    grid-row: 2;
+    overflow-y: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+
+  .map-list h2.sec {
+    margin-top: 6px;
+  }
+
+  .map-pane {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* flex-basis wins over the inline mobile height, so the map fills the pane. */
+  .map-pane .vmap {
+    flex: 1 1 0;
+    min-height: 320px;
+  }
+}
+
+@media (hover: hover) {
+  .prompt:hover {
+    box-shadow: 0 4px 16px rgba(60, 60, 60, 0.16);
+  }
+}

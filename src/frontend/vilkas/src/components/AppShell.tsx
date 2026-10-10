@@ -1,4 +1,5 @@
 // Resident app frame from the demo: splash, header with points, scrolling main, FAB, bottom nav.
+// On wide screens (AppShell.css) the bottom nav becomes a side rail and the frame fills the window.
 // Pages render once RootLayout has a session, so authenticated calls work on deep links.
 
 import { useEffect, useState } from "react";
@@ -118,13 +119,20 @@ function BottomNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const onMap = NAV[0].match(pathname);
+  // On phones the FAB floats above the map only; on desktop it heads the side rail on every page.
   return (
     <>
-      {onMap && (
-        <button type="button" className="fab" aria-label="Pranešti apie problemą" onClick={() => navigate("/map/report")}>
-          <PlusIcon size={36} />
-        </button>
-      )}
+      <button
+        type="button"
+        className={`fab${onMap ? "" : " off-map"}`}
+        aria-label="Pranešti apie problemą"
+        onClick={() => navigate("/map/report")}
+      >
+        <PlusIcon size={36} />
+        <span className="fab-label" aria-hidden="true">
+          Pranešti
+        </span>
+      </button>
       <nav className="bottom" aria-label="Pagrindinis meniu">
         {NAV.map(({ to, label, Icon, match }) => (
           <button

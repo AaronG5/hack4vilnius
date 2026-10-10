@@ -70,69 +70,75 @@ export function MapPage() {
 
   return (
     <>
-      <main className="app-main">
-        <div className="filters" role="group" aria-label="Rodyti žemėlapyje">
-          {FILTERS.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`chip${id === "new" ? " fnew" : ""}`}
-              aria-pressed={filter === id}
-              onClick={() => setFilter(id)}
-            >
-              {id === "new" && <i>?</i>}
-              {label} <span className="cnt">{counts[id]}</span>
-            </button>
-          ))}
-        </div>
-
-        {filter === "new" ? (
-          <div className="card wk" style={{ marginBottom: 10 }}>
-            <span className="wkn">{week}/5</span>
-            <span style={{ flex: 1 }}>
-              <b>Patikrinkite nepatvirtintas</b>
-              <br />
-              <span className="m">
-                {todo ? `${todo} laukia jūsų · +10 tšk. už kiekvieną` : "Visas aplinkui jau patikrinote — ačiū!"}
-              </span>
-            </span>
-          </div>
-        ) : (
-          near && (
-            <button type="button" className="prompt" onClick={() => open(near.id)}>
-              <span className="dot" />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                {near.category} · {here ? `už ${formatDistance(distanceMeters(here, near.at))}` : near.address || near.district} —{" "}
-                <b>vis dar yra?</b>
-              </span>
-              <span className="tag lime">+10</span>
-            </button>
-          )
-        )}
-
-        <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={setHere} />
-        <MapLegend />
-
-        <h2 className="sec">{title}</h2>
-        {!loaded ? (
-          <div className="card empty">Įkeliama…</div>
-        ) : error && views.length === 0 ? (
-          <div className="card empty" role="alert">
-            Nepavyko įkelti pranešimų.
-          </div>
-        ) : list.length ? (
-          <div className="list">
-            {list.map((v) => (
-              <ProblemItem key={v.id} view={v} onOpen={open} />
+      <main className="app-main map-page">
+        <div className="map-top">
+          <div className="filters" role="group" aria-label="Rodyti žemėlapyje">
+            {FILTERS.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={`chip${id === "new" ? " fnew" : ""}`}
+                aria-pressed={filter === id}
+                onClick={() => setFilter(id)}
+              >
+                {id === "new" && <i>?</i>}
+                {label} <span className="cnt">{counts[id]}</span>
+              </button>
             ))}
           </div>
-        ) : (
-          <div className="card empty">
-            {filter === "all"
-              ? "Kol kas pranešimų nėra. Paspauskite raudoną mygtuką ir praneškite apie pirmą problemą."
-              : "Šiame filtre problemų nėra."}
-          </div>
-        )}
+
+          {filter === "new" ? (
+            <div className="card wk" style={{ marginBottom: 10 }}>
+              <span className="wkn">{week}/5</span>
+              <span style={{ flex: 1 }}>
+                <b>Patikrinkite nepatvirtintas</b>
+                <br />
+                <span className="m">
+                  {todo ? `${todo} laukia jūsų · +10 tšk. už kiekvieną` : "Visas aplinkui jau patikrinote — ačiū!"}
+                </span>
+              </span>
+            </div>
+          ) : (
+            near && (
+              <button type="button" className="prompt" onClick={() => open(near.id)}>
+                <span className="dot" />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  {near.category} · {here ? `už ${formatDistance(distanceMeters(here, near.at))}` : near.address || near.district} —{" "}
+                  <b>vis dar yra?</b>
+                </span>
+                <span className="tag lime">+10</span>
+              </button>
+            )
+          )}
+        </div>
+
+        <div className="map-pane">
+          <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={setHere} />
+          <MapLegend />
+        </div>
+
+        <div className="map-list">
+          <h2 className="sec">{title}</h2>
+          {!loaded ? (
+            <div className="card empty">Įkeliama…</div>
+          ) : error && views.length === 0 ? (
+            <div className="card empty" role="alert">
+              Nepavyko įkelti pranešimų.
+            </div>
+          ) : list.length ? (
+            <div className="list">
+              {list.map((v) => (
+                <ProblemItem key={v.id} view={v} onOpen={open} />
+              ))}
+            </div>
+          ) : (
+            <div className="card empty">
+              {filter === "all"
+                ? "Kol kas pranešimų nėra. Paspauskite raudoną mygtuką ir praneškite apie pirmą problemą."
+                : "Šiame filtre problemų nėra."}
+            </div>
+          )}
+        </div>
       </main>
       <Outlet />
     </>

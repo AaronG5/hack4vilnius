@@ -259,3 +259,34 @@
 .urg button.life[aria-pressed="true"] {
   border-color: var(--red);
 }
+
+/* -- Desktop: dock the sheet as a side panel instead of a bottom sheet --- */
+
+@media (min-width: 900px) {
+  .sheet {
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    left: auto;
+    width: min(480px, calc(100% - 24px));
+    max-height: none;
+    border-radius: 26px 0 26px 26px;
+    padding: 20px 24px 24px;
+    animation-name: sheet-in;
+  }
+
+  .sheet .grab {
+    display: none;
+  }
+
+  .preview {
+    max-height: 280px;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}

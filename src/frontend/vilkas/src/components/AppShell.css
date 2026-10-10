@@ -237,3 +237,106 @@ nav.bottom button[aria-current="page"] svg {
   justify-content: center;
   border: 2px solid var(--bg);
 }
+
+.fab.off-map,
+.fab-label {
+  display: none;
+}
+
+/* -- Desktop: full-window frame, side rail instead of the bottom nav ----- */
+
+@media (min-width: 900px) {
+  .app {
+    max-width: none;
+    display: grid;
+    grid-template-columns: clamp(196px, 17vw, 240px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  header.top {
+    grid-column: 1 / -1;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .top .sub {
+    font-size: 13px;
+  }
+
+  .bell {
+    background: var(--surface-2);
+  }
+
+  .app-main {
+    grid-column: 2;
+    grid-row: 2;
+    /* Centre a readable column; the map page overrides this with its split layout. */
+    padding: 24px max(32px, calc((100% - 760px) / 2)) 48px;
+  }
+
+  nav.bottom {
+    position: static;
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 92px 12px 16px; /* room for the report button above */
+    border-top: none;
+    border-right: 1px solid var(--line);
+  }
+
+  nav.bottom button {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    height: 48px;
+    padding: 0 14px;
+    border-radius: 14px 0 14px 14px;
+    font-size: 14px;
+  }
+
+  nav.bottom button[aria-current="page"] {
+    background: var(--surface-2);
+  }
+
+  .fab,
+  .fab.off-map {
+    position: static;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    transform: none;
+    width: auto;
+    height: 60px;
+    margin: 16px 12px 0;
+    border: none;
+    border-radius: 18px 0 18px 18px;
+    box-shadow: 0 4px 14px rgba(237, 28, 36, 0.35);
+    display: flex;
+    gap: 8px;
+  }
+
+  .fab svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .fab-label {
+    display: inline;
+    font-size: 16px;
+    font-weight: 800;
+  }
+}
+
+@media (min-width: 900px) and (hover: hover) {
+  nav.bottom button:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .fab:hover {
+    background: #d4141b;
+  }
+}

@@ -534,3 +534,33 @@ textarea.inp {
     animation-iteration-count: infinite !important;
   }
 }
+
+/* -- Pointer hover feedback (desktop) ----------------------------------- */
+
+@media (hover: hover) {
+  .item,
+  .chcard,
+  .notif,
+  .chip,
+  .btn {
+    transition:
+      background-color 0.15s,
+      box-shadow 0.15s,
+      filter 0.15s;
+  }
+
+  button.item:hover,
+  a.item:hover,
+  .chcard:hover,
+  .notif:hover {
+    box-shadow: var(--shadow);
+  }
+
+  .chip:not([aria-pressed="true"]):hover {
+    background: var(--surface-2);
+  }
+
+  .btn:not([disabled]):hover {
+    filter: brightness(1.08);
+  }
+}
