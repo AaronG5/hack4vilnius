@@ -15,24 +15,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.anonymous import AnonymousIdentityMixin
 from users.models import User
-from users.openapi import OpenApiParameter, OpenApiResponse, extend_schema
 from users.serializers import (
-    AuthResponseSerializer,
     GoogleAuthSerializer,
     LoginSerializer,
     RegisterSerializer,
     UserSerializer,
-)
-
-_ANON_COOKIE_PARAMETER = OpenApiParameter(
-    name=cast("str", settings.ANONYMOUS_IDENTITY_COOKIE_NAME),
-    type=str,
-    location=OpenApiParameter.COOKIE,
-    required=False,
-    description=(
-        "Anonymous-visitor identity cookie (set automatically by prior "
-        "requests). If present, its data is attributed to this account."
-    ),
 )
 
 _VerifyOAuth2Token = Callable[[str, google_requests.Request, str], Mapping[str, object]]
@@ -51,18 +38,6 @@ class RegisterView(AnonymousIdentityMixin):
 
     permission_classes = (AllowAny,)
 
-    @extend_schema(
-        summary="Register with email and password",
-        description="Create an account directly with an email and password.",
-        parameters=[_ANON_COOKIE_PARAMETER],
-        request=RegisterSerializer,
-        responses={
-            201: AuthResponseSerializer,
-            400: OpenApiResponse(
-                description="Invalid data: duplicate email or a weak password.",
-            ),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Create the account and return an auth token for it."""
         serializer = RegisterSerializer(data=request.data)
@@ -79,18 +54,6 @@ class LoginView(AnonymousIdentityMixin):
 
     permission_classes = (AllowAny,)
 
-    @extend_schema(
-        summary="Log in with email and password",
-        description="Authenticate with an email and password.",
-        parameters=[_ANON_COOKIE_PARAMETER],
-        request=LoginSerializer,
-        responses={
-            200: AuthResponseSerializer,
-            400: OpenApiResponse(
-                description="Invalid credentials or an inactive/Google-only account.",
-            ),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Validate credentials and return an auth token for the account."""
         serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -107,15 +70,6 @@ class LogoutView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(
-        summary="Log out",
-        description="Revoke the current user's API token.",
-        request=None,
-        responses={
-            204: OpenApiResponse(description="Token revoked."),
-            401: OpenApiResponse(description="Missing or invalid token."),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Revoke the current user's API token."""
         _ = Token.objects.filter(user=request.user).delete()
@@ -128,23 +82,6 @@ class GoogleAuthView(AnonymousIdentityMixin):
 
     permission_classes = (AllowAny,)
 
-    @extend_schema(
-        summary="Register or log in with Google",
-        description=(
-            "Verify a Google-issued ID token (Sign in with Google) and create or "
-            "log into the account with the matching email."
-        ),
-        parameters=[_ANON_COOKIE_PARAMETER],
-        request=GoogleAuthSerializer,
-        responses={
-            200: AuthResponseSerializer,
-            201: AuthResponseSerializer,
-            401: OpenApiResponse(
-                description="Invalid, expired or unverified Google ID token.",
-            ),
-            503: OpenApiResponse(description="Google sign-in is not configured."),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Verify the Google ID token and return an auth token for the account."""
         serializer = GoogleAuthSerializer(data=request.data)

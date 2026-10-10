@@ -167,12 +167,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
-    "TAGS": [
-        {
-            "name": "auth",
-            "description": "Registration, login, logout and Google sign-in.",
-        },
-    ],
     # Tells Speakeasy-generated SDKs to retry on 5xx responses with backoff.
     # https://www.speakeasy.com/openapi/frameworks/django
     "EXTENSIONS_ROOT": {
