@@ -27,5 +27,6 @@ def get_milestones(challenge: "Challenge") -> list[Milestone]:
     Stub: always returns an empty list (no milestones configured) until
     real milestone tracking is implemented.
     """
+    # TODO:
     del challenge
     return []

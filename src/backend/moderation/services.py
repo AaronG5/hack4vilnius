@@ -16,5 +16,6 @@ def compute_trust_adjustment(current_score: float, outcome: str) -> float:
     Stub: always returns `current_score` unchanged until real trust rating
     is implemented.
     """
+    # TODO:
     del outcome
     return current_score

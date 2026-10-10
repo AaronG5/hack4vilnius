@@ -185,4 +185,9 @@ Ideas parked until the frontend phases are done; none are commitments.
   - **Two agreeing answers decide**: two saying it is there set the problem `confirmed`, two saying it isn't set it `canceled` — each needs more answers than the other way. One person decides nothing. A verdict is only promoted, never withdrawn for lack of votes, so a late answer can't undo what a case worker set; and once a problem is `ongoing`/`pending`/`completed`, answers stop moving it (`validations.services.evaluate_problem_validations`, no longer a stub).
   - An answer carries **free text** — "Ką matote?" — meant to say more than the original report did; it is optional (the answer is the `is_valid` flag). Those accounts are listed under "Kaimynų patikslinimai" in the problem sheet and under "Gyventojų patikslinimai" on the municipality's problem card.
   - `Vote` is now `"yes" | "no"` throughout (`stillVotes`/`fixedVotes` → `yesVotes`/`noVotes`), so no screen still says "sutvarkyta" for what is really "problemos nėra".
+- [x] Reports carry several photos, videos or audio clips (2026-10-10)
+  - The demo's disabled "Vaizdo ir garso įrašai — Bus kitoje versijoje" row is live: video and audio, several at a time. "Įkelti nuotraukas" takes several too, and more can be added on the comment and form steps; each is removable before sending.
+  - The backend already accepted this (`media` is a list, `infer_media_type` sorts photo/video/audio); the limit was the single-file UI.
+  - Clips are playable where they matter: a "Vaizdo ir garso įrašai" section in the problem sheet and on the municipality's problem card. Before this, anything that wasn't a photo was stored and never shown.
+  - The picker is now one shared `useAttachments` hook (`src/lib/attachments.ts`) with `AttachmentStrip`, used by both the report and the answer flows instead of two copies.
 - [ ] Phase 11 — API client tests

@@ -24,6 +24,7 @@ def estimate_legitimacy_score(category: "Category", description: str) -> float:
 
     Stub: always returns a neutral default score.
     """
+    # TODO:
     del category, description
     return _DEFAULT_LEGITIMACY_SCORE
 
@@ -34,6 +35,7 @@ def determine_urgency(category: "Category", description: str) -> str:
 
     Stub: always falls back to the category's configured default urgency.
     """
+    # TODO:
     del description
     urgency = category.default_urgency
     return urgency if urgency else ProblemUrgency.CAN_WAIT

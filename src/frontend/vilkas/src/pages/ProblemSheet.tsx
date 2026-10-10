@@ -3,85 +3,19 @@
 // account than the report gave, and any photos or videos backing it. The two
 // answers carry equal weight, so they look alike. One answer per person.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ApiError, createProblemValidation, type ProblemUrgency } from "../api";
-import { CameraIcon, CloseIcon, GalleryIcon } from "../components/icons";
+import { AttachmentStrip } from "../components/AttachmentStrip";
+import { CameraIcon, GalleryIcon } from "../components/icons";
 import { Sheet } from "../components/Sheet";
 import { ago, count } from "../lib/format";
 import { URGENCIES, URGENCY_HINT, URGENCY_LABEL } from "../lib/labels";
 import { scoreClass, STATUS_TEXT, type ProblemView, type Vote } from "../lib/problemModel";
+import { MAX_ATTACHMENTS, useAttachments } from "../lib/attachments";
 import { useAppState } from "../state/appState";
 
 const VOTE_FORMS: [string, string, string] = ["balsas", "balsai", "balsų"];
-
-function Attachments({
-  files,
-  previewFor,
-  onRemove,
-}: {
-  files: File[];
-  previewFor: (file: File) => string | undefined;
-  onRemove: (file: File) => void;
-}) {
-  return (
-    <div className="row" style={{ flexWrap: "nowrap", overflowX: "auto", gap: 8, paddingBottom: 4 }}>
-      {files.map((file) => {
-        const preview = previewFor(file);
-        return (
-          <div key={`${file.name}-${file.size}`} style={{ position: "relative", flexShrink: 0 }}>
-            {preview ? (
-              <img src={preview} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: "12px 0 12px 12px" }} />
-            ) : (
-              <span
-                className="sm"
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "12px 0 12px 12px",
-                  background: "var(--surface-2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  padding: 4,
-                  fontSize: 11,
-                }}
-              >
-                Vaizdo įrašas
-              </span>
-            )}
-            <button
-              type="button"
-              aria-label={`Pašalinti ${file.name}`}
-              onClick={() => onRemove(file)}
-              style={{
-                position: "absolute",
-                top: -6,
-                right: -6,
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                border: "none",
-                background: "var(--ink)",
-                color: "var(--surface)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <CloseIcon size={14} />
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/** Enough to show a problem from a few angles without turning into an upload queue. */
-const MAX_FILES = 5;
 
 export function ProblemSheet() {
   const { id } = useParams();
@@ -116,51 +50,10 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
   // than the report gave, and any files.
   const [urgency, setUrgency] = useState<ProblemUrgency>();
   const [account, setAccount] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
   const answered = m.myVote !== undefined;
 
-  // Previews live as long as their file; all of them are released on unmount.
-  const previews = useRef(new Map<File, string>());
-  const previewFor = (file: File): string | undefined => {
-    if (!file.type.startsWith("image/")) return undefined;
-    let url = previews.current.get(file);
-    if (!url) {
-      url = URL.createObjectURL(file);
-      previews.current.set(file, url);
-    }
-    return url;
-  };
-  useEffect(() => {
-    const open = previews.current;
-    return () => {
-      for (const url of open.values()) URL.revokeObjectURL(url);
-      open.clear();
-    };
-  }, []);
-
-  const addFiles = (picked: FileList | null) => {
-    if (!picked?.length) return;
-    setFiles((current) => {
-      const room = MAX_FILES - current.length;
-      if (room <= 0) {
-        toast(`Daugiausia ${MAX_FILES} failai`);
-        return current;
-      }
-      const fresh = [...picked].filter(
-        (file) => !current.some((had) => had.name === file.name && had.size === file.size),
-      );
-      return [...current, ...fresh.slice(0, room)];
-    });
-  };
-
-  const removeFile = (file: File) => {
-    const url = previews.current.get(file);
-    if (url) {
-      URL.revokeObjectURL(url);
-      previews.current.delete(file);
-    }
-    setFiles((current) => current.filter((had) => had !== file));
-  };
+  const onFull = useCallback((max: number) => toast(`Daugiausia ${max} failai`), [toast]);
+  const { files, add: addFiles, remove: removeFile, clear: clearFiles, previewFor } = useAttachments(MAX_ATTACHMENTS, onFull);
 
   const submitVote = async (vote: Vote) => {
     setBusy(true);
@@ -171,7 +64,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
         urgency,
         media: files,
       });
-      setFiles([]);
+      clearFiles();
       setAccount("");
       await reload();
       setPhotoAsk(null);
@@ -272,7 +165,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                   }}
                 />
               </label>
-              {files.length > 0 && <Attachments files={files} previewFor={previewFor} onRemove={removeFile} />}
+              <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
               <button type="button" className="btn" onClick={() => void submitVote(photoAsk)}>
                 {files.length > 0 ? `Siųsti atsakymą su ${files.length} failais` : "Praleisti ir atsakyti"}
               </button>
@@ -328,6 +221,26 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                 <img src={p.src} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: "12px 0 12px 12px" }} />
                 <figcaption className="sm" style={{ fontSize: 11 }}>
                   {p.kind === "report" ? "Pranešta" : p.kind === "no" ? "Problemos nėra" : "Problema yra"} · {ago(p.at)}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {m.clips.length > 0 && (
+        <div className="fld">
+          Vaizdo ir garso įrašai
+          <div className="list">
+            {m.clips.map((clip) => (
+              <figure key={clip.src} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {clip.media === "video" ? (
+                  <video src={clip.src} controls preload="metadata" style={{ width: "100%", borderRadius: "12px 0 12px 12px" }} />
+                ) : (
+                  <audio src={clip.src} controls preload="metadata" style={{ width: "100%" }} />
+                )}
+                <figcaption className="sm" style={{ fontSize: 11 }}>
+                  {clip.kind === "report" ? "Pranešta" : clip.kind === "no" ? "Problemos nėra" : "Problema yra"} · {ago(clip.at)}
                 </figcaption>
               </figure>
             ))}
@@ -418,7 +331,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
               </label>
 
               <div className="fld">
-                Nuotraukos ar vaizdo įrašai (nebūtina) — iki {MAX_FILES}
+                Nuotraukos ar vaizdo įrašai (nebūtina) — iki {MAX_ATTACHMENTS}
                 <div className="row">
                   <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
                     <CameraIcon size={18} />
@@ -451,7 +364,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                     />
                   </label>
                 </div>
-                {files.length > 0 && <Attachments files={files} previewFor={previewFor} onRemove={removeFile} />}
+                <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
               </div>
 
               {/* Both answers are worth the same, so neither is dressed up as

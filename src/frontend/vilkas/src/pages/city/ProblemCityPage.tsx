@@ -224,6 +224,18 @@ export function ProblemCityPage() {
               {descriptions[0] ?? "Aprašymo nėra."}
               {descriptions.length > 1 && <span className="hint"> Aprašymas sujungtas iš {descriptions.length} pranešimų.</span>}
             </p>
+            {v.clips.length > 0 && (
+              <div className="pc-desc" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Vaizdo ir garso įrašai</span>
+                {v.clips.map((clip) =>
+                  clip.media === "video" ? (
+                    <video key={clip.src} src={clip.src} controls preload="metadata" style={{ width: "100%", maxWidth: 420 }} />
+                  ) : (
+                    <audio key={clip.src} src={clip.src} controls preload="metadata" style={{ width: "100%", maxWidth: 420 }} />
+                  ),
+                )}
+              </div>
+            )}
             {accounts.length > 0 && (
               <div className="pc-desc" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>Gyventojų patikslinimai</span>

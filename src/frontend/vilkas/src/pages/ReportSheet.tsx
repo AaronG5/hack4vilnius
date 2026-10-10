@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProblemValidation, createReport, searchPlaces, type Place, type ProblemUrgency } from "../api";
+import { AttachmentStrip } from "../components/AttachmentStrip";
 import { LazyMap } from "../components/map/LazyMap";
 import { CameraIcon, GalleryIcon, MicIcon, PencilIcon, PinIcon } from "../components/icons";
 import { Sheet, Steps } from "../components/Sheet";
@@ -11,6 +12,7 @@ import { currentPosition, distanceMeters, districtOf, type Fix, type LngLat } fr
 import { analyzeReport } from "../lib/gaps";
 import { URGENCIES, URGENCY_LABEL } from "../lib/labels";
 import type { ProblemView } from "../lib/problemModel";
+import { MAX_ATTACHMENTS, useAttachments } from "../lib/attachments";
 import { useAppState } from "../state/appState";
 
 type Step = "source" | "text" | "photoText" | "analyzing" | "form" | "place" | "dupes" | "saving";
@@ -66,8 +68,6 @@ export function ReportSheet() {
   const { categories, districts, views, reload, toast } = useAppState();
 
   const [step, setStep] = useState<Step>("source");
-  const [file, setFile] = useState<File>();
-  const [preview, setPreview] = useState<string>();
   const [text, setText] = useState("");
   const [form, setForm] = useState<Form>(BLANK);
   const [ai, setAi] = useState<{ confidence: number; source: "photo" | "text" }>();
@@ -93,35 +93,25 @@ export function ReportSheet() {
   const [dupSel, setDupSel] = useState<number | null>(null);
   const aiCtl = useRef<AbortController>(undefined);
 
+  const onFull = useCallback((max: number) => toast(`Daugiausia ${max} failai`), [toast]);
+  const { files, add: addFiles, remove: removeFile, clear: clearFiles, previewFor } = useAttachments(MAX_ATTACHMENTS, onFull);
+  // The AI stand-in reads photos, not clips.
+  const hasImage = files.some((f) => f.type.startsWith("image/"));
+
   const close = useCallback(() => {
     aiCtl.current?.abort();
     navigate("/map");
   }, [navigate]);
 
-  // Preview URL lives as long as the chosen photo; both are cleaned up on unmount.
-  const previewRef = useRef<string>(undefined);
-  const setPhoto = (picked?: File) => {
-    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
-    previewRef.current = picked ? URL.createObjectURL(picked) : undefined;
-    setFile(picked);
-    setPreview(previewRef.current);
-  };
-  useEffect(
-    () => () => {
-      aiCtl.current?.abort();
-      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
-    },
-    [],
-  );
+  useEffect(() => () => aiCtl.current?.abort(), []);
 
   const placePins = useMemo(() => views.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score })), [views]);
 
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
 
-  const onFile = (files: FileList | null) => {
-    const picked = files?.[0];
-    if (!picked) return;
-    setPhoto(picked);
+  const onFile = (picked: FileList | null) => {
+    if (!picked?.length) return;
+    addFiles(picked);
     setStep("photoText");
   };
 
@@ -233,12 +223,12 @@ export function ReportSheet() {
   };
 
   const back = () => {
-    setPhoto(undefined);
+    clearFiles();
     setStep("source");
   };
 
   const analyze = async () => {
-    if (!file && !text.trim()) {
+    if (!files.length && !text.trim()) {
       toast("Aprašykite problemą arba pridėkite nuotrauką");
       return;
     }
@@ -247,7 +237,7 @@ export function ReportSheet() {
     const ctl = new AbortController();
     aiCtl.current = ctl;
     try {
-      const r = await analyzeReport(text, Boolean(file), categories, ctl.signal);
+      const r = await analyzeReport(text, hasImage, categories, ctl.signal);
       setForm({
         categoryId: r.categoryId,
         urgency: r.urgency,
@@ -302,7 +292,7 @@ export function ReportSheet() {
       await createReport({
         description: form.description.trim() || title,
         category: form.categoryId,
-        media: file ? [file] : [],
+        media: files,
         title,
         address: form.address.trim(),
         location: { type: "Point", coordinates: at },
@@ -329,7 +319,7 @@ export function ReportSheet() {
         is_valid: true,
         description: form.description.trim(),
         urgency: form.urgency,
-        media: file ? [file] : [],
+        media: files,
       });
       await reload();
       navigate(`/problems/${chosen.view.id}`);
@@ -363,17 +353,35 @@ export function ReportSheet() {
               <b>Nufotografuoti</b>
               <small>DI atpažins problemą iš nuotraukos — užtenka adreso</small>
             </span>
-            <input type="file" accept="image/*" capture="environment" aria-label="Nufotografuoti" onChange={(e) => onFile(e.target.files)} />
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              aria-label="Nufotografuoti"
+              onChange={(e) => {
+                onFile(e.target.files);
+                e.target.value = "";
+              }}
+            />
           </label>
           <label className="src">
             <span className="ic" style={{ background: "var(--btn)", color: "var(--btn-ink)" }}>
               <GalleryIcon />
             </span>
             <span>
-              <b>Įkelti nuotrauką</b>
-              <small>Iš telefono galerijos ar kompiuterio</small>
+              <b>Įkelti nuotraukas</b>
+              <small>Kelias iš karto — iš telefono galerijos ar kompiuterio</small>
             </span>
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Įkelti nuotrauką" onChange={(e) => onFile(e.target.files)} />
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              aria-label="Įkelti nuotraukas"
+              onChange={(e) => {
+                onFile(e.target.files);
+                e.target.value = "";
+              }}
+            />
           </label>
           <button type="button" className="src" onClick={() => setStep("text")}>
             <span className="ic" style={{ background: "var(--green)" }}>
@@ -384,15 +392,25 @@ export function ReportSheet() {
               <small>Negalite fotografuoti, pvz., autobuse? Nuotrauką pridėsite vėliau</small>
             </span>
           </button>
-          <div className="src" aria-disabled="true">
+          <label className="src">
             <span className="ic" style={{ background: "var(--lav)", color: "var(--chip-ink)" }}>
               <MicIcon size={22} />
             </span>
             <span>
               <b>Vaizdo ir garso įrašai</b>
-              <small>Bus kitoje versijoje</small>
+              <small>Kai nuotraukos neužtenka — triukšmas, tekantis vanduo, eismas</small>
             </span>
-          </div>
+            <input
+              type="file"
+              accept="video/*,audio/*"
+              multiple
+              aria-label="Įkelti vaizdo ar garso įrašų"
+              onChange={(e) => {
+                onFile(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </label>
         </>
       );
       break;
@@ -421,7 +439,37 @@ export function ReportSheet() {
         <>
           <Steps n={1} />
           <h1>Pridėti komentarą?</h1>
-          {preview && <img className="preview" src={preview} alt="Jūsų nuotrauka" />}
+          <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
+          <div className="row">
+            <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
+              <CameraIcon size={18} />
+              Dar viena
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                aria-label="Nufotografuoti dar vieną"
+                onChange={(e) => {
+                  addFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
+              <GalleryIcon size={18} />
+              Pridėti failų
+              <input
+                type="file"
+                accept="image/*,video/*,audio/*"
+                multiple
+                aria-label="Pridėti nuotraukų, vaizdo ar garso įrašų"
+                onChange={(e) => {
+                  addFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           {textArea(
             "Problemos apibūdinimas",
             "Pvz.: 0.2 metrų diametro kelio duobė.",
@@ -442,11 +490,11 @@ export function ReportSheet() {
       body = (
         <>
           <Steps n={2} />
-          {preview && <img className="preview" src={preview} alt="Jūsų nuotrauka" style={{ maxHeight: 150 }} />}
+          <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
           <div className="spin" role="progressbar" aria-label="DI analizuoja" />
-          <h1 style={{ textAlign: "center" }}>{file ? "DI žiūri į nuotrauką…" : "DI atpažįsta problemą…"}</h1>
+          <h1 style={{ textAlign: "center" }}>{hasImage ? "DI žiūri į nuotrauką…" : "DI atpažįsta problemą…"}</h1>
           <p className="lead" style={{ textAlign: "center" }}>
-            {file ? "Nuotraukos analizė trunka iki minutės." : "Tai užtrunka kelias sekundes."}
+            {hasImage ? "Nuotraukos analizė trunka iki minutės." : "Tai užtrunka kelias sekundes."}
           </p>
           <button type="button" className="btn ghost" onClick={stopAI}>
             Sustabdyti ir pildyti ranka
@@ -459,7 +507,7 @@ export function ReportSheet() {
       body = (
         <>
           <Steps n={2} />
-          {preview && <img className="preview" src={preview} alt="Jūsų nuotrauka" style={{ maxHeight: 150 }} />}
+          <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
           {ai && (
             <div className="row" style={{ alignItems: "center" }}>
               <span className="tag ai">✦ DI atpažino {ai.source === "photo" ? "iš nuotraukos" : "iš teksto"}</span>

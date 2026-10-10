@@ -20,5 +20,6 @@ def check_new_badges(user: "User") -> list[Badge]:
     Stub: always returns an empty list (no new badges) until real
     validation-count tallying is implemented.
     """
+    # TODO:
     del user
     return []

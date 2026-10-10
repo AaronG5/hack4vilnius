@@ -20,5 +20,6 @@ def get_district_for_point(point: "Mapping[str, object]") -> District | None:
     Stub: always returns `None` (no district match) until real
     point-in-polygon boundary resolution is implemented.
     """
+    # TODO:
     del point
     return None

@@ -42,6 +42,7 @@ def calculate_points(problem: Problem, validation: Validation) -> int:
     Stub: always awards a flat default amount, regardless of validation
     quality (extra media, description detail) or the problem's urgency.
     """
+    # TODO:
     del problem, validation
     return _DEFAULT_POINTS_AWARDED
 
@@ -53,6 +54,7 @@ def urgency_votes(problem: Problem) -> dict[str, int]:
     The first report's urgency counts as the reporter's own vote, so a
     problem nobody has validated yet still shows where it started.
     """
+    # TODO:
     tally = dict.fromkeys(_BY_SEVERITY, 0)
     reported = problem.reported_urgency or problem.urgency
     tally[reported] = tally.get(reported, 0) + 1
@@ -64,6 +66,7 @@ def urgency_votes(problem: Problem) -> dict[str, int]:
 
 def urgency_vote_of(problem: Problem, user: User) -> str | None:
     """Return the urgency `user` voted for on `problem`, if they answered it."""
+    # TODO:
     answer = Validation.objects.filter(problem=problem, user=user).first()
     return (answer.urgency or None) if answer is not None else None
 
@@ -75,6 +78,7 @@ def apply_urgency_votes(problem: Problem) -> None:
     Ties go to the more severe choice: under-reacting to something
     dangerous costs more than over-reacting to something that can wait.
     """
+    # TODO:
     tally = urgency_votes(problem)
     winner = max(
         _BY_SEVERITY,
@@ -101,6 +105,7 @@ def evaluate_problem_validations(problem: Problem) -> None:
     Still a stub: answers count one each, rather than by their author's
     trust score, and nobody is notified of the change.
     """
+    # TODO:
     if problem.status not in _RESIDENTS_DECIDE:
         return
 

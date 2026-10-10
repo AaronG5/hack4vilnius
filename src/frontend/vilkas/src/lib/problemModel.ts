@@ -11,6 +11,15 @@ export type ViewStatus = "new" | "ok" | "urgent" | "work" | "fixed";
 /** An answer to "is the problem there?": "yes" confirms it, "no" disputes it. */
 export type Vote = "yes" | "no";
 
+/** A video or audio clip attached to a report or an answer. */
+export interface ClipEntry {
+  src: string;
+  at: number;
+  kind: "report" | Vote;
+  /** "video" or "audio": which player to render. */
+  media: "video" | "audio";
+}
+
 export interface PhotoEntry {
   src: string;
   at: number;
@@ -31,6 +40,8 @@ export interface ProblemView {
   created: number;
   ageDays: number;
   photos: PhotoEntry[];
+  /** Videos and audio: evidence a photo can't carry, like noise. */
+  clips: ClipEntry[];
   thumb?: string;
   thumbAt?: number;
   /** Reports + answers saying the problem is there. */
@@ -120,6 +131,19 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
   ].sort((a, b) => a.at - b.at);
   const latest = photos.at(-1);
 
+  const clips: ClipEntry[] = [
+    ...p.reports.flatMap((r) => r.media.map((m) => ({ m, kind: "report" as const }))),
+    ...p.validations.flatMap((v) => v.media.map((m) => ({ m, kind: v.is_valid ? ("yes" as const) : ("no" as const) }))),
+  ]
+    .filter(({ m }) => m.type === "video" || m.type === "audio")
+    .map(({ m, kind }) => ({
+      src: mediaSrc(m.file_url),
+      at: Date.parse(m.created_at),
+      kind,
+      media: m.type === "video" ? ("video" as const) : ("audio" as const),
+    }))
+    .sort((a, b) => a.at - b.at);
+
   const confirms = Math.max(1, p.reports.length) + yesVotes;
   const nearSensitive = p.near_sensitive ?? false;
   const score = priorityScore(urgency, confirms, nearSensitive, ageDays);
@@ -147,6 +171,7 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
     created,
     ageDays,
     photos,
+    clips,
     thumb: latest?.src,
     thumbAt: latest?.at,
     confirms,

@@ -65,6 +65,7 @@ def default_category() -> Category | None:
     exists, else the first configured category, else `None` (no categories
     configured at all).
     """
+    # TODO:
     return (
         Category.objects.filter(name__iexact=_FALLBACK_CATEGORY_NAME).first()
         or Category.objects.first()
@@ -110,6 +111,7 @@ def suggest_category_label(suggestions: list[Category]) -> str | None:
     Takes `suggest_category`'s result rather than asking the AI again: the
     top suggestion's name, or `None` when there was no AI suggestion.
     """
+    # TODO:
     return suggestions[0].name if suggestions else None
 
 
@@ -119,6 +121,7 @@ def detect_abuse(description: str, media_files: "list[UploadedFile[bytes]]") -> 
 
     Stub: always returns `False` (never flagged) until implemented.
     """
+    # TODO:
     del description, media_files
     return False
 

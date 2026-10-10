@@ -18,11 +18,17 @@ from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
 REPORTS_URL = "/api/reports"
 NEUTRAL_SCORE = 50.0
 UPLOAD_COUNT = 2
+MIXED_UPLOAD_COUNT = 4
 
 
 def _body(response: Response) -> dict[str, object]:
     """Return a response's JSON body, typed for test assertions."""
     return cast("dict[str, object]", response.data)
+
+
+def _clip(name: str, content_type: str) -> SimpleUploadedFile:
+    """Return a small in-memory video or audio upload."""
+    return SimpleUploadedFile(name, b"fake-media-bytes", content_type=content_type)
 
 
 def _photo(name: str = "photo.jpg") -> SimpleUploadedFile:
@@ -236,6 +242,39 @@ class TestReportCreate:
         )
 
         assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    def test_accepts_photos_videos_and_audio_together(
+        self,
+        auth_client: APIClient,
+        category: Category,
+    ) -> None:
+        """A pothole may need a photo; a noisy pump needs a recording."""
+        response = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "Siurblinė ūžia visą naktį.",
+                "category": str(category.id),
+                "latitude": 54.69,
+                "longitude": 25.28,
+                "media": [
+                    _photo("one.jpg"),
+                    _photo("two.jpg"),
+                    _clip("clip.mp4", "video/mp4"),
+                    _clip("noise.m4a", "audio/mp4"),
+                ],
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        kinds = sorted(media.type for media in Report.objects.get().media.all())
+        assert kinds == [
+            MediaType.AUDIO,
+            MediaType.PHOTO,
+            MediaType.PHOTO,
+            MediaType.VIDEO,
+        ]
+        assert len(cast("list[object]", _body(response)["media"])) == MIXED_UPLOAD_COUNT
 
     def test_allows_a_text_only_report(
         self,
