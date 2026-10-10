@@ -104,7 +104,7 @@ export function ProfilePage() {
             ? `Jūsų veiksmai padėjo sutvarkyti ${helped} ${plural(helped, ["problemą", "problemas", "problemų"])}`
             : "Praneškite ar patikrinkite — ir čia matysite savo poveikį"}
         </b>
-        <small>+20 tšk. už pranešimą, +10 už patikrinimą ar naują nuotrauką.</small>
+        <small>Taškai skiriami, kai jūsų pranešimas ar atsakymas pasitvirtina: +20 už patvirtintą pranešimą, +10 už teisingą atsakymą.</small>
       </section>
 
       <div className="grid3" style={{ marginTop: 10 }}>

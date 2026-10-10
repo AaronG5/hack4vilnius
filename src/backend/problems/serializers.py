@@ -1,8 +1,9 @@
 """Serializers for reading and updating `Problem`s."""
 
-from typing import ClassVar, final
+from typing import ClassVar, cast, final
 
 import validations.services as validation_services
+from categories.models import Category
 from categories.serializers import CategorySerializer
 from institutions.serializers import InstitutionSerializer
 from problems.models import Problem
@@ -40,6 +41,8 @@ class ProblemSerializer(serializers.ModelSerializer[Problem]):
             "institution",
             "urgency_votes",
             "my_urgency_vote",
+            "fixed_at",
+            "reopened_at",
             "created_at",
             "updated_at",
         )
@@ -78,3 +81,35 @@ class ProblemStatusUpdateSerializer(serializers.Serializer[Problem]):
     """Validates a status change (`PUT /api/problems/{id}/status`)."""
 
     status = serializers.ChoiceField(choices=ProblemStatus.choices)
+
+
+@final
+class NearbyQuerySerializer(serializers.Serializer[object]):
+    """Validates `GET /api/problems/nearby` query parameters."""
+
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lng = serializers.FloatField(min_value=-180, max_value=180)
+    category = serializers.PrimaryKeyRelatedField[Category](
+        queryset=Category.objects.all(),
+        required=False,
+    )
+    radius = serializers.FloatField(min_value=1, max_value=1000, default=270)
+
+
+@final
+class NearbyProblemSerializer(ProblemSerializer):
+    """A `Problem` with how far it is from the point that was asked about."""
+
+    distance_m = serializers.SerializerMethodField()
+
+    @final
+    class Meta(ProblemSerializer.Meta):
+        """Adds `distance_m` to the base problem fields."""
+
+        fields = (*ProblemSerializer.Meta.fields, "distance_m")
+        read_only_fields = fields
+
+    def get_distance_m(self, problem: Problem) -> int:
+        """Return the distance in whole metres, from the view's context."""
+        distances = cast("dict[object, float]", self.context["distances"])
+        return round(distances[problem.id])

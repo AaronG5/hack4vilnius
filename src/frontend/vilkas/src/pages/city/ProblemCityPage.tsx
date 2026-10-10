@@ -74,7 +74,13 @@ function history(v: ProblemView, assignment: Assignment | undefined): HistoryIte
       sub: `Jūs · ${ago(assignment.at)} · terminas ${shortDate(assignment.due)}`,
     });
   }
-  if (v.isFixed) items.push({ at: Date.parse(v.detail.updated_at), color: "var(--green)", title: "Vykdytojas pažymėjo „sutvarkyta“", sub: ago(Date.parse(v.detail.updated_at)) });
+  if (v.isFixed && v.fixedAt) {
+    items.push({ at: v.fixedAt, color: "var(--green)", title: "Pažymėta „sutvarkyta“", sub: v.fixWindowOpen ? `${ago(v.fixedAt)} · laukia kaimynų patvirtinimo` : ago(v.fixedAt) });
+  }
+  if (v.detail.reopened_at) {
+    const at = Date.parse(v.detail.reopened_at);
+    items.push({ at, color: "var(--red)", title: "Atidaryta iš naujo", sub: `${ago(at)} · gyventojai sako, kad vis dar yra` });
+  }
   return items.sort((a, b) => b.at - a.at).slice(0, 7);
 }
 

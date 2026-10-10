@@ -32,11 +32,12 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   const [filter, setFilter] = useState<MapFilter>("all");
   const [toastMessage, setToastMessage] = useState<string>();
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [clock, setClock] = useState(0);
+  const [clock, setClock] = useState(() => Date.now());
 
-  // Re-render every minute so "prieš 5 min." doesn't freeze while the page is open.
+  // Advance every minute, so "prieš 5 min." doesn't freeze while the page is
+  // open and fixed problems leave the map when their hour is up.
   useEffect(() => {
-    const timer = setInterval(() => setClock((n) => n + 1), 60_000);
+    const timer = setInterval(() => setClock(Date.now()), 60_000);
     return () => clearInterval(timer);
   }, []);
 
@@ -82,8 +83,8 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   }, []);
 
   const views = useMemo(
-    () => details.filter((p) => p.status !== "canceled").map((p) => toView(p, me?.id, districts)),
-    [details, me?.id, districts],
+    () => details.filter((p) => p.status !== "canceled").map((p) => toView(p, me?.id, districts, clock)),
+    [details, me?.id, districts, clock],
   );
 
   // Announce landmarks unlocked since the last load (after the action's own toast).

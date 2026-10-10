@@ -2,13 +2,13 @@
 
 from typing import TYPE_CHECKING, cast, final, override
 
-import users.services as user_services
 import validations.services as validation_services
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import UploadedFile
 from django.shortcuts import get_object_or_404
 from media_assets.models import Media
 from media_assets.services import infer_media_type
+from problems import lifecycle
 from problems.models import Problem
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -95,15 +95,11 @@ class ValidationListCreateView(DefaultListCreateAPIView[Validation]):
             user=user,
             problem=problem,
         )
-        validation.points_awarded = validation_services.calculate_points(
-            problem,
-            validation,
-        )
-        validation.save(update_fields=["points_awarded"])
-        user_services.award_points(user, validation.points_awarded)
         _attach_media(validation, user, files)
         validation_services.apply_urgency_votes(problem)
-        validation_services.evaluate_problem_validations(problem)
+        # Points come only once the answer proves right; see `problems.lifecycle`.
+        lifecycle.record_answer(problem, validation)
+        validation.refresh_from_db(fields=["points_awarded"])
 
         output = ValidationSerializer(validation, context={"request": request})
         return Response(

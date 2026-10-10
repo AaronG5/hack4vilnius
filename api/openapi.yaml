@@ -177,6 +177,53 @@ paths:
                 items:
                   $ref: "#/components/schemas/Problem"
 
+  /problems/nearby:
+    get:
+      tags: [problems]
+      summary: Open problems around a point
+      description: >-
+        What a resident sees before filing a report, to confirm an existing
+        problem instead of creating a duplicate. Only open problems
+        (unconfirmed, confirmed, pending, ongoing). With `category`, problems
+        in it come first; otherwise, and within each group, the nearest
+        come first. A new report within 25 m of an open problem in the same
+        category is attached to it automatically.
+      security: []
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - name: lng
+          in: query
+          required: true
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - name: category
+          in: query
+          schema: { type: string, format: uuid }
+        - name: radius
+          in: query
+          description: Metres.
+          schema: { type: number, minimum: 1, maximum: 1000, default: 270 }
+      responses:
+        "200":
+          description: Nearby open problems, each with its distance.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/Problem"
+                    - type: object
+                      properties:
+                        distance_m:
+                          type: integer
+                          description: Distance from the point, in whole metres.
+                      required: [distance_m]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
   /problems/{id}:
     parameters:
       - name: id
@@ -1049,6 +1096,21 @@ components:
           description: >-
             The requesting user's own urgency vote, or null if they have not
             answered this problem (or answered without voting).
+        fixed_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: >-
+            When it was marked fixed, by a resident's "there is no problem" or
+            by the city. For an hour residents may confirm the fix (or reopen
+            it); after that it leaves the map.
+        reopened_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: Last time residents said it was still there after a fix.
         created_at:
           type: string
           format: date-time
@@ -1117,6 +1179,12 @@ components:
             $ref: "#/components/schemas/Media"
         has_moderation_flag:
           type: boolean
+        points_awarded:
+          type: integer
+          readOnly: true
+          description: >-
+            Points this report earned. 0 until its problem is confirmed by
+            residents or taken on by the city.
           description: Whether this report was flagged for staff review.
         created_at:
           type: string
@@ -1211,6 +1279,11 @@ components:
         points_awarded:
           type: integer
           readOnly: true
+          description: >-
+            Points this answer earned. Paid only once it proves right: when it
+            helps confirm the problem (the first answers), when the city takes
+            the problem on (later answers), or when a fix it claimed or
+            confirmed is confirmed within the hour. 0 until then.
         user:
           $ref: "#/components/schemas/UserRef"
         problem:

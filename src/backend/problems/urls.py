@@ -1,12 +1,18 @@
 """URL routes for the problems app."""
 
 from django.urls import path
-from problems.views import ProblemDetailView, ProblemListView, ProblemStatusUpdateView
+from problems.views import (
+    ProblemDetailView,
+    ProblemListView,
+    ProblemNearbyView,
+    ProblemStatusUpdateView,
+)
 
 app_name = "problems"
 
 urlpatterns = [
     path("problems", ProblemListView.as_view(), name="list"),
+    path("problems/nearby", ProblemNearbyView.as_view(), name="nearby"),
     path("problems/<uuid:id>", ProblemDetailView.as_view(), name="detail"),
     path(
         "problems/<uuid:id>/status",

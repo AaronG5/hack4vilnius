@@ -53,6 +53,8 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
   const [urgency, setUrgency] = useState<ProblemUrgency>();
   const [account, setAccount] = useState("");
   const answered = m.myVote !== undefined;
+  // A fixed problem takes answers only during its hour on the map.
+  const canAnswer = !m.mine && m.status !== "work" && !answered && (!m.isFixed || m.fixWindowOpen);
   // Answers count only from residents on site: the map page watches the position.
   const located = useOutletContext<WatchedFix | undefined>();
   const fix = located?.fix;
@@ -74,7 +76,14 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
       setAccount("");
       await reload();
       setPhotoAsk(null);
-      toast(`Ačiū už patikrinimą! +${result.points_awarded} tšk.`);
+      // Points come only once an answer proves right (see problems/lifecycle.py).
+      toast(
+        result.points_awarded > 0
+          ? `Ačiū! +${result.points_awarded} tšk.`
+          : m.isFixed && vote === "yes"
+            ? "Ačiū! Problema grąžinta į sąrašą"
+            : "Ačiū! Taškus gausite, kai atsakymas pasitvirtins",
+      );
     } catch (err) {
       const status = err instanceof ApiError ? err.status : 0;
       if (status === 409) {
@@ -118,7 +127,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
       {photoAsk && (
         <div className="card" style={{ background: "var(--surface-2)", display: "flex", flexDirection: "column", gap: 10 }}>
           <div className="row" style={{ alignItems: "center" }}>
-            <span className="tag lime">+10 tšk.</span>
+            <span className="tag lime">Taškai, kai pasitvirtins</span>
             <span className="tag ex">Pranešta {ago(m.created)}</span>
           </div>
           <h1 style={{ fontSize: 19 }}>
@@ -322,7 +331,22 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
             </div>
           )}
 
-          {!m.mine && m.status !== "work" && !answered && (
+          {m.isFixed && !answered && !m.mine && (
+            <div className="note" style={{ background: "rgba(0,150,64,.18)" }}>
+              {m.fixWindowOpen ? (
+                <>
+                  <b>Ar tikrai sutvarkyta?</b> Pažymėta {ago(m.fixedAt ?? m.created)}. Jei esate šalia, patvirtinkite per valandą — pirmieji
+                  patvirtinę gauna taškų. Jei problema vis dar yra, ji grįš į sąrašą.
+                </>
+              ) : (
+                <>
+                  <b>Sutvarkyta.</b> Patvirtinimo laikas baigėsi.
+                </>
+              )}
+            </div>
+          )}
+
+          {canAnswer && (
             <>
               <label className="fld">
                 Ką matote? (nebūtina) — papasakokite plačiau nei pranešime
@@ -397,14 +421,15 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                   the expected one. */}
               <div className="row">
                 <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy || !onSite} onClick={() => answer("yes")}>
-                  Problema yra
+                  {m.isFixed ? "Vis dar yra" : "Problema yra"}
                 </button>
                 <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy || !onSite} onClick={() => answer("no")}>
-                  Problemos nėra
+                  {m.isFixed ? "Taip, sutvarkyta" : "Problemos nėra"}
                 </button>
               </div>
               <span className="sm">
-                Patvirtinimai padeda problemą patvirtinti, paneigimai — ją atmesti. Atsakyti galima vieną kartą.
+                Taškus gausite, kai jūsų atsakymas pasitvirtins: pirmieji teisingai atsakę gauna iškart, vėlesni — kai savivaldybė imsis
+                problemos. Atsakyti galima vieną kartą.
               </span>
             </>
           )}

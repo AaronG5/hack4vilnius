@@ -43,7 +43,9 @@ function listFor(filter: MapFilter, views: ProblemView[], shown: ProblemView[]):
 
 export function MapPage() {
   const navigate = useNavigate();
-  const { views, filter, setFilter, loaded, error, me } = useAppState();
+  const { views: all, filter, setFilter, loaded, error, me } = useAppState();
+  // Fixed problems stay on the map, green, only while neighbours may confirm the fix.
+  const views = useMemo(() => all.filter((v) => !v.isFixed || v.fixWindowOpen), [all]);
   const open = (id: string) => navigate(`/problems/${id}`);
   // Live position: answers are only taken on site, so it's watched rather than read once.
   // It's shared with the problem sheet through the outlet context.

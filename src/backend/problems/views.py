@@ -2,10 +2,13 @@
 
 from typing import TYPE_CHECKING, cast, final, override
 
+import problems.services as problem_services
 from districts.services import get_district_for_point
-from notifications.services import notify_problem_status_change
+from problems import lifecycle
 from problems.models import Problem
 from problems.serializers import (
+    NearbyProblemSerializer,
+    NearbyQuerySerializer,
     ProblemDetailSerializer,
     ProblemSerializer,
     ProblemStatusUpdateSerializer,
@@ -17,7 +20,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.permissions import IsCityAdministratorOrStaff
-from vilnius_backend.choices import ProblemStatus
 from vilnius_backend.generic_views import (
     DefaultListAPIView,
     DefaultRetrieveAPIView,
@@ -26,6 +28,7 @@ from vilnius_backend.generic_views import (
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from categories.models import Category
     from django.db.models import QuerySet
     from rest_framework.utils.serializer_helpers import ReturnDict
 
@@ -80,6 +83,39 @@ class ProblemListView(DefaultListAPIView[Problem]):
 
 
 @final
+class ProblemNearbyView(APIView):
+    """
+    `GET /api/problems/nearby` — open problems around a point.
+
+    What a resident sees before filing a report, to confirm an existing
+    problem instead of creating a duplicate. Same category first, then
+    nearest first.
+    """
+
+    permission_classes = (AllowAny,)
+
+    def get(self, request: Request) -> Response:
+        """Return open problems within `radius` metres of `lat`/`lng`."""
+        query = NearbyQuerySerializer(data=request.query_params)
+        _ = query.is_valid(raise_exception=True)
+        params = cast("dict[str, object]", query.validated_data)
+        found = problem_services.nearby_problems(
+            (cast("float", params["lng"]), cast("float", params["lat"])),
+            cast("float", params["radius"]),
+            cast("Category | None", params.get("category")),
+        )
+        output = NearbyProblemSerializer(
+            [problem for problem, _distance in found],
+            many=True,
+            context={
+                "request": request,
+                "distances": {problem.id: distance for problem, distance in found},
+            },
+        )
+        return Response(cast("ReturnDict[str, object]", output.data))
+
+
+@final
 class ProblemDetailView(DefaultRetrieveAPIView[Problem]):
     """`GET /api/problems/{id}` — problem details, reports and validations."""
 
@@ -94,9 +130,6 @@ class ProblemDetailView(DefaultRetrieveAPIView[Problem]):
         "validations__media",
         "validations__user",
     )
-
-
-_HANDED_OVER = frozenset({ProblemStatus.PENDING, ProblemStatus.ONGOING})
 
 
 @final
@@ -115,13 +148,7 @@ class ProblemStatusUpdateView(APIView):
         _ = serializer.is_valid(raise_exception=True)
         new_status = cast("str", serializer.validated_data["status"])
 
-        problem.status = new_status
-        # Handing a problem over without naming who takes it: the category's
-        # own institution does, unless one was already chosen.
-        if new_status in _HANDED_OVER and problem.institution is None:
-            problem.institution = problem.category.institution
-        problem.save(update_fields=["status", "institution", "updated_at"])
-        _ = notify_problem_status_change(problem)
+        lifecycle.apply_city_status(problem, new_status)
 
         output = ProblemSerializer(problem)
         return Response(

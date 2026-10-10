@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING, cast, final, override
 
 import problems.services as problem_services
 import reports.services as report_services
-import users.services as user_services
 from categories.models import Category
 from categories.serializers import CategorySerializer
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import UploadedFile
 from media_assets.models import Media
 from media_assets.services import infer_media_type
+from problems import lifecycle
 from problems.models import Problem
 from reports.models import Report
 from reports.serializers import (
@@ -158,7 +158,12 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
             problem=problem,
         )
         _attach_media(report, user, files)
-        user_services.award_points(user, user_services.REPORT_POINTS)
+        # A report on a problem that already existed backs it up like an
+        # answer would. Points come only once the problem is confirmed; see
+        # `problems.lifecycle`.
+        if Report.objects.filter(problem=problem).count() > 1:
+            lifecycle.record_answer(problem, report)
+            report.refresh_from_db(fields=["points_awarded"])
 
         output = ReportSerializer(report, context={"request": request})
         return Response(

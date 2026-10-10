@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, NamedTuple, TypedDict, cast, final, override
 
 import problems.services as problem_services
-import validations.services as validation_services
 from badges.models import Badge
 from categories.models import Category
 from challenges.models import Challenge
@@ -487,6 +486,11 @@ class Command(BaseCommand):
             _ = Problem.objects.filter(id=problem.id).update(
                 created_at=created_at,
                 updated_at=now - dt.timedelta(hours=example.age_hours / 2),
+                fixed_at=(
+                    now - dt.timedelta(hours=example.age_hours / 2)
+                    if example.status in {ProblemStatus.COMPLETED}
+                    else None
+                ),
             )
             report = Report.objects.create(
                 description=description,
@@ -509,6 +513,7 @@ class Command(BaseCommand):
         answers = [True] * example.still_there + [False] * example.fixed
         spacing = example.age_hours / (len(answers) + 1)
         for position, is_valid in enumerate(answers, start=1):
+            # Samples: no points, which are paid as claims prove true.
             validation = Validation.objects.create(
                 is_valid=is_valid,
                 # The answer is `is_valid`; these samples add no extra text.
@@ -516,11 +521,6 @@ class Command(BaseCommand):
                 user=neighbours[(offset + position) % len(neighbours)],
                 problem=problem,
             )
-            validation.points_awarded = validation_services.calculate_points(
-                problem,
-                validation,
-            )
-            validation.save(update_fields=["points_awarded"])
             _ = Validation.objects.filter(id=validation.id).update(
                 created_at=timezone.now()
                 - dt.timedelta(hours=example.age_hours - position * spacing),

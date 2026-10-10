@@ -84,7 +84,7 @@ class TestNotifyProblemStatusChange:
 
         created = notify_problem_status_change(problem)
 
-        assert created[0].message.startswith("Sutvarkyta! ")
+        assert created[0].message.startswith("Pažymėta kaip sutvarkyta! ")
         assert "„Gili duobė“" in created[0].message
 
     def test_nobody_involved_means_no_notifications(self, problem: Problem) -> None:

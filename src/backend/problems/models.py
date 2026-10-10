@@ -7,6 +7,7 @@ from categories.models import Category
 from django.db import models
 from django.db.models.expressions import Combinable
 from institutions.models import Institution
+from users.models import User
 from vilnius_backend.base_models import TimestampedModel, UUIDModel
 from vilnius_backend.choices import ProblemStatus, ProblemUrgency
 
@@ -77,6 +78,40 @@ class Problem(UUIDModel, TimestampedModel):
         blank=True,
         related_name="problems",
         help_text="Institution currently handling it, once confirmed.",
+    )
+    fixed_at: models.DateTimeField[
+        str | dt.datetime | dt.date | Combinable | None, dt.datetime | None
+    ] = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "When it was marked fixed. Residents may confirm the fix for an "
+            "hour; after that it leaves the map."
+        ),
+    )
+    fix_claimed_by: models.ForeignKey[User | Combinable | None, User | None] = (
+        models.ForeignKey(
+            User,
+            on_delete=models.SET_NULL,
+            null=True,
+            blank=True,
+            related_name="+",
+            help_text="Whose answer marked it fixed; empty if the city did.",
+        )
+    )
+    status_before_fix: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=16,
+        choices=ProblemStatus.choices,
+        blank=True,
+        default="",
+        help_text="Where it returns if residents say it isn't fixed.",
+    )
+    reopened_at: models.DateTimeField[
+        str | dt.datetime | dt.date | Combinable | None, dt.datetime | None
+    ] = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last time residents reported it still there after a fix.",
     )
     updated_at: models.DateTimeField[
         str | dt.datetime | dt.date | Combinable, dt.datetime

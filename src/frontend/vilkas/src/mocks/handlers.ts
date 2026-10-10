@@ -12,6 +12,7 @@ import type {
   UserUpdate,
   Validation,
 } from "../api";
+import { distanceMeters, type LngLat } from "../lib/geo";
 import { URGENCIES_DESC } from "../lib/labels";
 import * as fx from "./fixtures";
 
@@ -145,6 +146,19 @@ export const handlers = [
         (!q.get("category") || p.category.id === q.get("category")),
     );
     return HttpResponse.json(list.map(withMyVote));
+  }),
+  http.get(`${API}/problems/nearby`, ({ request }) => {
+    const q = new URL(request.url).searchParams;
+    const at: LngLat = [Number(q.get("lng")), Number(q.get("lat"))];
+    const radius = Number(q.get("radius") ?? 270);
+    const category = q.get("category");
+    const open = new Set(["unconfirmed", "confirmed", "pending", "ongoing"]);
+    const found = db.problems
+      .filter((p) => open.has(p.status))
+      .map((p) => ({ ...withMyVote(p), distance_m: Math.round(distanceMeters(at, p.location.coordinates)) }))
+      .filter((p) => p.distance_m <= radius)
+      .sort((a, b) => Number(category && a.category.id !== category) - Number(category && b.category.id !== category) || a.distance_m - b.distance_m);
+    return HttpResponse.json(found);
   }),
   http.get(`${API}/problems/:id`, ({ params }) => {
     const problem = db.problems.find((p) => p.id === idParam(params));

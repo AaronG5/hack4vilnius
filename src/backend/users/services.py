@@ -3,9 +3,6 @@
 from django.db.models import F
 from users.models import User
 
-# What a new report earns; validations earn `Validation.points_awarded`.
-REPORT_POINTS = 20
-
 
 def award_points(user: User, points: int) -> None:
     """

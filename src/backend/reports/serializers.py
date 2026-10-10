@@ -40,6 +40,7 @@ class ReportSerializer(serializers.ModelSerializer[Report]):
             "problem",
             "media",
             "has_moderation_flag",
+            "points_awarded",
             "created_at",
         )
         read_only_fields = fields

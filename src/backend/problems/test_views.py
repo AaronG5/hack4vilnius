@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
 PROBLEMS_URL = "/api/problems"
 NEUTRAL_SCORE = 50.0
+# From VILNIUS_POINT to 0.0001 degrees of latitude north of it.
+NEAR_DISTANCE_M = 11
 
 
 def _entries(response: Response) -> list[dict[str, object]]:
@@ -155,6 +157,43 @@ class TestProblemDetail:
         response = api_client.get(f"{PROBLEMS_URL}/{uuid4()}")
 
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+@pytest.mark.django_db
+class TestProblemNearby:
+    """Tests for `GET /api/problems/nearby`."""
+
+    def test_is_public_and_returns_distances(
+        self,
+        api_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Anyone can ask; each problem carries its distance in metres."""
+        response = api_client.get(
+            f"{PROBLEMS_URL}/nearby",
+            {"lat": 54.6901, "lng": 25.28},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        entries = _entries(response)
+        assert [entry["id"] for entry in entries] == [str(problem.id)]
+        assert entries[0]["distance_m"] == NEAR_DISTANCE_M
+
+    def test_respects_the_radius(self, api_client: APIClient, problem: Problem) -> None:
+        """A problem outside `radius` isn't returned."""
+        del problem
+        response = api_client.get(
+            f"{PROBLEMS_URL}/nearby",
+            {"lat": 54.691, "lng": 25.28, "radius": 50},
+        )
+
+        assert _entries(response) == []
+
+    def test_requires_a_point(self, api_client: APIClient) -> None:
+        """Without `lat` and `lng` there is nothing to search around."""
+        response = api_client.get(f"{PROBLEMS_URL}/nearby")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
 
 
 @pytest.mark.django_db

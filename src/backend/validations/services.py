@@ -1,32 +1,14 @@
 """
-Validation scoring, urgency tallying and the confirm/cancel decision.
+Urgency tallying from residents' answers.
 
-Point calculation is still a stub. The urgency tally and the status
-decision are real: a validation is where a resident says whether the
-problem is there at all, and how urgent it looks.
+What an answer does to a problem's status, and the points it earns, live in
+`problems.lifecycle`.
 """
 
-from notifications.services import notify_problem_status_change
 from problems.models import Problem
 from users.models import User
 from validations.models import Validation
-from vilnius_backend.choices import ProblemStatus, ProblemUrgency
-
-_DEFAULT_POINTS_AWARDED = 10
-
-# One passer-by shouldn't decide a problem's fate on their own.
-_ANSWERS_TO_DECIDE = 2
-
-# The statuses residents' answers decide between. Once the municipality has
-# taken a problem on (ongoing, pending) or closed it (completed), the status
-# is theirs and answers no longer move it.
-_RESIDENTS_DECIDE = frozenset(
-    {
-        ProblemStatus.UNCONFIRMED,
-        ProblemStatus.CONFIRMED,
-        ProblemStatus.CANCELED,
-    },
-)
+from vilnius_backend.choices import ProblemUrgency
 
 # Most severe first: a tie between two urgencies is settled the careful way.
 _BY_SEVERITY: tuple[str, ...] = (
@@ -34,18 +16,6 @@ _BY_SEVERITY: tuple[str, ...] = (
     ProblemUrgency.URGENT,
     ProblemUrgency.CAN_WAIT,
 )
-
-
-def calculate_points(problem: Problem, validation: Validation) -> int:
-    """
-    Calculate points earned by submitting a validation.
-
-    Stub: always awards a flat default amount, regardless of validation
-    quality (extra media, description detail) or the problem's urgency.
-    """
-    # TODO:
-    del problem, validation
-    return _DEFAULT_POINTS_AWARDED
 
 
 def urgency_votes(problem: Problem) -> dict[str, int]:
@@ -88,39 +58,3 @@ def apply_urgency_votes(problem: Problem) -> None:
     if winner != problem.urgency:
         problem.urgency = winner
         problem.save(update_fields=["urgency", "updated_at"])
-
-
-def evaluate_problem_validations(problem: Problem) -> None:
-    """
-    Confirm or cancel `problem` according to what residents answered.
-
-    "The problem is there" counts toward confirming it, "there is no
-    problem" toward canceling it. Deciding either way takes at least two
-    answers that agree and more of them than the other way, so one person
-    can neither confirm nor erase a problem alone.
-
-    A verdict is only ever promoted, never withdrawn for lack of votes:
-    the municipality also writes this status, and a single late answer
-    must not undo what a case worker set.
-
-    Everyone involved is notified of a change. Still a stub: answers count
-    one each, rather than by their author's trust score.
-    """
-    # TODO:
-    if problem.status not in _RESIDENTS_DECIDE:
-        return
-
-    answers = Validation.objects.filter(problem=problem)
-    confirming = answers.filter(is_valid=True).count()
-    disputing = answers.filter(is_valid=False).count()
-
-    decided: str | None = None
-    if confirming >= _ANSWERS_TO_DECIDE and confirming > disputing:
-        decided = ProblemStatus.CONFIRMED
-    elif disputing >= _ANSWERS_TO_DECIDE and disputing > confirming:
-        decided = ProblemStatus.CANCELED
-
-    if decided is not None and decided != problem.status:
-        problem.status = decided
-        problem.save(update_fields=["status", "updated_at"])
-        _ = notify_problem_status_change(problem)

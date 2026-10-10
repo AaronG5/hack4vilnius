@@ -13,13 +13,13 @@ from reports.models import Report
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 from users.models import User
-from users.services import REPORT_POINTS
 from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
 
 REPORTS_URL = "/api/reports"
 NEUTRAL_SCORE = 50.0
 UPLOAD_COUNT = 2
 MIXED_UPLOAD_COUNT = 4
+PROBLEMS_AFTER_A_SECOND = 2
 
 
 def _body(response: Response) -> dict[str, object]:
@@ -163,6 +163,49 @@ class TestReportCreate:
         assert response.status_code == HTTPStatus.CREATED
         assert Problem.objects.count() == 1
         assert Report.objects.get().problem == problem
+
+    def test_joins_an_open_problem_a_few_metres_away(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        category: Category,
+    ) -> None:
+        """A second report of the same thing at the same spot isn't a new problem."""
+        response = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "Pothole here.",
+                "category": str(category.id),
+                "latitude": 54.6901,
+                "longitude": 25.28,
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert Problem.objects.count() == 1
+        assert _body(response)["problem"] == str(problem.id)
+
+    def test_a_report_further_away_is_a_new_problem(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        category: Category,
+    ) -> None:
+        """Beyond the merge radius, the report starts its own problem."""
+        del problem
+        _ = auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "Another pothole.",
+                "category": str(category.id),
+                "latitude": 54.691,
+                "longitude": 25.28,
+            },
+            format="multipart",
+        )
+
+        assert Problem.objects.count() == PROBLEMS_AFTER_A_SECOND
 
     def test_falls_back_to_the_other_category_without_one(
         self,
@@ -340,15 +383,15 @@ class TestReportCreate:
         assert body["has_moderation_flag"] is False
         assert body["ai_category_suggestion"] is None
 
-    def test_awards_report_points_to_the_reporter(
+    def test_reporting_alone_earns_nothing_yet(
         self,
         auth_client: APIClient,
         category: Category,
         user: User,
     ) -> None:
-        """Each report adds the report reward to the reporter's points."""
+        """A report is paid once its problem is confirmed, not when filed."""
         before = user.points
-        _ = auth_client.post(
+        response = auth_client.post(
             REPORTS_URL,
             {
                 "description": "A pothole.",
@@ -360,7 +403,8 @@ class TestReportCreate:
         )
 
         user.refresh_from_db()
-        assert user.points == before + REPORT_POINTS
+        assert _body(response)["points_awarded"] == 0
+        assert user.points == before
 
     def test_stores_what_the_reporter_said_about_a_new_problem(
         self,

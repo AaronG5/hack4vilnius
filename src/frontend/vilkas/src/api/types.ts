@@ -177,6 +177,10 @@ export interface Problem {
   urgency_votes: Partial<Record<ProblemUrgency, number>>;
   /** The current user's urgency vote, null if they haven't voted. */
   my_urgency_vote: ProblemUrgency | null;
+  /** When it was marked fixed; residents may confirm for an hour, then it leaves the map. */
+  fixed_at?: DateTime | null;
+  /** Last time residents said it was still there after a fix. */
+  reopened_at?: DateTime | null;
 
   /** Short human title, e.g. "Gili duobė dešinėje juostoje"; "" when the reporter gave none. */
   title?: string;
@@ -214,6 +218,8 @@ export interface Report {
   problem: Uuid;
   media: Media[];
   has_moderation_flag: boolean;
+  /** Paid once the problem is confirmed; 0 until then. */
+  points_awarded?: number;
   created_at: DateTime;
 }
 

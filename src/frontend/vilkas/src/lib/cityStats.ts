@@ -18,11 +18,9 @@ export function inPeriod(v: ProblemView, period: Period, now = Date.now()): bool
   return period === 0 || now - v.created <= period * DAY;
 }
 
-/** Marked fixed, but residents answered "still there" after that. */
+/** Marked fixed, then residents said it was still there, and it isn't fixed since. */
 export function isReopened(v: ProblemView): boolean {
-  if (!v.isFixed) return false;
-  const fixedAt = Date.parse(v.detail.updated_at);
-  return v.detail.validations.some((val) => val.is_valid && Date.parse(val.created_at) > fixedAt);
+  return !v.isFixed && Boolean(v.detail.reopened_at);
 }
 
 /** Rising when 2+ confirmations or urgency votes arrived in the last 3 days. */
@@ -122,14 +120,11 @@ export function weekBuckets(views: ProblemView[], n = 8, now = Date.now()): Week
   });
 }
 
-/**
- * Average days from report to "completed" (updated_at as the completion time).
- * TODO(api-gap): needs a real completed_at / status history.
- */
+/** Average days from report to being marked fixed. */
 export function avgResolveDays(views: ProblemView[]): number | null {
   const done = views.filter((v) => v.isFixed);
   if (!done.length) return null;
-  const total = done.reduce((n, v) => n + (Date.parse(v.detail.updated_at) - v.created) / DAY, 0);
+  const total = done.reduce((n, v) => n + ((v.fixedAt ?? v.created) - v.created) / DAY, 0);
   return total / done.length;
 }
 

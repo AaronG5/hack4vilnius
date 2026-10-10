@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from notifications.models import Notification
+from problems.lifecycle import ANSWER_POINTS
 from problems.models import Problem
 from reports.models import Report
 from rest_framework.response import Response
@@ -16,7 +17,6 @@ from validations.models import Validation
 from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
 
 PROBLEMS_URL = "/api/problems"
-FLAT_AWARD = 10
 MEDIA_COUNT = 3
 TWO_ANSWERS = 2
 
@@ -74,7 +74,7 @@ class TestValidationList:
         entry = _entries(response)[0]
         assert entry["is_valid"] is True
         assert entry["description"] == validation.description
-        assert entry["points_awarded"] == FLAT_AWARD
+        assert entry["points_awarded"] == validation.points_awarded
         assert entry["problem"] == str(problem.id)
 
     def test_only_lists_the_named_problems_validations(
@@ -142,56 +142,55 @@ class TestValidationCreate:
         assert validation.user == user
         assert validation.is_valid is True
 
-    def test_awards_the_stubbed_point_amount(
+    def test_an_answer_earns_nothing_until_it_proves_right(
         self,
         auth_client: APIClient,
         problem: Problem,
+        user: User,
     ) -> None:
-        """Point calculation is stubbed to a flat amount for now."""
+        """A lone answer decides nothing, so it isn't paid yet."""
+        before = user.points
         response = auth_client.post(
             _url(problem),
             {"is_valid": True, "description": "Still here.", "media": [_photo()]},
             format="multipart",
         )
 
-        assert _body(response)["points_awarded"] == FLAT_AWARD
-        assert Validation.objects.get().points_awarded == FLAT_AWARD
+        user.refresh_from_db()
+        assert _body(response)["points_awarded"] == 0
+        assert user.points == before
 
-    def test_adds_the_points_to_the_user(
+    def test_the_answer_that_confirms_is_paid(
         self,
         auth_client: APIClient,
+        other_auth_client: APIClient,
         problem: Problem,
-        user: User,
+        other_user: User,
     ) -> None:
-        """The answer's points land on the user's own total."""
-        before = user.points
-        _ = auth_client.post(
+        """The answer that tips the problem into confirmed is paid at once."""
+        _ = auth_client.post(_url(problem), {"is_valid": True}, format="multipart")
+        response = other_auth_client.post(
             _url(problem),
-            {"is_valid": True, "description": "Still here.", "media": []},
+            {"is_valid": True},
             format="multipart",
         )
 
-        user.refresh_from_db()
-        assert user.points == before + FLAT_AWARD
+        other_user.refresh_from_db()
+        assert _body(response)["points_awarded"] == ANSWER_POINTS
+        assert other_user.points == ANSWER_POINTS
 
-    def test_a_refused_second_answer_earns_nothing(
+    def test_a_refused_second_answer_changes_nothing(
         self,
         auth_client: APIClient,
         problem: Problem,
-        user: User,
     ) -> None:
-        """Answering the same problem twice is refused, and so are its points."""
-        body: dict[str, object] = {
-            "is_valid": True,
-            "description": "Still here.",
-            "media": [],
-        }
+        """Answering the same problem twice is refused."""
+        body: dict[str, object] = {"is_valid": True, "media": []}
         _ = auth_client.post(_url(problem), body, format="multipart")
         response = auth_client.post(_url(problem), body, format="multipart")
 
-        user.refresh_from_db()
         assert response.status_code == HTTPStatus.CONFLICT
-        assert user.points == FLAT_AWARD
+        assert Validation.objects.count() == 1
 
     def test_attaches_uploaded_media(
         self,
@@ -264,15 +263,20 @@ class TestValidationCreate:
         problem: Problem,
         report: Report,
     ) -> None:
-        """When answers confirm a problem, its reporter hears about it."""
+        """When answers confirm a problem, its reporter is paid and told why."""
         problem.status = ProblemStatus.UNCONFIRMED
         problem.save(update_fields=["status"])
 
         for client in (auth_client, other_auth_client):
             _ = client.post(_url(problem), {"is_valid": True}, format="multipart")
 
-        note = Notification.objects.get(user=report.user, problem=problem)
-        assert note.message.startswith("Kaimynai patvirtino problemą!")
+        messages: list[str] = list(
+            Notification.objects.filter(user=report.user).values_list(
+                "message",
+                flat=True,
+            ),
+        )
+        assert any(m.startswith("Gavote 20 tšk.! Kaimynai") for m in messages)
 
     def test_one_answer_notifies_nobody(
         self,
@@ -289,21 +293,19 @@ class TestValidationCreate:
 
         assert not Notification.objects.exists()
 
-    def test_two_disputing_answers_cancel_the_problem(
+    def test_saying_it_is_gone_marks_it_fixed(
         self,
         auth_client: APIClient,
-        other_auth_client: APIClient,
         problem: Problem,
+        user: User,
     ) -> None:
-        """Two residents saying there is no problem cancel it."""
-        problem.status = ProblemStatus.UNCONFIRMED
-        problem.save(update_fields=["status"])
-
-        for client in (auth_client, other_auth_client):
-            _ = client.post(_url(problem), {"is_valid": False}, format="multipart")
+        """One "there is no problem" opens the hour for neighbours to confirm."""
+        _ = auth_client.post(_url(problem), {"is_valid": False}, format="multipart")
 
         problem.refresh_from_db()
-        assert problem.status == ProblemStatus.CANCELED
+        assert problem.status == ProblemStatus.COMPLETED
+        assert problem.fixed_at is not None
+        assert problem.fix_claimed_by == user
 
     def test_a_problem_the_city_is_working_on_is_left_alone(
         self,

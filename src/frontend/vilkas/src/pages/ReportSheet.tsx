@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { createProblemValidation, createReport, searchPlaces, type Place, type ProblemUrgency } from "../api";
+import { ApiError, createProblemValidation, createReport, nearbyProblems, searchPlaces, type Place, type ProblemUrgency } from "../api";
 import { AttachmentStrip } from "../components/AttachmentStrip";
 import { LazyMap } from "../components/map/LazyMap";
 import { CameraIcon, GalleryIcon, MicIcon, PencilIcon, PinIcon } from "../components/icons";
@@ -28,11 +28,14 @@ interface Form {
 
 interface Candidate {
   view: ProblemView;
-  match: number;
   meters: number;
 }
 
+/** How far to look for problems this report might duplicate. */
 const DUPLICATE_RADIUS_M = 270;
+/** A problem of another type is only offered when it's this close. */
+const OTHER_TYPE_RADIUS_M = 35;
+const MAX_CANDIDATES = 3;
 
 // Address lookup: wait for a pause in typing, and for enough of an address
 // to be worth searching for (the API rejects anything shorter).
@@ -264,20 +267,31 @@ export function ReportSheet() {
     setStep("form");
   };
 
-  // TODO(api-gap): GET /problems/nearby. Same district within ~270 m; match from category and distance.
-  const checkDuplicates = () => {
+  // Before filing, offer open problems nearby: the same type within 270 m,
+  // another type only when it's right here. The backend ranks them; when it
+  // can't be reached, the problems already on the map are searched instead.
+  const checkDuplicates = async () => {
     if (!at) return;
-    const district = districtOf(at, districts)?.name;
-    const found = views
-      .filter((v) => !v.isFixed && v.district === district)
-      .map((v) => {
-        const meters = distanceMeters(v.at, at);
-        const same = v.detail.category.id === form.categoryId;
-        return { view: v, meters: Math.max(5, Math.round(meters)), match: Math.round((same ? 55 : 15) + (1 - meters / DUPLICATE_RADIUS_M) * 40) };
+    const [lng, lat] = at;
+    let near: { id: string; meters: number; category: string }[];
+    try {
+      const found = await nearbyProblems({ lat, lng, category: form.categoryId || undefined, radius: DUPLICATE_RADIUS_M });
+      near = found.map((p) => ({ id: p.id, meters: p.distance_m, category: p.category.id }));
+    } catch {
+      near = views
+        .filter((v) => !v.isFixed)
+        .map((v) => ({ id: v.id, meters: Math.round(distanceMeters(v.at, at)), category: v.detail.category.id }))
+        .filter((c) => c.meters <= DUPLICATE_RADIUS_M)
+        .sort((a, b) => Number(a.category !== form.categoryId) - Number(b.category !== form.categoryId) || a.meters - b.meters);
+    }
+    const found = near
+      .filter((c) => c.category === form.categoryId || c.meters <= OTHER_TYPE_RADIUS_M)
+      .flatMap((c) => {
+        // Not your own problems, nor ones you've answered: one answer per person.
+        const view = views.find((v) => v.id === c.id && !v.mine && v.myVote === undefined);
+        return view ? [{ view, meters: Math.max(5, c.meters) }] : [];
       })
-      .filter((c) => c.meters <= DUPLICATE_RADIUS_M && c.match >= 50)
-      .sort((a, b) => b.match - a.match)
-      .slice(0, 3);
+      .slice(0, MAX_CANDIDATES);
     if (found.length) {
       setCands(found);
       setDupSel(0);
@@ -292,7 +306,7 @@ export function ReportSheet() {
     setStep("saving");
     const title = form.title.trim() || categories.find((c) => c.id === form.categoryId)?.name || "";
     try {
-      await createReport({
+      const report = await createReport({
         description: form.description.trim() || title,
         category: form.categoryId,
         media: files,
@@ -303,8 +317,14 @@ export function ReportSheet() {
         near_sensitive: form.nearSensitive,
       });
       await reload();
-      navigate("/map");
-      toast("Pranešimas išsiųstas! +20 tšk.");
+      // A report a few metres from an open problem of the same type joins it.
+      if (views.some((v) => v.id === report.problem)) {
+        navigate(`/problems/${report.problem}`);
+        toast("Toks pranešimas čia jau buvo — prisijungėte prie jo! Taškus gausite, kai jis pasitvirtins");
+      } else {
+        navigate("/map");
+        toast("Pranešimas išsiųstas! +20 tšk. gausite, kai kaimynai jį patvirtins");
+      }
     } catch {
       setStep(cands.length ? "dupes" : "place");
       toast("Nepavyko išsiųsti — pabandykite dar kartą");
@@ -326,8 +346,15 @@ export function ReportSheet() {
       });
       await reload();
       navigate(`/problems/${chosen.view.id}`);
-      toast(`Ačiū, patvirtinta! +${result.points_awarded} tšk.`);
-    } catch {
+      toast(result.points_awarded > 0 ? `Ačiū, patvirtinta! +${result.points_awarded} tšk.` : "Ačiū, patvirtinta! Taškus gausite, kai pasitvirtins");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Already answered from another device: show the problem instead.
+        await reload();
+        navigate(`/problems/${chosen.view.id}`);
+        toast("Jūs jau atsakėte apie šią problemą");
+        return;
+      }
       setStep("dupes");
       toast("Nepavyko išsaugoti — pabandykite dar kartą");
     }
@@ -637,7 +664,7 @@ export function ReportSheet() {
             type="button"
             className="btn"
             disabled={!form.categoryId || !form.title.trim()}
-            onClick={() => (at ? checkDuplicates() : setStep("place"))}
+            onClick={() => (at ? void checkDuplicates() : setStep("place"))}
           >
             {at ? "Toliau — peržiūrėti" : "Toliau — pažymėti vietą"}
           </button>
@@ -678,7 +705,7 @@ export function ReportSheet() {
           />
           <p style={{ fontWeight: 600 }}>{at ? `Rajonas: ${districtOf(at, districts)?.name ?? "—"}` : "Vieta dar nepažymėta"}</p>
           <div className="row">
-            <button type="button" className="btn" style={{ flex: 1 }} disabled={!at} onClick={checkDuplicates}>
+            <button type="button" className="btn" style={{ flex: 1 }} disabled={!at} onClick={() => void checkDuplicates()}>
               Toliau
             </button>
             <button type="button" className="btn ghost" onClick={() => setStep("form")}>

@@ -25,6 +25,10 @@ class Report(UUIDModel, TimestampedModel):
     ai_abuse_flag: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
         default=False,
     )
+    points_awarded: models.IntegerField[int | Combinable, int] = models.IntegerField(
+        default=0,
+        help_text="Paid once the problem is confirmed, not when reported.",
+    )
     user: models.ForeignKey[User | Combinable, User] = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

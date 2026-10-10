@@ -166,6 +166,17 @@ def category(institution: Institution) -> Category:
 
 
 @pytest.fixture
+def other_category() -> Category:
+    """Return a second category, with no institution."""
+    return Category.objects.create(
+        name="Streetlight",
+        description="Broken street lighting.",
+        icon="https://example.com/icons/streetlight.svg",
+        default_urgency=ProblemUrgency.URGENT,
+    )
+
+
+@pytest.fixture
 def problem(category: Category) -> Problem:
     """Return an unconfirmed problem in the city centre."""
     return Problem.objects.create(

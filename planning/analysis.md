@@ -176,6 +176,14 @@ These run in the browser today. They should live in one place so the resident ap
 - Remove "DI" wording wherever no AI was involved: keyword matching on the report form, and "DI sujungė" when the merge was done by the reporter.
 - The report form's "confidence 82 % / 35 %" is a made-up number. Hide it until the analyse endpoint returns a real one.
 
+## Points and the fix window (checkpoint 6, 2026-10-11)
+
+Decided with the product owner and implemented in `src/backend/problems/lifecycle.py`:
+
+- Points reward claims that proved true, never the act of claiming. A report earns 20 once its problem is confirmed; the answers that confirm it (the first 2) earn 10 each at that moment; later answers earn 10 only when the city takes the problem on.
+- "Problemos nėra", or the city marking it fixed, keeps the problem on the map in green for 1 hour. The first 2 neighbours to confirm earn 10, and so does whoever claimed the fix. "Vis dar yra" in that hour reopens it, and the claim earns nothing. After the hour it leaves the map either way.
+- Everyone paid gets a "Gavote N tšk.!" notification.
+
 ## Suggested order
 
 | # | Work | Who | Unblocks |
@@ -187,7 +195,7 @@ These run in the browser today. They should live in one place so the resident ap
 | 5 | ✅ (no login, by decision) `CITY_TOOLS_FOR_EVERYONE` in development + "accepted / fixed" buttons on the city card — checkpoint 4, 2026-10-11 | FE + BE | Whole municipality flow end to end |
 | 6 | ✅ Remove or replace the fake challenge numbers (deadlines from `end_date`, empty leaderboards, no fake counter) — checkpoint 1, 2026-10-10 | FE | Challenges |
 | 7 | ✅ Hide or relabel prizes and the DI confidence; anonymous default name + name field — checkpoint 2, 2026-10-11 | FE | Profile, report form |
-| 8 | `GET /problems/nearby` + backend duplicate check | BE | Validation and clustering (core problem #1) |
+| 8 | ✅ `GET /problems/nearby` + backend duplicate check (same category within 25 m joins automatically) — checkpoint 5, 2026-10-11 | BE | Validation and clustering (core problem #1) |
 | 9 | ✅ Urgency votes, carried by answers instead of a separate endpoint — done by the backend team (4f61545) | BE | Problem sheet, priority |
 | 10 | `GET /institutions` + `Assignment` model | BE + FE | Municipality card |
 | 11 | Award badges server-side; FE reads `/users/me/badges` | BE + FE | Profile |

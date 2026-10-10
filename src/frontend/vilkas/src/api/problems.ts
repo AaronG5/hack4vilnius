@@ -16,6 +16,24 @@ export function listProblems(filters: ProblemFilters = {}, signal?: AbortSignal)
   return request<Problem[]>("/problems", { query: filters, signal });
 }
 
+/** Query for GET /problems/nearby. */
+export interface NearbyQuery {
+  lat: number;
+  lng: number;
+  /** Category id: problems in it come first. */
+  category?: Uuid;
+  /** Metres, default 270. */
+  radius?: number;
+}
+
+/** A problem near the point asked about, with its distance. */
+export type NearbyProblem = Problem & { distance_m: number };
+
+/** GET /problems/nearby — open problems around a point, same category first, then nearest. */
+export function nearbyProblems(query: NearbyQuery, signal?: AbortSignal): Promise<NearbyProblem[]> {
+  return request<NearbyProblem[]>("/problems/nearby", { query: { ...query }, signal });
+}
+
 /** GET /problems/{id} — problem details, including its reports and validations. */
 export function getProblem(id: Uuid, signal?: AbortSignal): Promise<ProblemDetail> {
   return request<ProblemDetail>(`/problems/${encodeURIComponent(id)}`, { signal });

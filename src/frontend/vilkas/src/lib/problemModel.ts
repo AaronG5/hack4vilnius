@@ -60,6 +60,10 @@ export interface ProblemView {
   score: number;
   status: ViewStatus;
   isFixed: boolean;
+  /** When it was marked fixed. */
+  fixedAt?: number;
+  /** Marked fixed less than `FIX_WINDOW_MS` ago: green on the map, neighbours may confirm. */
+  fixWindowOpen: boolean;
 }
 
 export const STATUS_LABEL: Record<ViewStatus, string> = {
@@ -70,8 +74,11 @@ export const STATUS_LABEL: Record<ViewStatus, string> = {
   fixed: "sutvarkyta",
 };
 
+/** How long a fixed problem stays on the map for neighbours to confirm (matches the backend). */
+export const FIX_WINDOW_MS = 3_600_000;
+
 export const STATUS_TEXT: Record<ViewStatus, string> = {
-  fixed: "Sutvarkyta (patvirtino gyventojai)",
+  fixed: "Pažymėta sutvarkyta",
   work: "Sprendžiama — savivaldybė jau dirba",
   new: "Laukia kaimynų patvirtinimo",
   urgent: "Skubi — aukštas prioritetas",
@@ -148,6 +155,8 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
   const nearSensitive = p.near_sensitive ?? false;
   const score = priorityScore(urgency, confirms, nearSensitive, ageDays);
   const isFixed = p.status === "completed";
+  const fixedAt = isFixed ? Date.parse(p.fixed_at ?? p.updated_at) : undefined;
+  const fixWindowOpen = fixedAt !== undefined && now - fixedAt <= FIX_WINDOW_MS;
   const status: ViewStatus = isFixed
     ? "fixed"
     : p.status === "ongoing" || p.status === "pending"
@@ -187,6 +196,8 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
     score,
     status,
     isFixed,
+    fixedAt,
+    fixWindowOpen,
   };
 }
 
