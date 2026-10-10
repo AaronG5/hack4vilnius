@@ -287,6 +287,23 @@ h2.sec {
   text-decoration: none;
 }
 
+/* Upload buttons are labels around a file input: hide the native control and
+   its "No file chosen" text, keep it focusable, and show focus on the label. */
+.btn input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+.btn:has(input[type="file"]) {
+  position: relative;
+}
+.btn:has(input[type="file"]:focus-visible) {
+  outline: 3px solid var(--red);
+  outline-offset: 2px;
+}
+
 .btn.red {
   background: var(--red-deep);
   color: #fff;
