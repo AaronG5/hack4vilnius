@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProblemValidation, createReport, type ProblemUrgency } from "../api";
 import { LazyMap } from "../components/map/LazyMap";
-import { CameraIcon, GalleryIcon, MicIcon, PencilIcon } from "../components/icons";
+import { CameraIcon, GalleryIcon, MicIcon, PencilIcon, PinIcon } from "../components/icons";
 import { Sheet, Steps } from "../components/Sheet";
-import { distanceMeters, districtOf, type LngLat } from "../lib/geo";
+import { currentPosition, distanceMeters, districtOf, type Fix, type LngLat } from "../lib/geo";
 import { analyzeReport } from "../lib/gaps";
 import { URGENCIES, URGENCY_LABEL } from "../lib/labels";
 import type { ProblemView } from "../lib/problemModel";
@@ -34,6 +34,27 @@ const DUPLICATE_RADIUS_M = 270;
 
 const BLANK: Form = { categoryId: "", urgency: "urgent", title: "", address: "", description: "", nearSensitive: false };
 
+// GeolocationPositionError codes, named rather than compared as bare numbers.
+const PERMISSION_DENIED = 1;
+const TIMEOUT = 3;
+
+function locationError(error: unknown): string {
+  // Read `code` off the shape rather than `instanceof GeolocationPositionError`:
+  // the global is missing on older Safari, where that would throw.
+  const code = typeof error === "object" && error !== null && "code" in error ? Number((error as { code: unknown }).code) : 0;
+  if (code === PERMISSION_DENIED) {
+    // Browsers refuse geolocation outright on an insecure origin — which is
+    // what opening the dev server by LAN address looks like from a phone.
+    return window.isSecureContext
+      ? "Vietos prieiga uždrausta — leiskite ją naršyklės nustatymuose arba pažymėkite vietą žemėlapyje."
+      : "Vietos nustatymas veikia tik saugiu ryšiu (https arba localhost) — pažymėkite vietą žemėlapyje.";
+  }
+  if (code === TIMEOUT) {
+    return "Vietos nustatymas užtruko per ilgai — bandykite dar kartą arba pažymėkite vietą žemėlapyje.";
+  }
+  return "Nepavyko nustatyti vietos — pažymėkite ją žemėlapyje.";
+}
+
 export function ReportSheet() {
   const navigate = useNavigate();
   const { categories, districts, views, reload, toast } = useAppState();
@@ -48,6 +69,10 @@ export function ReportSheet() {
   const [at, setAt] = useState<LngLat>();
   // Where the map should move to after "Mano vieta".
   const [focus, setFocus] = useState<LngLat>();
+  const [locating, setLocating] = useState(false);
+  // The GPS fix behind the address, while it still describes `at`.
+  const [fix, setFix] = useState<Fix & { district: string }>();
+  const [fixError, setFixError] = useState<string>();
   const [cands, setCands] = useState<Candidate[]>([]);
   const [dupSel, setDupSel] = useState<number | null>(null);
   const aiCtl = useRef<AbortController>(undefined);
@@ -82,6 +107,32 @@ export function ReportSheet() {
     if (!picked) return;
     setPhoto(picked);
     setStep("photoText");
+  };
+
+  // The browser gives coordinates, not a street. Until there is a geocoder
+  // (TODO(api-gap): reverse geocoding), the pin carries the precision and the
+  // address field gets the district as an orientyras.
+  const locateMe = async () => {
+    setLocating(true);
+    setFixError(undefined);
+    try {
+      const here = await currentPosition();
+      const district = districtOf(here.at, districts)?.name ?? "";
+      setAt(here.at);
+      setFocus(here.at);
+      setFix({ ...here, district });
+      if (!form.address.trim() && district) patch({ address: district });
+    } catch (error) {
+      setFixError(locationError(error));
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  // A spot chosen by hand replaces the fix, so the note can't describe the wrong place.
+  const pickPlace = (picked: LngLat) => {
+    setAt(picked);
+    setFix(undefined);
   };
 
   const back = () => {
@@ -342,10 +393,36 @@ export function ReportSheet() {
             Pavadinimas
             <input className="inp" maxLength={60} value={form.title} onChange={(e) => patch({ title: e.target.value })} />
           </label>
-          <label className="fld">
-            Adresas ar orientyras
-            <input className="inp" placeholder="Pvz.: Kalvarijų g. 98" value={form.address} onChange={(e) => patch({ address: e.target.value })} />
-          </label>
+          <div className="fld">
+            <label htmlFor="report-address">Adresas ar orientyras</label>
+            <div className="row" style={{ flexWrap: "nowrap", alignItems: "stretch" }}>
+              <input
+                id="report-address"
+                className="inp"
+                style={{ flex: 1, minWidth: 0 }}
+                placeholder="Pvz.: Kalvarijų g. 98"
+                value={form.address}
+                onChange={(e) => patch({ address: e.target.value })}
+              />
+              <button
+                type="button"
+                className="btn ghost"
+                style={{ height: "auto", padding: "0 14px", flexShrink: 0, fontSize: 14 }}
+                disabled={locating}
+                onClick={() => void locateMe()}
+              >
+                <PinIcon size={18} />
+                {locating ? "Ieškoma…" : "Mano vieta"}
+              </button>
+            </div>
+            {fix && (
+              <span style={{ fontWeight: 500 }}>
+                Vieta nustatyta{fix.district && `: ${fix.district}`} · {fix.at[1].toFixed(5)}, {fix.at[0].toFixed(5)} (±{Math.round(fix.accuracy)} m).
+                Patikslinti galėsite kitame žingsnyje.
+              </span>
+            )}
+            {fixError && <span className="note warn">{fixError}</span>}
+          </div>
           <label className="fld">
             Aprašymas
             <textarea className="inp" value={form.description} onChange={(e) => patch({ description: e.target.value })} />
@@ -384,10 +461,10 @@ export function ReportSheet() {
             label="Pažymėkite problemos vietą"
             height={300}
             pins={placePins}
-            onPick={setAt}
+            onPick={pickPlace}
             mark={at}
             onLocate={(here) => {
-              setAt(here);
+              pickPlace(here);
               setFocus(here);
             }}
             center={focus}

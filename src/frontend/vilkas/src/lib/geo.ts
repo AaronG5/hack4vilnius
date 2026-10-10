@@ -16,6 +16,27 @@ export function distanceMeters([lng1, lat1]: LngLat, [lng2, lat2]: LngLat): numb
   return 6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+export interface Fix {
+  at: LngLat;
+  /** Radius of uncertainty in metres, as reported by the browser. */
+  accuracy: number;
+}
+
+/** The device's current position. Rejects with a `GeolocationPositionError`. */
+export function currentPosition(): Promise<Fix> {
+  return new Promise((resolve, reject: (reason: unknown) => void) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not available."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => resolve({ at: [coords.longitude, coords.latitude], accuracy: coords.accuracy }),
+      reject,
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    );
+  });
+}
+
 /** "30 m", "450 m", "1,2 km". */
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.max(5, Math.round(meters / 5) * 5)} m`;
