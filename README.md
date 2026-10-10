@@ -17,6 +17,12 @@ To start the server
 ```bash
 uv --directory ./src/backend run python manage.py runserver
 ```
+> View api schema with http://127.0.0.1:8000/api/schema/swagger-ui/
+
+API docs (Swagger UI / ReDoc / raw OpenAPI schema) are served at:
+- `/api/schema/swagger-ui/`
+- `/api/schema/redoc/`
+- `/api/schema/`
 
 ### Development
 #### Setup
@@ -29,6 +35,7 @@ uv sync --group dev
 uv --directory ./src/backend run ruff format
 uv --directory ./src/backend run ruff check
 uv --directory ./src/backend run basedpyright
+uv --directory ./src/backend run pytest
 ```
 
 #### Run migrations and apply them
