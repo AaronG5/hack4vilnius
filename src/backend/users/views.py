@@ -13,8 +13,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from users.anonymous import AnonymousIdentityMixin
 from users.models import User
-from users.openapi import OpenApiResponse, extend_schema
+from users.openapi import OpenApiParameter, OpenApiResponse, extend_schema
 from users.serializers import (
     AuthResponseSerializer,
     GoogleAuthSerializer,
@@ -23,7 +24,16 @@ from users.serializers import (
     UserSerializer,
 )
 
-_AUTH_TAG = ["auth"]
+_ANON_COOKIE_PARAMETER = OpenApiParameter(
+    name=cast("str", settings.ANONYMOUS_IDENTITY_COOKIE_NAME),
+    type=str,
+    location=OpenApiParameter.COOKIE,
+    required=False,
+    description=(
+        "Anonymous-visitor identity cookie (set automatically by prior "
+        "requests). If present, its data is attributed to this account."
+    ),
+)
 
 _VerifyOAuth2Token = Callable[[str, google_requests.Request, str], Mapping[str, object]]
 
@@ -36,15 +46,15 @@ def _authenticated_response(user: User, status_code: int) -> Response:
 
 
 @final
-class RegisterView(APIView):
+class RegisterView(AnonymousIdentityMixin):
     """Create an account with an email and password."""
 
     permission_classes = (AllowAny,)
 
     @extend_schema(
-        tags=_AUTH_TAG,
         summary="Register with email and password",
         description="Create an account directly with an email and password.",
+        parameters=[_ANON_COOKIE_PARAMETER],
         request=RegisterSerializer,
         responses={
             201: AuthResponseSerializer,
@@ -58,19 +68,21 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         _ = serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        if self.anonymous_identity is not None:
+            self.anonymous_identity.claim(user)
         return _authenticated_response(user, status.HTTP_201_CREATED)
 
 
 @final
-class LoginView(APIView):
+class LoginView(AnonymousIdentityMixin):
     """Log in with an email and password."""
 
     permission_classes = (AllowAny,)
 
     @extend_schema(
-        tags=_AUTH_TAG,
         summary="Log in with email and password",
         description="Authenticate with an email and password.",
+        parameters=[_ANON_COOKIE_PARAMETER],
         request=LoginSerializer,
         responses={
             200: AuthResponseSerializer,
@@ -84,6 +96,8 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         _ = serializer.is_valid(raise_exception=True)
         user = cast("User", serializer.validated_data["user"])
+        if self.anonymous_identity is not None:
+            self.anonymous_identity.claim(user)
         return _authenticated_response(user, status.HTTP_200_OK)
 
 
@@ -94,7 +108,6 @@ class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        tags=_AUTH_TAG,
         summary="Log out",
         description="Revoke the current user's API token.",
         request=None,
@@ -110,18 +123,18 @@ class LogoutView(APIView):
 
 
 @final
-class GoogleAuthView(APIView):
+class GoogleAuthView(AnonymousIdentityMixin):
     """Register or log in using a Google ID token (Sign in with Google)."""
 
     permission_classes = (AllowAny,)
 
     @extend_schema(
-        tags=_AUTH_TAG,
         summary="Register or log in with Google",
         description=(
             "Verify a Google-issued ID token (Sign in with Google) and create or "
             "log into the account with the matching email."
         ),
+        parameters=[_ANON_COOKIE_PARAMETER],
         request=GoogleAuthSerializer,
         responses={
             200: AuthResponseSerializer,
@@ -167,6 +180,8 @@ class GoogleAuthView(APIView):
             )
 
         user, created = _get_or_create_google_user(email, google_sub, payload)
+        if self.anonymous_identity is not None:
+            self.anonymous_identity.claim(user)
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return _authenticated_response(user, status_code)
 

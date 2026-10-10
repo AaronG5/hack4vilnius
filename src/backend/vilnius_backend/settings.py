@@ -195,3 +195,11 @@ SPECTACULAR_SETTINGS = {
 # ID of the OAuth 2.0 client registered in Google Cloud Console; ID tokens
 # presented to the Google auth endpoint must be issued for this audience.
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+
+
+# Anonymous identity tracking
+# A signed cookie that lets a not-yet-registered visitor's activity be
+# attributed to the account they register or log into. The frontend is
+# responsible for making sure cookies are accepted before relying on this.
+ANONYMOUS_IDENTITY_COOKIE_NAME = "anon_id"
+ANONYMOUS_IDENTITY_COOKIE_MAX_AGE = 400 * 24 * 60 * 60  # ~400 days (Chrome's cap)

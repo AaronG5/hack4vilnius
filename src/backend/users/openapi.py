@@ -27,25 +27,32 @@ _ResponseSchema = (
 _ExtendSchema = Callable[..., Callable[[_ViewMethod], _ViewMethod]]
 
 OpenApiResponse = _spectacular.OpenApiResponse
+OpenApiParameter = _spectacular.OpenApiParameter
 
 
 def extend_schema[S](
     *,
-    tags: Sequence[str] | None = None,
     summary: str | None = None,
     description: str | None = None,
+    parameters: Sequence[_spectacular.OpenApiParameter] | None = None,
     request: _RequestSchema[S] = None,
     responses: Mapping[int, _ResponseSchema[S]] | None = None,
 ) -> Callable[[_ViewMethod], _ViewMethod]:
-    """Document an `APIView.post` method for the generated OpenAPI schema."""
+    """
+    Document an `APIView.post` method for the generated OpenAPI schema.
+
+    Every endpoint in this project is tagged "auth" — there's only one app
+    so far; add a `tags` parameter here if/when that stops being true.
+    """
     impl = cast("_ExtendSchema", _spectacular.extend_schema)
     return impl(
-        tags=tags,
+        tags=["auth"],
         summary=summary,
         description=description,
+        parameters=parameters,
         request=request,
         responses=responses,
     )
 
 
-__all__ = ["OpenApiResponse", "extend_schema"]
+__all__ = ["OpenApiParameter", "OpenApiResponse", "extend_schema"]

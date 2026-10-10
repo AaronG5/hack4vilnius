@@ -2,7 +2,7 @@
 
 import pytest
 from django.db import IntegrityError
-from users.models import User
+from users.models import AnonymousIdentity, User
 
 
 @pytest.mark.django_db
@@ -108,3 +108,59 @@ class TestUser:
                 None,
                 google_sub="google-subject-123",
             )
+
+
+@pytest.mark.django_db
+class TestAnonymousIdentity:
+    """Tests for the `AnonymousIdentity` model."""
+
+    def test_is_not_claimed_when_created(self) -> None:
+        """A freshly created identity has no owner yet."""
+        identity = AnonymousIdentity.objects.create()
+
+        assert identity.is_claimed is False
+        assert identity.claimed_by is None
+        assert identity.claimed_at is None
+
+    def test_claim_attributes_the_identity_to_a_user(self) -> None:
+        """Claiming sets both the owner and the claim timestamp."""
+        identity = AnonymousIdentity.objects.create()
+        user = User.objects.create_user("agent@example.com", "correct-horse-1")
+
+        identity.claim(user)
+
+        assert identity.is_claimed is True
+        assert identity.claimed_by == user
+        assert identity.claimed_at is not None
+
+    def test_claim_persists_to_the_database(self) -> None:
+        """The claim survives a fresh read from the database."""
+        identity = AnonymousIdentity.objects.create()
+        user = User.objects.create_user("agent@example.com", "correct-horse-1")
+
+        identity.claim(user)
+        reloaded = AnonymousIdentity.objects.get(pk=identity.id)
+
+        assert reloaded.claimed_by == user
+
+    def test_claim_is_idempotent(self) -> None:
+        """Claiming an already-claimed identity again is a no-op."""
+        identity = AnonymousIdentity.objects.create()
+        first_owner = User.objects.create_user("first@example.com", "correct-horse-1")
+        second_owner = User.objects.create_user(
+            "second@example.com",
+            "correct-horse-2",
+        )
+
+        identity.claim(first_owner)
+        claimed_at = identity.claimed_at
+        identity.claim(second_owner)
+
+        assert identity.claimed_by == first_owner
+        assert identity.claimed_at == claimed_at
+
+    def test_str_returns_the_id(self) -> None:
+        """`str(identity)` is its id, used in the admin and shell."""
+        identity = AnonymousIdentity.objects.create()
+
+        assert str(identity) == str(identity.id)

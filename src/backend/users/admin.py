@@ -1,18 +1,21 @@
 """Admin registration for the `User` model."""
 
-from typing import TYPE_CHECKING, final
+from typing import TYPE_CHECKING, final, override
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from users.models import User
+from django.http import HttpRequest
+from users.models import AnonymousIdentity, User
 
 if TYPE_CHECKING:
-    # `UserAdmin` is only generic for type checkers; django-stubs declares it as
-    # `ModelAdmin[_UserType]` but Django's real class has no `__class_getitem__`,
-    # so subscripting it at runtime raises TypeError.
+    # `UserAdmin`/`ModelAdmin` are only generic for type checkers; django-stubs
+    # declares them as `ModelAdmin[_ModelT]` but Django's real classes have no
+    # `__class_getitem__`, so subscripting them at runtime raises TypeError.
     _UserAdminBase = DjangoUserAdmin[User]
+    _AnonymousIdentityAdminBase = admin.ModelAdmin[AnonymousIdentity]
 else:
     _UserAdminBase = DjangoUserAdmin
+    _AnonymousIdentityAdminBase = admin.ModelAdmin
 
 
 @final
@@ -50,3 +53,18 @@ class UserAdmin(_UserAdminBase):
         ),
     )
     readonly_fields = ("date_joined",)
+
+
+@final
+@admin.register(AnonymousIdentity)
+class AnonymousIdentityAdmin(_AnonymousIdentityAdminBase):
+    """Read-only admin view of cookie-tracked anonymous visitors."""
+
+    list_display = ("id", "created_at", "claimed_by", "claimed_at")
+    list_filter = ("claimed_at",)
+    readonly_fields = ("id", "created_at", "claimed_by", "claimed_at")
+
+    @override
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        """Identities are only ever created by the API, never by hand."""
+        return False

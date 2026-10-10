@@ -5,11 +5,12 @@ from http import HTTPStatus
 from typing import cast
 
 import pytest
+from django.conf import settings as django_settings
 from pytest_django.fixtures import Settings
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.test import APIClient
-from users.models import User
+from users.models import AnonymousIdentity, User
 
 REGISTER_URL = "/api/auth/register/"
 LOGIN_URL = "/api/auth/login/"
@@ -20,6 +21,10 @@ GOOGLE_URL = "/api/auth/google/"
 def _body(response: Response) -> dict[str, object]:
     """Return a response's JSON body, typed for test assertions."""
     return cast("dict[str, object]", response.data)
+
+
+def _anon_cookie_name() -> str:
+    return cast("str", django_settings.ANONYMOUS_IDENTITY_COOKIE_NAME)
 
 
 @pytest.fixture
@@ -337,3 +342,149 @@ class TestGoogleAuth:
         response = api_client.post(GOOGLE_URL, {"id_token": "fake-token"})
 
         assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+
+
+@pytest.mark.django_db
+class TestAnonymousIdentityMerge:
+    """Tests that anonymous (pre-login) activity merges into the account."""
+
+    def test_an_unauthenticated_hit_issues_an_identity_and_cookie(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """A first unauthenticated request creates and cookies an identity."""
+        response = api_client.post(
+            LOGIN_URL,
+            {"email": "ghost@example.com", "password": "whatever-1234"},
+        )
+
+        assert _anon_cookie_name() in response.cookies
+        assert AnonymousIdentity.objects.count() == 1
+        identity = AnonymousIdentity.objects.get()
+        assert identity.is_claimed is False
+
+    def test_repeated_unauthenticated_hits_reuse_the_same_identity(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """The same browser session doesn't accumulate multiple identities."""
+        credentials = {"email": "ghost@example.com", "password": "whatever-1234"}
+        _ = api_client.post(LOGIN_URL, credentials)
+        _ = api_client.post(LOGIN_URL, credentials)
+
+        assert AnonymousIdentity.objects.count() == 1
+
+    def test_a_tampered_cookie_does_not_break_the_request(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """A corrupted cookie is treated as absent rather than erroring."""
+        api_client.cookies[_anon_cookie_name()] = "not-a-real-signed-value"
+
+        response = api_client.post(
+            LOGIN_URL,
+            {"email": "ghost@example.com", "password": "whatever-1234"},
+        )
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert AnonymousIdentity.objects.count() == 1
+
+    def test_register_claims_the_anonymous_identity(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """Registering attributes the browsing session's identity to the user."""
+        _ = api_client.post(LOGIN_URL, {"email": "x@example.com", "password": "wrong"})
+        identity = AnonymousIdentity.objects.get()
+
+        response = api_client.post(
+            REGISTER_URL,
+            {"email": "new.citizen@example.com", "password": "a-very-sturdy-pass"},
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        identity.refresh_from_db()
+        user = User.objects.get(email="new.citizen@example.com")
+        assert identity.claimed_by == user
+        assert response.cookies[_anon_cookie_name()].value == ""
+
+    def test_login_claims_the_anonymous_identity(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """Logging in attributes the browsing session's identity to the user."""
+        user = User.objects.create_user("agent@example.com", "correct-horse-1")
+        _ = api_client.post(LOGIN_URL, {"email": "x@example.com", "password": "wrong"})
+        identity = AnonymousIdentity.objects.get()
+
+        response = api_client.post(
+            LOGIN_URL,
+            {"email": "agent@example.com", "password": "correct-horse-1"},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        identity.refresh_from_db()
+        assert identity.claimed_by == user
+        assert response.cookies[_anon_cookie_name()].value == ""
+
+    def test_a_failed_login_does_not_claim_the_identity(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """An unsuccessful login leaves the identity unclaimed for next time."""
+        _ = User.objects.create_user("agent@example.com", "correct-horse-1")
+        _ = api_client.post(LOGIN_URL, {"email": "x@example.com", "password": "wrong"})
+        identity = AnonymousIdentity.objects.get()
+
+        response = api_client.post(
+            LOGIN_URL,
+            {"email": "agent@example.com", "password": "wrong-password"},
+        )
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        identity.refresh_from_db()
+        assert identity.is_claimed is False
+
+    def test_google_sign_in_claims_the_anonymous_identity(
+        self,
+        api_client: APIClient,
+        monkeypatch: pytest.MonkeyPatch,
+        settings: Settings,
+    ) -> None:
+        """Google sign-in attributes the browsing session's identity too."""
+        settings.GOOGLE_OAUTH_CLIENT_ID = "test-client-id.apps.googleusercontent.com"
+
+        def _verify(*_args: object, **_kwargs: object) -> dict[str, object]:
+            return {
+                "sub": "google-subject-123",
+                "email": "citizen@gmail.com",
+                "email_verified": True,
+                "name": "Citizen Agent",
+            }
+
+        monkeypatch.setattr("users.views.google_id_token.verify_oauth2_token", _verify)
+        _ = api_client.post(LOGIN_URL, {"email": "x@example.com", "password": "wrong"})
+        identity = AnonymousIdentity.objects.get()
+
+        response = api_client.post(GOOGLE_URL, {"id_token": "fake-token"})
+
+        assert response.status_code == HTTPStatus.CREATED
+        identity.refresh_from_db()
+        user = User.objects.get(email="citizen@gmail.com")
+        assert identity.claimed_by == user
+
+    def test_a_fresh_identity_is_issued_after_claiming(
+        self,
+        api_client: APIClient,
+    ) -> None:
+        """Browsing anonymously again after claiming starts a new identity."""
+        _ = api_client.post(LOGIN_URL, {"email": "x@example.com", "password": "wrong"})
+        _ = api_client.post(
+            REGISTER_URL,
+            {"email": "new.citizen@example.com", "password": "a-very-sturdy-pass"},
+        )
+
+        _ = api_client.post(LOGIN_URL, {"email": "y@example.com", "password": "wrong"})
+
+        assert AnonymousIdentity.objects.filter(claimed_by__isnull=True).count() == 1
+        assert AnonymousIdentity.objects.filter(claimed_by__isnull=False).count() == 1

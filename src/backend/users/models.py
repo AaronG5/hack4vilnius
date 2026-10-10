@@ -1,12 +1,14 @@
 """User model and manager for email- and Google-based authentication."""
 
 import datetime as dt
+import uuid
 from typing import ClassVar, final, override
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.db.models.expressions import Combinable
+from django.utils import timezone
 
 
 @final
@@ -103,3 +105,59 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self) -> str:
         """Return the user's email, used throughout the admin and shell."""
         return self.email
+
+
+@final
+class AnonymousIdentity(models.Model):
+    """
+    A cookie-tracked visitor who hasn't registered or logged in yet.
+
+    Future models that record activity from anonymous visitors (e.g. a
+    problem report) can add a nullable `ForeignKey` to this model; calling
+    `claim()` is the hook where that activity gets attributed to the `User`
+    they just registered or logged in as.
+    """
+
+    id: models.UUIDField[uuid.UUID | str, uuid.UUID] = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+    created_at: models.DateTimeField[
+        str | dt.datetime | dt.date | Combinable, dt.datetime
+    ] = models.DateTimeField(auto_now_add=True)
+    claimed_by: models.ForeignKey[User | Combinable | None, User | None] = (
+        models.ForeignKey(
+            User,
+            on_delete=models.SET_NULL,
+            null=True,
+            blank=True,
+            related_name="anonymous_identities",
+        )
+    )
+    claimed_at: models.DateTimeField[
+        str | dt.datetime | dt.date | Combinable | None, dt.datetime | None
+    ] = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        """Most recently created identities first, matching admin defaults."""
+
+        ordering: ClassVar[list[str]] = ["-created_at"]
+
+    @override
+    def __str__(self) -> str:
+        """Return the identity's id, used in the admin and shell."""
+        return str(self.id)
+
+    @property
+    def is_claimed(self) -> bool:
+        """Whether this identity has already been attributed to a user."""
+        return self.claimed_by is not None
+
+    def claim(self, user: User) -> None:
+        """Attribute this identity's data to `user`, if not already claimed."""
+        if self.is_claimed:
+            return
+        self.claimed_by = user
+        self.claimed_at = timezone.now()
+        self.save(update_fields=["claimed_by", "claimed_at"])
