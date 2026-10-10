@@ -483,6 +483,7 @@ class Command(BaseCommand):
             problem = Problem.objects.create(
                 status=example.status,
                 urgency=example.urgency,
+                reported_urgency=example.urgency,
                 legitimacy_score=problem_services.estimate_legitimacy_score(
                     category,
                     description,
@@ -527,7 +528,8 @@ class Command(BaseCommand):
         for position, is_valid in enumerate(answers, start=1):
             validation = Validation.objects.create(
                 is_valid=is_valid,
-                description="Vis dar yra" if is_valid else "Sutvarkyta",
+                # The answer is `is_valid`; these samples add no extra text.
+                description="",
                 user=neighbours[(offset + position) % len(neighbours)],
                 problem=problem,
             )

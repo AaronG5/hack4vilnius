@@ -47,7 +47,19 @@ export function MapPage() {
   const [here, setHere] = useState<LngLat>();
 
   const shown = useMemo(() => views.filter((v) => passes(filter, v)), [views, filter]);
-  const pins = useMemo(() => shown.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score })), [shown]);
+  const pins = useMemo(
+    () =>
+      shown.map((v) => ({
+        id: v.id,
+        at: v.at,
+        status: v.status,
+        title: v.title,
+        score: v.score,
+        // Answered already: gray, so what still needs checking stands out.
+        checked: v.myVote !== undefined,
+      })),
+    [shown],
+  );
   const counts: Record<MapFilter, number> = {
     all: views.length,
     new: views.filter((v) => v.status === "new").length,

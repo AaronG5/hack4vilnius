@@ -1,10 +1,12 @@
-// Problem details sheet from the demo: facts, photo history, urgency voting and
-// "Vis dar yra / Sutvarkyta / Nežinau" answers (asking for a fresh photo on older problems).
+// Problem details sheet from the demo: facts, photo history, and one final answer —
+// "Problema yra" or "Problemos nėra", with an optional urgency vote, a longer
+// account than the report gave, and any photos or videos backing it. The two
+// answers carry equal weight, so they look alike. One answer per person.
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ApiError, createProblemValidation, voteUrgency, type ProblemUrgency } from "../api";
-import { CameraIcon, GalleryIcon } from "../components/icons";
+import { ApiError, createProblemValidation, type ProblemUrgency } from "../api";
+import { CameraIcon, CloseIcon, GalleryIcon } from "../components/icons";
 import { Sheet } from "../components/Sheet";
 import { ago, count } from "../lib/format";
 import { URGENCIES, URGENCY_HINT, URGENCY_LABEL } from "../lib/labels";
@@ -12,6 +14,74 @@ import { scoreClass, STATUS_TEXT, type ProblemView, type Vote } from "../lib/pro
 import { useAppState } from "../state/appState";
 
 const VOTE_FORMS: [string, string, string] = ["balsas", "balsai", "balsų"];
+
+function Attachments({
+  files,
+  previewFor,
+  onRemove,
+}: {
+  files: File[];
+  previewFor: (file: File) => string | undefined;
+  onRemove: (file: File) => void;
+}) {
+  return (
+    <div className="row" style={{ flexWrap: "nowrap", overflowX: "auto", gap: 8, paddingBottom: 4 }}>
+      {files.map((file) => {
+        const preview = previewFor(file);
+        return (
+          <div key={`${file.name}-${file.size}`} style={{ position: "relative", flexShrink: 0 }}>
+            {preview ? (
+              <img src={preview} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: "12px 0 12px 12px" }} />
+            ) : (
+              <span
+                className="sm"
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: "12px 0 12px 12px",
+                  background: "var(--surface-2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  padding: 4,
+                  fontSize: 11,
+                }}
+              >
+                Vaizdo įrašas
+              </span>
+            )}
+            <button
+              type="button"
+              aria-label={`Pašalinti ${file.name}`}
+              onClick={() => onRemove(file)}
+              style={{
+                position: "absolute",
+                top: -6,
+                right: -6,
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                border: "none",
+                background: "var(--ink)",
+                color: "var(--surface)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <CloseIcon size={14} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Enough to show a problem from a few angles without turning into an upload queue. */
+const MAX_FILES = 5;
 
 export function ProblemSheet() {
   const { id } = useParams();
@@ -42,62 +112,96 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
   const { reload, toast } = useAppState();
   const [photoAsk, setPhotoAsk] = useState<Vote | null>(null);
   const [busy, setBusy] = useState(false);
-  const [unsure, setUnsure] = useState(false);
+  // What this answer will carry: an optional urgency vote, a longer account
+  // than the report gave, and any files.
+  const [urgency, setUrgency] = useState<ProblemUrgency>();
+  const [account, setAccount] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const answered = m.myVote !== undefined;
 
-  const submitVote = async (vote: Vote, file?: File) => {
-    const first = !m.myVote;
+  // Previews live as long as their file; all of them are released on unmount.
+  const previews = useRef(new Map<File, string>());
+  const previewFor = (file: File): string | undefined => {
+    if (!file.type.startsWith("image/")) return undefined;
+    let url = previews.current.get(file);
+    if (!url) {
+      url = URL.createObjectURL(file);
+      previews.current.set(file, url);
+    }
+    return url;
+  };
+  useEffect(() => {
+    const open = previews.current;
+    return () => {
+      for (const url of open.values()) URL.revokeObjectURL(url);
+      open.clear();
+    };
+  }, []);
+
+  const addFiles = (picked: FileList | null) => {
+    if (!picked?.length) return;
+    setFiles((current) => {
+      const room = MAX_FILES - current.length;
+      if (room <= 0) {
+        toast(`Daugiausia ${MAX_FILES} failai`);
+        return current;
+      }
+      const fresh = [...picked].filter(
+        (file) => !current.some((had) => had.name === file.name && had.size === file.size),
+      );
+      return [...current, ...fresh.slice(0, room)];
+    });
+  };
+
+  const removeFile = (file: File) => {
+    const url = previews.current.get(file);
+    if (url) {
+      URL.revokeObjectURL(url);
+      previews.current.delete(file);
+    }
+    setFiles((current) => current.filter((had) => had !== file));
+  };
+
+  const submitVote = async (vote: Vote) => {
     setBusy(true);
     try {
       const result = await createProblemValidation(m.id, {
-        is_valid: vote === "still",
-        description: vote === "still" ? "Vis dar yra" : "Sutvarkyta",
-        media: file ? [file] : [],
+        is_valid: vote === "yes",
+        description: account.trim(),
+        urgency,
+        media: files,
       });
+      setFiles([]);
+      setAccount("");
       await reload();
       setPhotoAsk(null);
-      if (!first) toast("Atsakymas pakeistas");
-      else if (file) toast(`Nuotrauka atnaujinta! +${result.points_awarded} tšk.`);
-      else toast(`${vote === "still" ? "Ačiū, patvirtinta!" : "Ačiū už patikrinimą!"} +${result.points_awarded} tšk.`);
+      toast(`Ačiū už patikrinimą! +${result.points_awarded} tšk.`);
     } catch (err) {
-      toast(err instanceof ApiError && err.status === 413 ? "Nuotrauka per didelė — pabandykite kitą" : "Nepavyko išsaugoti — pabandykite dar kartą");
+      const status = err instanceof ApiError ? err.status : 0;
+      if (status === 409) {
+        // Someone answered from another device, or a double submit.
+        await reload();
+        toast("Jūs jau atsakėte į šį pranešimą");
+      } else {
+        toast(status === 413 ? "Failas per didelis — pabandykite kitą" : "Nepavyko išsaugoti — pabandykite dar kartą");
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  const answer = (vote: Vote | "unsure") => {
-    if (vote === "unsure") {
-      setUnsure(true);
-      toast("Ačiū!");
-      return;
-    }
-    setUnsure(false);
-    // Problems older than a day: ask for a fresh photo before sending the answer.
-    if (m.ageDays >= 1) setPhotoAsk(vote);
+  const answer = (vote: Vote) => {
+    if (answered) return;
+    // Older than a day and nothing attached yet: ask for a fresh photo first.
+    if (m.ageDays >= 1 && files.length === 0) setPhotoAsk(vote);
     else void submitVote(vote);
   };
 
-  const castUrgency = async (urgency: ProblemUrgency) => {
-    try {
-      await voteUrgency(m.id, { urgency });
-      await reload();
-      toast(urgency === "dangerous_to_life" ? "Pažymėta: pavojinga gyvybei" : "Ačiū už balsą!");
-    } catch (err) {
-      // TODO(api-gap): POST /problems/{id}/urgency-votes is only served by the
-      // mock API, so against Django this is a 404 rather than a failure.
-      const missing = err instanceof ApiError && (err.status === 404 || err.status === 405);
-      toast(missing ? "Skubumo balsavimas dar neveikia" : "Nepavyko išsaugoti — pabandykite dar kartą");
-    }
-  };
-
-  const onPhoto = (files: FileList | null) => {
-    const file = files?.[0];
-    if (file && photoAsk) void submitVote(photoAsk, file);
-  };
-
   const history = m.photos.slice().reverse();
+  // Answers that say more than yes/no; the rest are just votes.
+  const accounts = m.detail.validations.filter((v) => v.description.trim());
   const mx = Math.max(1, m.urgVotes);
-  const myAnswer = unsure ? "nežinau" : m.myVote === "still" ? "vis dar yra" : m.myVote === "fixed" ? "sutvarkyta" : null;
+  const myAnswer = m.myVote === "yes" ? "problema yra" : m.myVote === "no" ? "problemos nėra" : null;
 
   return (
     <>
@@ -119,11 +223,11 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
             <span className="tag ex">Pranešta {ago(m.created)}</span>
           </div>
           <h1 style={{ fontSize: 19 }}>
-            {photoAsk === "fixed" ? "Parodykite, kaip atrodo sutvarkyta vieta" : "Pridėkite naujausią nuotrauką"}
+            {photoAsk === "no" ? "Parodykite, kaip vieta atrodo dabar" : "Pridėkite naujausią nuotrauką"}
           </h1>
           <p className="lead">
-            {photoAsk === "fixed"
-              ? "Nuotrauka padės kitiems greičiau patvirtinti, kad problema išspręsta."
+            {photoAsk === "no"
+              ? "Nuotrauka padės kitiems patikėti, kad problemos šioje vietoje nebėra."
               : "Problema pranešta daugiau nei prieš parą. Nauja nuotrauka parodys savivaldybei, kaip ji atrodo dabar — ar nepablogėjo."}
           </p>
           {busy ? (
@@ -138,20 +242,39 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                   <b>Nufotografuoti dabar</b>
                   <small>Atidaro kamerą telefone</small>
                 </span>
-                <input type="file" accept="image/*" capture="environment" aria-label="Nufotografuoti dabar" onChange={(e) => onPhoto(e.target.files)} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  aria-label="Nufotografuoti dabar"
+                  onChange={(e) => {
+                    addFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
               </label>
               <label className="src" style={{ background: "var(--surface)" }}>
                 <span className="ic" style={{ background: "var(--btn)", color: "var(--btn-ink)" }}>
                   <GalleryIcon />
                 </span>
                 <span>
-                  <b>Įkelti nuotrauką</b>
-                  <small>Ką tik padarytą nuotrauką iš galerijos</small>
+                  <b>Įkelti iš galerijos</b>
+                  <small>Kelias nuotraukas ar vaizdo įrašą</small>
                 </span>
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Įkelti nuotrauką" onChange={(e) => onPhoto(e.target.files)} />
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  aria-label="Įkelti nuotraukų ar vaizdo įrašų"
+                  onChange={(e) => {
+                    addFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
               </label>
-              <button type="button" className="btn link" onClick={() => void submitVote(photoAsk)}>
-                Praleisti
+              {files.length > 0 && <Attachments files={files} previewFor={previewFor} onRemove={removeFile} />}
+              <button type="button" className="btn" onClick={() => void submitVote(photoAsk)}>
+                {files.length > 0 ? `Siųsti atsakymą su ${files.length} failais` : "Praleisti ir atsakyti"}
               </button>
             </>
           )}
@@ -182,7 +305,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
         <dt>Patvirtinimai</dt>
         <dd>
           {m.confirms}
-          {m.fixedVotes > 0 && ` · ${m.fixedVotes} sako „sutvarkyta“`}
+          {m.noVotes > 0 && ` · ${m.noVotes} sako „problemos nėra“`}
         </dd>
         <dt>Pranešta</dt>
         <dd>{ago(m.created)}</dd>
@@ -204,9 +327,24 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
               <figure key={p.src} style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
                 <img src={p.src} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: "12px 0 12px 12px" }} />
                 <figcaption className="sm" style={{ fontSize: 11 }}>
-                  {p.kind === "report" ? "Pranešta" : p.kind === "fixed" ? "Sutvarkyta?" : "Vis dar yra"} · {ago(p.at)}
+                  {p.kind === "report" ? "Pranešta" : p.kind === "no" ? "Problemos nėra" : "Problema yra"} · {ago(p.at)}
                 </figcaption>
               </figure>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {accounts.length > 0 && (
+        <div className="fld">
+          Kaimynų patikslinimai
+          <div className="list">
+            {accounts.map((a) => (
+              <div key={a.id} className="note">
+                <b>{a.is_valid ? "Problema yra" : "Problemos nėra"}</b> · {a.user.name || "Gyventojas"} · {ago(Date.parse(a.created_at))}
+                <br />
+                {a.description}
+              </div>
             ))}
           </div>
         </div>
@@ -224,29 +362,34 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
             myAnswer &&
             m.status !== "work" && (
               <div className="note">
-                Jūs pažymėjote: <b>{myAnswer}</b>. Galite pakeisti.
+                Jūs pažymėjote: <b>{myAnswer}</b>.{" "}
+                {answered ? "Atsakymas galutinis — pakeisti nebegalima." : "Galite atsakyti, kai apsispręsite."}
               </div>
             )
           )}
           {m.status === "work" && (
             <div className="note" style={{ background: "rgba(255,198,41,.25)" }}>
-              <b>Sprendžia savivaldybė.</b> Būseną atnaujina vykdytojas — patvirtinti nereikia. Kai bus sutvarkyta, paprašysime
-              kaimynų tai patvirtinti.
+              <b>Sprendžia savivaldybė.</b> Būseną atnaujina vykdytojas — patvirtinti nereikia.
             </div>
           )}
 
           {!m.isFixed && !m.mine && m.status !== "work" && (
             <div className="fld" role="group" aria-label="Kaip skubu?">
               Kaip skubu?{" "}
-              {m.myUrg ? "Jūsų balsas pažymėtas — galite pakeisti" : "Balsuokite — tai padeda nuspręsti, ką tvarkyti pirmiausia"}
+              {answered
+                ? m.myUrg
+                  ? "Jūsų balsas suskaičiuotas"
+                  : "Atsakėte nebalsavę dėl skubumo"
+                : "Pasirinkite — balsas bus išsiųstas kartu su atsakymu"}
               <div className="urg">
                 {URGENCIES.map((k) => (
                   <button
                     key={k}
                     type="button"
                     className={k === "dangerous_to_life" ? "life" : undefined}
-                    aria-pressed={m.myUrg === k}
-                    onClick={() => void castUrgency(k)}
+                    aria-pressed={answered ? m.myUrg === k : urgency === k}
+                    disabled={answered || busy}
+                    onClick={() => setUrgency((chosen) => (chosen === k ? undefined : k))}
                   >
                     <b>{URGENCY_LABEL[k]}</b>
                     <small>{URGENCY_HINT[k]}</small>
@@ -260,18 +403,71 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
             </div>
           )}
 
-          {!m.mine && m.status !== "work" && (
-            <div className="grid3">
-              <button type="button" className="btn red" disabled={busy} onClick={() => answer("still")}>
-                Vis dar yra
-              </button>
-              <button type="button" className="btn green" disabled={busy} onClick={() => answer("fixed")}>
-                Sutvarkyta
-              </button>
-              <button type="button" className="btn ghost" disabled={busy} onClick={() => answer("unsure")}>
-                Nežinau
-              </button>
-            </div>
+          {!m.mine && m.status !== "work" && !answered && (
+            <>
+              <label className="fld">
+                Ką matote? (nebūtina) — papasakokite plačiau nei pranešime
+                <textarea
+                  className="inp"
+                  maxLength={1000}
+                  placeholder="Pvz.: duobė išsiplėtė per visą juostą, vakare jos nesimato"
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  disabled={busy}
+                />
+              </label>
+
+              <div className="fld">
+                Nuotraukos ar vaizdo įrašai (nebūtina) — iki {MAX_FILES}
+                <div className="row">
+                  <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
+                    <CameraIcon size={18} />
+                    Nufotografuoti
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      aria-label="Nufotografuoti"
+                      disabled={busy}
+                      onChange={(e) => {
+                        addFiles(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
+                    <GalleryIcon size={18} />
+                    Įkelti
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      aria-label="Įkelti nuotraukų ar vaizdo įrašų"
+                      disabled={busy}
+                      onChange={(e) => {
+                        addFiles(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {files.length > 0 && <Attachments files={files} previewFor={previewFor} onRemove={removeFile} />}
+              </div>
+
+              {/* Both answers are worth the same, so neither is dressed up as
+                  the expected one. */}
+              <div className="row">
+                <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy} onClick={() => answer("yes")}>
+                  Problema yra
+                </button>
+                <button type="button" className="btn ghost" style={{ flex: 1 }} disabled={busy} onClick={() => answer("no")}>
+                  Problemos nėra
+                </button>
+              </div>
+              <span className="sm">
+                Patvirtinimai padeda problemą patvirtinti, paneigimai — ją atmesti. Atsakyti galima vieną kartą.
+              </span>
+            </>
           )}
           <button type="button" className="btn ghost" onClick={onClose}>
             Uždaryti

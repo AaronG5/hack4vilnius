@@ -6,7 +6,6 @@ import type {
   ProblemDetail,
   ProblemFilters,
   ProblemStatusUpdate,
-  UrgencyVoteCreate,
   Uuid,
   Validation,
   ValidationCreate,
@@ -40,7 +39,11 @@ export function listProblemValidations(id: Uuid, signal?: AbortSignal): Promise<
   return request<Validation[]>(`/problems/${encodeURIComponent(id)}/validations`, { signal });
 }
 
-/** POST /problems/{id}/validations — submit a validation (multipart, with media). */
+/**
+ * POST /problems/{id}/validations — submit a validation (multipart, with media).
+ *
+ * One answer per person per problem: a second one is refused with 409.
+ */
 export function createProblemValidation(
   id: Uuid,
   validation: ValidationCreate,
@@ -51,17 +54,9 @@ export function createProblemValidation(
     body: toFormData({
       is_valid: validation.is_valid,
       description: validation.description,
+      urgency: validation.urgency,
       media: validation.media,
     }),
-    signal,
-  });
-}
-
-/** TODO(api-gap): POST /problems/{id}/urgency-votes — not in openapi.yaml yet. */
-export function voteUrgency(id: Uuid, vote: UrgencyVoteCreate, signal?: AbortSignal): Promise<Problem> {
-  return request<Problem>(`/problems/${encodeURIComponent(id)}/urgency-votes`, {
-    method: "POST",
-    body: vote,
     signal,
   });
 }

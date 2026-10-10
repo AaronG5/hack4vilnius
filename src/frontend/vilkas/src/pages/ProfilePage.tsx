@@ -35,7 +35,8 @@ export function ProfilePage() {
   const voted = views.filter((v) => v.myVote);
   const helped = mine.filter((v) => v.isFixed).length + voted.filter((v) => v.isFixed).length;
   // Trust: how often your "fixed / still there" answers agree with the outcome.
-  const agree = voted.filter((v) => (v.myVote === "fixed") === v.isFixed).length;
+  // Agreement with the neighbours: did the rest of the street answer the same way?
+  const agree = voted.filter((v) => (v.myVote === "yes") === v.yesVotes >= v.noVotes).length;
   const trust = voted.length ? `${Math.round((agree / voted.length) * 100)} %` : "–";
   const checks = acts.filter((a) => a.type !== "report").length;
   const earned = earnedLandmarks(acts);

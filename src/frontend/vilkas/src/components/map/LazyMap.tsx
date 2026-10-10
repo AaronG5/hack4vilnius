@@ -33,6 +33,10 @@ export function MapLegend() {
         <i style={{ background: "var(--green)" }} />
         Sutvarkyta
       </span>
+      <span>
+        <i style={{ background: "#9A9A9A" }} />
+        Jūs atsakėte
+      </span>
     </div>
   );
 }

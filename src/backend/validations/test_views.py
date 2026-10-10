@@ -11,9 +11,12 @@ from rest_framework.response import Response
 from rest_framework.test import APIClient
 from users.models import User
 from validations.models import Validation
+from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
 
 PROBLEMS_URL = "/api/problems"
 FLAT_AWARD = 10
+MEDIA_COUNT = 3
+TWO_ANSWERS = 2
 
 
 def _url(problem: Problem) -> str:
@@ -31,11 +34,14 @@ def _body(response: Response) -> dict[str, object]:
     return cast("dict[str, object]", response.data)
 
 
-def _photo() -> SimpleUploadedFile:
+def _photo(name: str = "photo.jpg") -> SimpleUploadedFile:
     """Return a small in-memory JPEG upload."""
-    return SimpleUploadedFile(
-        "photo.jpg", b"fake-jpeg-bytes", content_type="image/jpeg"
-    )
+    return SimpleUploadedFile(name, b"fake-jpeg-bytes", content_type="image/jpeg")
+
+
+def _video(name: str = "clip.mp4") -> SimpleUploadedFile:
+    """Return a small in-memory video upload."""
+    return SimpleUploadedFile(name, b"fake-mp4-bytes", content_type="video/mp4")
 
 
 @pytest.mark.django_db
@@ -179,21 +185,71 @@ class TestValidationCreate:
         assert response.status_code == HTTPStatus.CREATED
         assert Validation.objects.get().is_valid is False
 
-    def test_leaves_the_problem_status_alone_while_stubbed(
+    def test_one_answer_decides_nothing(
         self,
         auth_client: APIClient,
         problem: Problem,
     ) -> None:
-        """Confirm/cancel transitions are deferred, so the status doesn't move."""
+        """A single passer-by can neither confirm nor erase a problem."""
+        problem.status = ProblemStatus.UNCONFIRMED
+        problem.save(update_fields=["status"])
+
         _ = auth_client.post(
             _url(problem),
-            {"is_valid": True, "description": "Still here.", "media": [_photo()]},
+            {"is_valid": True, "media": [_photo()]},
             format="multipart",
         )
 
-        previous_status = problem.status
         problem.refresh_from_db()
-        assert problem.status == previous_status
+        assert problem.status == ProblemStatus.UNCONFIRMED
+
+    def test_two_agreeing_answers_confirm_the_problem(
+        self,
+        auth_client: APIClient,
+        other_auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Two residents saying the problem is there confirm it."""
+        problem.status = ProblemStatus.UNCONFIRMED
+        problem.save(update_fields=["status"])
+
+        for client in (auth_client, other_auth_client):
+            _ = client.post(_url(problem), {"is_valid": True}, format="multipart")
+
+        problem.refresh_from_db()
+        assert problem.status == ProblemStatus.CONFIRMED
+
+    def test_two_disputing_answers_cancel_the_problem(
+        self,
+        auth_client: APIClient,
+        other_auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Two residents saying there is no problem cancel it."""
+        problem.status = ProblemStatus.UNCONFIRMED
+        problem.save(update_fields=["status"])
+
+        for client in (auth_client, other_auth_client):
+            _ = client.post(_url(problem), {"is_valid": False}, format="multipart")
+
+        problem.refresh_from_db()
+        assert problem.status == ProblemStatus.CANCELED
+
+    def test_a_problem_the_city_is_working_on_is_left_alone(
+        self,
+        auth_client: APIClient,
+        other_auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Once a case worker owns the status, answers stop moving it."""
+        problem.status = ProblemStatus.ONGOING
+        problem.save(update_fields=["status"])
+
+        for client in (auth_client, other_auth_client):
+            _ = client.post(_url(problem), {"is_valid": False}, format="multipart")
+
+        problem.refresh_from_db()
+        assert problem.status == ProblemStatus.ONGOING
 
     def test_allows_an_answer_without_media(
         self,
@@ -211,19 +267,180 @@ class TestValidationCreate:
         assert _body(response)["media"] == []
         assert Validation.objects.get().media.count() == 0
 
-    def test_requires_a_description(
+    def test_allows_an_answer_with_no_extra_text(
         self,
         auth_client: APIClient,
         problem: Problem,
     ) -> None:
-        """A validation needs a text description, with or without media."""
+        """The answer is `is_valid`; the text beside it is optional."""
         response = auth_client.post(
             _url(problem),
             {"is_valid": True, "media": [_photo()]},
             format="multipart",
         )
 
+        assert response.status_code == HTTPStatus.CREATED
+        assert _body(response)["description"] == ""
+
+    def test_keeps_a_longer_account_than_the_report_gave(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """A resident can say more than the original report did."""
+        account = (
+            "Duobė išsiplėtė per visą juostą, gylis apie 15 cm, "
+            "vakare jos nesimato ir automobiliai į ją įvažiuoja."
+        )
+        response = auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": account},
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert _body(response)["description"] == account
+
+    def test_records_the_urgency_the_resident_voted_for(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """An answer is also where a resident says how urgent it looks."""
+        response = auth_client.post(
+            _url(problem),
+            {
+                "is_valid": True,
+                "description": "Still here.",
+                "urgency": ProblemUrgency.DANGEROUS_TO_LIFE,
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert _body(response)["urgency"] == ProblemUrgency.DANGEROUS_TO_LIFE
+        assert Validation.objects.get().urgency == ProblemUrgency.DANGEROUS_TO_LIFE
+
+    def test_urgency_votes_move_the_problem(
+        self,
+        auth_client: APIClient,
+        other_auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Two residents calling it dangerous outvote the original report."""
+        problem.urgency = ProblemUrgency.CAN_WAIT
+        problem.reported_urgency = ProblemUrgency.CAN_WAIT
+        problem.save(update_fields=["urgency", "reported_urgency"])
+
+        for client in (auth_client, other_auth_client):
+            response = client.post(
+                _url(problem),
+                {
+                    "is_valid": True,
+                    "description": "Still here.",
+                    "urgency": ProblemUrgency.DANGEROUS_TO_LIFE,
+                },
+                format="multipart",
+            )
+            assert response.status_code == HTTPStatus.CREATED
+
+        problem.refresh_from_db()
+        assert problem.urgency == ProblemUrgency.DANGEROUS_TO_LIFE
+        # What the report said is kept, so re-tallying can't drift.
+        assert problem.reported_urgency == ProblemUrgency.CAN_WAIT
+
+    def test_urgency_is_optional(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Answering "still there" with no opinion on urgency is allowed."""
+        response = auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": "Still here."},
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert _body(response)["urgency"] == ""
+
+    def test_rejects_an_urgency_outside_the_choices(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """Urgency is one of the three levels, not free text."""
+        response = auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": "Still here.", "urgency": "whenever"},
+            format="multipart",
+        )
+
         assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    def test_attaches_several_photos_and_a_video(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """A resident can back one answer with several files."""
+        response = auth_client.post(
+            _url(problem),
+            {
+                "is_valid": True,
+                "description": "Still here, from two angles.",
+                "media": [_photo("one.jpg"), _photo("two.jpg"), _video("clip.mp4")],
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        kinds = sorted(media.type for media in Validation.objects.get().media.all())
+        assert kinds == [MediaType.PHOTO, MediaType.PHOTO, MediaType.VIDEO]
+        assert len(cast("list[object]", _body(response)["media"])) == MEDIA_COUNT
+
+    def test_a_second_answer_is_refused(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """One answer per person: a vote that can be revised can be gamed."""
+        first = auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": "Still here."},
+            format="multipart",
+        )
+        second = auth_client.post(
+            _url(problem),
+            {"is_valid": False, "description": "Actually it is fixed."},
+            format="multipart",
+        )
+
+        assert first.status_code == HTTPStatus.CREATED
+        assert second.status_code == HTTPStatus.CONFLICT
+        assert Validation.objects.count() == 1
+        assert Validation.objects.get().is_valid is True
+
+    def test_another_resident_can_still_answer(
+        self,
+        auth_client: APIClient,
+        other_auth_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """The limit is one answer per person, not one answer per problem."""
+        _ = auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": "Still here."},
+            format="multipart",
+        )
+        response = other_auth_client.post(
+            _url(problem),
+            {"is_valid": True, "description": "Still here too."},
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert Validation.objects.count() == TWO_ANSWERS
 
     def test_unknown_problem_is_not_found(self, auth_client: APIClient) -> None:
         """Validating a problem that doesn't exist is a 404, not a 500."""

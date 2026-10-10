@@ -173,6 +173,10 @@ export interface Problem {
   institution?: Institution | null;
   created_at: DateTime;
   updated_at: DateTime;
+  /** Residents' urgency votes, counting the first report as the reporter's. */
+  urgency_votes: Partial<Record<ProblemUrgency, number>>;
+  /** The current user's urgency vote, null if they haven't voted. */
+  my_urgency_vote: ProblemUrgency | null;
 
   // TODO(api-gap): fields below are not in openapi.yaml yet (planning/FRONTEND_PLAN.md › API gaps).
   // The mock API returns them; pages fall back when they are missing.
@@ -182,10 +186,6 @@ export interface Problem {
   address?: string;
   /** Near a school, kindergarten, hospital or playground. */
   near_sensitive?: boolean;
-  /** Residents' urgency votes (including the reporter's choice). */
-  urgency_votes?: Partial<Record<ProblemUrgency, number>>;
-  /** The current user's urgency vote, if any. */
-  my_urgency_vote?: ProblemUrgency | null;
 }
 
 export interface ProblemDetail extends Problem {
@@ -240,6 +240,8 @@ export interface Validation {
   id: Uuid;
   is_valid: boolean;
   description: string;
+  /** How urgent this resident thinks it is; "" when they didn't say. */
+  urgency: ProblemUrgency | "";
   points_awarded: number;
   user: UserRef;
   problem: Uuid;
@@ -247,14 +249,12 @@ export interface Validation {
   created_at: DateTime;
 }
 
-/** TODO(api-gap): body of the proposed POST /problems/{id}/urgency-votes. */
-export interface UrgencyVoteCreate {
-  urgency: ProblemUrgency;
-}
-
 export interface ValidationCreate {
   is_valid: boolean;
   description: string;
+  /** Optional urgency vote cast along with the answer. */
+  urgency?: ProblemUrgency;
+  /** Photos or videos backing the answer; several are allowed. */
   media: Blob[];
 }
 

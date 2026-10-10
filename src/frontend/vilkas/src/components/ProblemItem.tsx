@@ -1,6 +1,7 @@
 import { scoreClass, type ProblemView } from "../lib/problemModel";
 
 function statusText(v: ProblemView): string {
+  if (v.myVote) return v.myVote === "yes" ? "atsakėte: problema yra" : "atsakėte: problemos nėra";
   if (v.status === "new") return "laukia patvirtinimo";
   if (v.status === "work") return "sprendžiama";
   if (v.isFixed) return "sutvarkyta";

@@ -17,6 +17,8 @@ export interface MapPin {
   status: ViewStatus;
   title: string;
   score: number;
+  /** Already answered by this user: drawn gray, since there is nothing left to do. */
+  checked?: boolean;
 }
 
 export interface MapLabel {
@@ -77,6 +79,9 @@ const PIN_IMAGE: Record<ViewStatus, string> = {
   fixed: "pin-fixed",
 };
 
+/** Problems this user has already answered; their status no longer asks anything of them. */
+const PIN_CHECKED = "pin-checked";
+
 /** Notched pin (square top-right corner) as a MapLibre image. */
 function pinImage(fill: string, size: number, border = "#ffffff") {
   const ratio = 2;
@@ -104,6 +109,7 @@ function addPinImages(map: MLMap) {
     ["pin-work", "#FFC629", 26],
     ["pin-fixed", "#1C4B1D", 26],
     ["pin-cluster", "#ED1C24", 32],
+    [PIN_CHECKED, "#9A9A9A", 26],
   ];
   for (const [name, fill, size, border] of images) {
     if (map.hasImage(name)) continue;
@@ -122,7 +128,14 @@ function pinsGeoJSON(pins: MapPin[]): FeatureCollection {
     features: pins.map((p) => ({
       type: "Feature",
       geometry: { type: "Point", coordinates: p.at },
-      properties: { id: p.id, status: p.status, score: p.score, tone: tone(p.score), title: p.title },
+      properties: {
+        id: p.id,
+        status: p.status,
+        score: p.score,
+        tone: tone(p.score),
+        title: p.title,
+        checked: p.checked === true,
+      },
     })),
   };
 }
@@ -189,7 +202,7 @@ function install(map: MLMap, props: VilniusMapProps) {
       id: "pulse",
       type: "circle",
       source: "problems",
-      filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "status"], "new"]],
+      filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "status"], "new"], ["!", ["get", "checked"]]],
       paint: { "circle-color": "#ED1C24", "circle-radius": 14, "circle-opacity": 0.3 },
       layout: { visibility: pick ? "none" : "visible" },
     });
@@ -207,9 +220,14 @@ function install(map: MLMap, props: VilniusMapProps) {
       source: "problems",
       filter: ["!", ["has", "point_count"]],
       layout: {
-        "icon-image": ["match", ["get", "status"], "new", PIN_IMAGE.new, "work", PIN_IMAGE.work, "fixed", PIN_IMAGE.fixed, PIN_IMAGE.ok],
+        "icon-image": [
+          "case",
+          ["get", "checked"],
+          PIN_CHECKED,
+          ["match", ["get", "status"], "new", PIN_IMAGE.new, "work", PIN_IMAGE.work, "fixed", PIN_IMAGE.fixed, PIN_IMAGE.ok],
+        ],
         "icon-allow-overlap": true,
-        "text-field": ["case", ["==", ["get", "status"], "new"], "?", ""],
+        "text-field": ["case", ["all", ["==", ["get", "status"], "new"], ["!", ["get", "checked"]]], "?", ""],
         "text-font": FONT,
         "text-size": 12,
         "text-allow-overlap": true,

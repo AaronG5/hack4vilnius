@@ -101,7 +101,6 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 |---|---|---|---|
 | Title, address, "near school" | everywhere | optional gap fields on `ReportCreate` / `Problem`; fall back to category / coordinates | add to `ReportCreate` and `Problem` |
 | Urgency chosen when reporting | report sheet | optional `urgency` on `ReportCreate` | add field |
-| Urgency votes | problem sheet | `voteUrgency()` gap function + `urgency_votes` on `Problem` | `POST /problems/{id}/urgency-votes`, `urgency_votes` on `Problem` |
 | Priority score | map list, sheet, dashboard | computed client-side (`src/lib/priority.ts`, the demo formula) | `priority_score` + factors on `Problem` |
 | List summaries | map list | `getProblem()` per problem | title, thumb, confirmation counts in `GET /problems` |
 | AI analysis before submit | report sheet | keyword stand-in in `src/lib/gaps.ts` | `POST /reports/analyze` |
@@ -173,4 +172,11 @@ Ideas parked until the frontend phases are done; none are commitments.
   - `GET /api/geocode?q=` (new `geocoding` app) proxies Photon, an OpenStreetMap geocoder built for type-ahead, bounded to Vilnius and cached. It runs server-side because those services ask callers to identify themselves and keep rates low, which browser type-ahead can't promise; it needs a session, so the app isn't an open relay.
   - The report form's address field is a combobox: suggestions appear as you type (350 ms debounce, 3 characters minimum), and choosing one sets the report's location. The "Kur tai?" map step is then skipped — "Patikslinti vietą žemėlapyje" still opens it.
   - No match, a failed lookup, or an address typed but never resolved all fall back to the map step, each saying which happened.
+- [x] One final answer, with urgency and media (2026-10-10)
+  - A validation now carries the resident's urgency vote, so the separate `voteUrgency()` stand-in is gone: `Validation.urgency`, and `Problem.urgency` follows the majority (ties to the more severe). `Problem.reported_urgency` keeps what the first report said, so re-tallying can't drift.
+  - `Problem.urgency_votes` and `my_urgency_vote` are real API fields now — the sheet's voting bars are no longer a stand-in.
+  - One answer per person per problem, enforced by a unique constraint; a second one is refused with **409**. The migration de-duplicates existing answers first (keeping the newest, which is what the app showed), or `AddConstraint` would fail on any database where somebody changed their mind.
+  - An answer can carry several photos **or videos** (up to 5 in the UI), picked from the camera or the gallery, each removable before sending.
+  - Problems this user has answered draw a **gray pin** on the map (legend: "Jūs atsakėte") and say so in the ranked list; the sheet's answer buttons and urgency controls are disabled with "Atsakymas galutinis".
+  - "Nežinau" still isn't sent, so it doesn't use up the one answer.
 - [ ] Phase 11 — API client tests

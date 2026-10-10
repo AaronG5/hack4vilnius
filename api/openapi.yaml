@@ -293,6 +293,13 @@ paths:
     post:
       tags: [validations]
       summary: Submit a validation for a problem
+      description: >-
+        One answer per person per problem, and it is final: an answer is a
+        vote, and a vote that can be revised is one that can be gamed.
+        Answers decide a problem's status while it is `unconfirmed`,
+        `confirmed` or `canceled` — two residents saying it is there confirm
+        it, two saying it isn't cancel it. Once the municipality has taken
+        the problem on, the status is theirs.
       security:
         - tokenAuth: []
       requestBody:
@@ -314,6 +321,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          description: This user has already answered this problem.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     get:
       tags: [validations]
       summary: List validations for a problem
@@ -962,6 +975,22 @@ components:
             - $ref: "#/components/schemas/Institution"
           nullable: true
           description: Institution currently handling it, once confirmed.
+        urgency_votes:
+          type: object
+          readOnly: true
+          additionalProperties:
+            type: integer
+          description: >-
+            How many residents voted for each urgency, counting the first
+            report as the reporter's own vote.
+        my_urgency_vote:
+          allOf:
+            - $ref: "#/components/schemas/ProblemUrgency"
+          readOnly: true
+          nullable: true
+          description: >-
+            The requesting user's own urgency vote, or null if they have not
+            answered this problem (or answered without voting).
         created_at:
           type: string
           format: date-time
@@ -1095,6 +1124,12 @@ components:
           type: boolean
         description:
           type: string
+        urgency:
+          allOf:
+            - $ref: "#/components/schemas/ProblemUrgency"
+          description: >-
+            How urgent this resident thinks the problem is. An empty string
+            when they answered without saying.
         points_awarded:
           type: integer
           readOnly: true
@@ -1128,17 +1163,32 @@ components:
       properties:
         is_valid:
           type: boolean
+          description: >-
+            Whether the problem is there. `true` counts toward confirming it,
+            `false` toward canceling it: two answers that agree, and more of
+            them than the other way, decide which.
         description:
           type: string
+          description: >-
+            Optional: what this resident saw, in more detail than the
+            original report gave.
+        urgency:
+          allOf:
+            - $ref: "#/components/schemas/ProblemUrgency"
+          description: >-
+            Optional: how urgent this resident thinks the problem is. An
+            answer is also an urgency vote, and the problem's urgency becomes
+            whatever most residents voted for (ties go to the more severe).
         media:
           type: array
           items:
             type: string
             format: binary
           description: >-
-            A fresh photo backing the answer. Optional: answering
-            "still there" / "fixed" must stay a single tap.
-      required: [is_valid, description]
+            Photos or videos backing the answer, several if you like.
+            Optional: answering "still there" / "fixed" must stay a single
+            tap.
+      required: [is_valid]
 
     # -- Notifications / Moderation --------------------------------------------
 

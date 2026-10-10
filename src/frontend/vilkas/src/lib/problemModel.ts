@@ -8,12 +8,13 @@ import { URGENCIES_DESC } from "./labels";
 const DAY = 86_400_000;
 
 export type ViewStatus = "new" | "ok" | "urgent" | "work" | "fixed";
-export type Vote = "still" | "fixed";
+/** An answer to "is the problem there?": "yes" confirms it, "no" disputes it. */
+export type Vote = "yes" | "no";
 
 export interface PhotoEntry {
   src: string;
   at: number;
-  /** What the uploader said: first report, "still there" or "fixed". */
+  /** What the uploader said: the first report, or an answer either way. */
   kind: "report" | Vote;
 }
 
@@ -32,10 +33,12 @@ export interface ProblemView {
   photos: PhotoEntry[];
   thumb?: string;
   thumbAt?: number;
-  /** Reports + "still there" answers. */
+  /** Reports + answers saying the problem is there. */
   confirms: number;
-  stillVotes: number;
-  fixedVotes: number;
+  /** Answers saying the problem is there. */
+  yesVotes: number;
+  /** Answers saying there is no problem. */
+  noVotes: number;
   myVote?: Vote;
   mine: boolean;
   tally: Record<ProblemUrgency, number>;
@@ -95,8 +98,8 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
   const ageDays = Math.max(0, (now - created) / DAY);
   const at = p.location.coordinates;
 
-  const stillVotes = p.validations.filter((v) => v.is_valid).length;
-  const fixedVotes = p.validations.length - stillVotes;
+  const yesVotes = p.validations.filter((v) => v.is_valid).length;
+  const noVotes = p.validations.length - yesVotes;
   const mineValidation = p.validations.find((v) => v.user.id === meId);
 
   const tally: Record<ProblemUrgency, number> = { can_wait: 0, urgent: 0, dangerous_to_life: 0 };
@@ -112,12 +115,12 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
     ...p.validations.flatMap((v) =>
       v.media
         .filter((m) => m.type === "photo")
-        .map((m) => ({ src: mediaSrc(m.file_url), at: Date.parse(m.created_at), kind: v.is_valid ? ("still" as const) : ("fixed" as const) })),
+        .map((m) => ({ src: mediaSrc(m.file_url), at: Date.parse(m.created_at), kind: v.is_valid ? ("yes" as const) : ("no" as const) })),
     ),
   ].sort((a, b) => a.at - b.at);
   const latest = photos.at(-1);
 
-  const confirms = Math.max(1, p.reports.length) + stillVotes;
+  const confirms = Math.max(1, p.reports.length) + yesVotes;
   const nearSensitive = p.near_sensitive ?? false;
   const score = priorityScore(urgency, confirms, nearSensitive, ageDays);
   const isFixed = p.status === "completed";
@@ -147,9 +150,9 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
     thumb: latest?.src,
     thumbAt: latest?.at,
     confirms,
-    stillVotes,
-    fixedVotes,
-    myVote: mineValidation ? (mineValidation.is_valid ? "still" : "fixed") : undefined,
+    yesVotes,
+    noVotes,
+    myVote: mineValidation ? (mineValidation.is_valid ? "yes" : "no") : undefined,
     mine: p.reports.some((r) => r.user.id === meId),
     tally,
     urgVotes,
@@ -183,7 +186,7 @@ export function myActivity(views: ProblemView[], meId: Uuid | undefined): Activi
     const base = { where: v.at, category: v.category, district: v.district };
     for (const r of v.detail.reports) if (r.user.id === meId) acts.push({ ...base, type: "report", at: Date.parse(r.created_at) });
     for (const val of v.detail.validations)
-      if (val.user.id === meId) acts.push({ ...base, type: val.is_valid ? "still" : "fixed", at: Date.parse(val.created_at) });
+      if (val.user.id === meId) acts.push({ ...base, type: val.is_valid ? "yes" : "no", at: Date.parse(val.created_at) });
   }
   return acts.sort((a, b) => a.at - b.at);
 }

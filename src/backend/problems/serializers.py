@@ -2,11 +2,13 @@
 
 from typing import ClassVar, final
 
+import validations.services as validation_services
 from categories.serializers import CategorySerializer
 from institutions.serializers import InstitutionSerializer
 from problems.models import Problem
 from reports.serializers import ReportSerializer
 from rest_framework import serializers
+from users.models import User
 from validations.serializers import ValidationSerializer
 from vilnius_backend.choices import ProblemStatus
 from vilnius_backend.geo import GeoPointSerializer
@@ -18,6 +20,8 @@ class ProblemSerializer(serializers.ModelSerializer[Problem]):
     location: GeoPointSerializer = GeoPointSerializer()
     category: CategorySerializer = CategorySerializer(read_only=True)
     institution: InstitutionSerializer = InstitutionSerializer(read_only=True)
+    urgency_votes = serializers.SerializerMethodField()
+    my_urgency_vote = serializers.SerializerMethodField()
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Expose every contract field; status changes via the status serializer."""
@@ -31,10 +35,24 @@ class ProblemSerializer(serializers.ModelSerializer[Problem]):
             "location",
             "category",
             "institution",
+            "urgency_votes",
+            "my_urgency_vote",
             "created_at",
             "updated_at",
         )
         read_only_fields: ClassVar[tuple[str, ...]] = fields
+
+    def get_urgency_votes(self, problem: Problem) -> dict[str, int]:
+        """Count how urgent residents think this problem is."""
+        return validation_services.urgency_votes(problem)
+
+    def get_my_urgency_vote(self, problem: Problem) -> str | None:
+        """Return the requesting user's own urgency vote, if they cast one."""
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not isinstance(user, User):
+            return None
+        return validation_services.urgency_vote_of(problem, user)
 
 
 @final

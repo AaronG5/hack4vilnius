@@ -79,9 +79,18 @@ class ValidationListCreateView(DefaultListCreateAPIView[Validation]):
         user = cast("User", request.user)
         files = cast("list[UploadedFile[bytes]]", data["media"])
 
+        # One answer per person: an answer is a vote, and a vote that can be
+        # revised is one that can be gamed.
+        if Validation.objects.filter(user=user, problem=problem).exists():
+            return Response(
+                {"detail": "You have already answered this problem."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
         validation = Validation.objects.create(
             is_valid=cast("bool", data["is_valid"]),
             description=cast("str", data["description"]),
+            urgency=cast("str", data["urgency"]),
             user=user,
             problem=problem,
         )
@@ -91,6 +100,7 @@ class ValidationListCreateView(DefaultListCreateAPIView[Validation]):
         )
         validation.save(update_fields=["points_awarded"])
         _attach_media(validation, user, files)
+        validation_services.apply_urgency_votes(problem)
         validation_services.evaluate_problem_validations(problem)
 
         output = ValidationSerializer(validation, context={"request": request})

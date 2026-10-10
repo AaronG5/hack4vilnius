@@ -9,6 +9,7 @@ from media_assets.models import Media, MediaRelation
 from problems.models import Problem
 from users.models import User
 from vilnius_backend.base_models import TimestampedModel, UUIDModel
+from vilnius_backend.choices import ProblemUrgency
 
 
 @final
@@ -16,7 +17,18 @@ class Validation(UUIDModel, TimestampedModel):
     """A single user's validation of a problem's existence/status."""
 
     is_valid: models.BooleanField[bool | Combinable, bool] = models.BooleanField()
-    description: models.TextField[str | Combinable, str] = models.TextField()
+    description: models.TextField[str | Combinable, str] = models.TextField(
+        blank=True,
+        default="",
+        help_text="What this resident saw, in more detail than the report.",
+    )
+    urgency: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=32,
+        choices=ProblemUrgency.choices,
+        blank=True,
+        default="",
+        help_text="How urgent this resident thinks it is; empty if unsaid.",
+    )
     points_awarded: models.IntegerField[int | Combinable, int] = models.IntegerField(
         default=0,
     )
@@ -37,9 +49,15 @@ class Validation(UUIDModel, TimestampedModel):
     )
 
     class Meta(UUIDModel.Meta, TimestampedModel.Meta):
-        """Most recently created first."""
+        """One answer per person per problem; most recently created first."""
 
         ordering: ClassVar[list[str]] = ["-created_at"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["user", "problem"],
+                name="unique_validation_per_user_and_problem",
+            ),
+        ]
 
     @override
     def __str__(self) -> str:

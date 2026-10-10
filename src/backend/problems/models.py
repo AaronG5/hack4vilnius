@@ -29,6 +29,17 @@ class Problem(UUIDModel, TimestampedModel):
     urgency: models.CharField[str | Combinable, str] = models.CharField(
         max_length=32,
         choices=ProblemUrgency.choices,
+        help_text="Current consensus: what most residents voted for.",
+    )
+    reported_urgency: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=32,
+        choices=ProblemUrgency.choices,
+        blank=True,
+        default="",
+        help_text=(
+            "What the first report said, counted as the reporter's own vote. "
+            "Never changes, so re-tallying can't drift."
+        ),
     )
     legitimacy_score: models.FloatField[float | Combinable, float] = models.FloatField(
         help_text="AI-estimated percentage, 0-100.",

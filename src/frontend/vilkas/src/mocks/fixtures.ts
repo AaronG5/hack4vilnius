@@ -122,6 +122,7 @@ function urgencyVotes(ex: Example): Partial<Record<ProblemUrgency, number>> {
 }
 
 export const problems: Problem[] = EXAMPLES.map((ex, i) => ({
+  my_urgency_vote: null,
   id: mockId("p", i + 1),
   status: ex.status,
   urgency: ex.urgency,
@@ -154,7 +155,10 @@ export const validations: Validation[] = EXAMPLES.flatMap((ex, i) => {
   const vote = (isValid: boolean, k: number): Validation => ({
     id: mockId("v", ++validationN),
     is_valid: isValid,
-    description: isValid ? "Vis dar yra" : "Sutvarkyta",
+    description: "",
+    // The sample answers predate urgency voting; `urgency_votes` below holds
+    // the tally these problems start with.
+    urgency: "",
     points_awarded: 10,
     user: neighbours[(i + k + 1) % neighbours.length],
     problem: problems[i].id,

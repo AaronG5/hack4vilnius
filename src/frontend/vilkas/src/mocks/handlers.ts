@@ -8,17 +8,20 @@ import type {
   ProblemStatusUpdate,
   ProblemUrgency,
   Report,
-  UrgencyVoteCreate,
   User,
   UserUpdate,
   Validation,
 } from "../api";
+import { URGENCIES_DESC } from "../lib/labels";
 import * as fx from "./fixtures";
 
 // Matches the API whatever origin/base URL the client is configured with.
 const API = "*/api";
 
 const POINTS = { report: 20, validation: 10, photo: 10 };
+
+/** One passer-by shouldn't decide a problem's fate on their own. */
+const DECIDING_ANSWERS = 2;
 
 function createDb() {
   return {
@@ -170,39 +173,45 @@ export const handlers = [
     if (!isAuthed(request)) return unauthorized();
     const problem = db.problems.find((p) => p.id === idParam(params));
     if (!problem) return notFound();
+    // One answer per person per problem, and it is final.
+    if (db.validations.some((v) => v.problem === problem.id && v.user.id === db.user.id)) {
+      return HttpResponse.json({ detail: "Jūs jau atsakėte į šį pranešimą." }, { status: 409 });
+    }
     const form = await request.formData();
     const media = mediaFrom(form, db.user);
-    // One answer per person: a new validation replaces the previous one.
-    const previous = db.validations.find((v) => v.problem === problem.id && v.user.id === db.user.id);
-    const points = previous ? 0 : POINTS.validation + (media.length ? POINTS.photo : 0);
+    const urgency = (form.get("urgency") as ProblemUrgency | null) || undefined;
+    const points = POINTS.validation + (media.length ? POINTS.photo : 0);
     const validation: Validation = {
-      id: previous?.id ?? newId("v"),
+      id: newId("v"),
       is_valid: form.get("is_valid") === "true",
       description: String(form.get("description") ?? ""),
+      urgency: urgency ?? "",
       points_awarded: points,
       user: me(),
       problem: problem.id,
-      media: media.length ? media : (previous?.media ?? []),
+      media,
       created_at: new Date().toISOString(),
     };
-    db.validations = db.validations.filter((v) => v !== previous).concat(validation);
+    db.validations = db.validations.concat(validation);
     db.user.points += points;
-    if (problem.status === "unconfirmed" && validation.is_valid) problem.status = "confirmed";
+    if (urgency) {
+      // An answer is also an urgency vote; the problem follows the majority,
+      // ties going to the more severe (as the backend does).
+      const votes = { ...problem.urgency_votes, [urgency]: (problem.urgency_votes?.[urgency] ?? 0) + 1 };
+      problem.urgency_votes = votes;
+      problem.urgency = URGENCIES_DESC.reduce((best, k) => ((votes[k] ?? 0) > (votes[best] ?? 0) ? k : best), URGENCIES_DESC[0]);
+      db.myUrgency.set(problem.id, urgency);
+    }
+    // Two answers that agree, and more of them than the other way, decide the
+    // status — while it is still the residents' to decide (as the backend does).
+    const answers = db.validations.filter((v) => v.problem === problem.id);
+    const confirming = answers.filter((v) => v.is_valid).length;
+    const disputing = answers.length - confirming;
+    if (["unconfirmed", "confirmed", "canceled"].includes(problem.status)) {
+      if (confirming >= DECIDING_ANSWERS && confirming > disputing) problem.status = "confirmed";
+      else if (disputing >= DECIDING_ANSWERS && disputing > confirming) problem.status = "canceled";
+    }
     return HttpResponse.json(validation, { status: 201 });
-  }),
-  // TODO(api-gap): not in openapi.yaml yet.
-  http.post(`${API}/problems/:id/urgency-votes`, async ({ request, params }) => {
-    if (!isAuthed(request)) return unauthorized();
-    const problem = db.problems.find((p) => p.id === idParam(params));
-    if (!problem) return notFound();
-    const { urgency } = (await request.json()) as UrgencyVoteCreate;
-    const votes = { ...problem.urgency_votes };
-    const previous = db.myUrgency.get(problem.id);
-    if (previous) votes[previous] = Math.max(0, (votes[previous] ?? 1) - 1);
-    votes[urgency] = (votes[urgency] ?? 0) + 1;
-    problem.urgency_votes = votes;
-    db.myUrgency.set(problem.id, urgency);
-    return HttpResponse.json(withMyVote(problem));
   }),
 
   // -- reports ---------------------------------------------------------------
@@ -234,6 +243,7 @@ export const handlers = [
         address: String(form.get("address") ?? ""),
         near_sensitive: form.get("near_sensitive") === "true",
         urgency_votes: { [urgency]: 1 },
+        my_urgency_vote: null,
       } satisfies Problem;
       db.problems.unshift(problem);
     }

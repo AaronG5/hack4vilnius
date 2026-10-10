@@ -6,7 +6,7 @@ import type { Activity } from "./problemModel";
 
 const WEEK = 7 * 86_400_000;
 
-/** "Still there" / "fixed" answers in the last 7 days (weekly challenge: 5). */
+/** Answers either way in the last 7 days (weekly challenge: 5). */
 export function weekChecks(acts: Activity[], now = Date.now()): number {
   return acts.filter((a) => a.at >= now - WEEK && a.type !== "report").length;
 }

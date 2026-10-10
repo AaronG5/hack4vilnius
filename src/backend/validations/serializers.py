@@ -7,6 +7,7 @@ from problems.models import Problem
 from rest_framework import serializers
 from users.serializers import UserRefSerializer
 from validations.models import Validation
+from vilnius_backend.choices import ProblemUrgency
 
 
 @final
@@ -30,6 +31,7 @@ class ValidationSerializer(serializers.ModelSerializer[Validation]):
             "id",
             "is_valid",
             "description",
+            "urgency",
             "points_awarded",
             "user",
             "problem",
@@ -48,8 +50,23 @@ class ValidationCreateSerializer(serializers.Serializer[Validation]):
     # metaclass pops declared fields off the class, so the method stays
     # reachable at runtime.
     is_valid = serializers.BooleanField()  # pyright: ignore[reportAssignmentType]
-    description = serializers.CharField()
-    # Optional: answering "still there" / "fixed" must stay a single tap.
+    # Optional: room to say more than the original report did. The answer
+    # itself is `is_valid`, so there is nothing a resident must retype.
+    description = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    # Optional: how urgent this resident thinks the problem is. Left out when
+    # they only answer whether it is still there.
+    urgency = serializers.ChoiceField(
+        choices=ProblemUrgency.choices,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    # Optional, and more than one: answering "still there" / "fixed" must stay
+    # a single tap, but a resident can attach several photos or videos.
     media = serializers.ListField(
         child=serializers.FileField(),
         required=False,

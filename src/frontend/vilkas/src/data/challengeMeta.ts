@@ -121,9 +121,9 @@ export function challengeMeta(key: ChallengeKey, ctx: { myDistrict: string; tabl
 }
 
 export const GOALS = {
-  check: { label: "Tikrinti problemas", hint: "„Ar vis dar yra?“ pakeliui", unit: "patikrinimų", types: ["still", "fixed"] },
+  check: { label: "Tikrinti problemas", hint: "„Ar problema yra?“ pakeliui", unit: "patikrinimų", types: ["yes", "no"] },
   report: { label: "Pranešti naujas", hint: "Duobės, šiukšlės, apšvietimas…", unit: "pranešimų", types: ["report"] },
-  fixed: { label: "Patvirtinti sutvarkymus", hint: "Pažymėti, kad problema sutvarkyta", unit: "patvirtintų sutvarkymų", types: ["fixed"] },
+  fixed: { label: "Paneigti pranešimus", hint: "Pažymėti, kad problemos nebėra", unit: "paneigimų", types: ["no"] },
 } as const;
 
 export type GoalKey = keyof typeof GOALS;

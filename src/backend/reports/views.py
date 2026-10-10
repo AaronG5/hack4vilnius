@@ -73,9 +73,11 @@ def _get_or_create_problem(
     if duplicate is not None:
         return duplicate
 
+    urgency = problem_services.determine_urgency(resolved_category, description)
     return Problem.objects.create(
         status=ProblemStatus.UNCONFIRMED,
-        urgency=problem_services.determine_urgency(resolved_category, description),
+        urgency=urgency,
+        reported_urgency=urgency,
         legitimacy_score=problem_services.estimate_legitimacy_score(
             resolved_category,
             description,

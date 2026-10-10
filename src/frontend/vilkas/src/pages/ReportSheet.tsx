@@ -318,7 +318,8 @@ export function ReportSheet() {
     }
   };
 
-  // Confirming a duplicate = a "still there" answer on the existing problem, with the user's photo.
+  // Confirming a duplicate = answering "the problem is there" on the existing
+  // problem, with this reporter's photo, text and urgency.
   const confirmDuplicate = async () => {
     const chosen = dupSel !== null ? cands[dupSel] : undefined;
     if (!chosen) return;
@@ -326,7 +327,8 @@ export function ReportSheet() {
     try {
       const result = await createProblemValidation(chosen.view.id, {
         is_valid: true,
-        description: form.description.trim() || "Vis dar yra",
+        description: form.description.trim(),
+        urgency: form.urgency,
         media: file ? [file] : [],
       });
       await reload();
@@ -421,8 +423,8 @@ export function ReportSheet() {
           <h1>Pridėti komentarą?</h1>
           {preview && <img className="preview" src={preview} alt="Jūsų nuotrauka" />}
           {textArea(
-            "Adresas ar komentaras (nebūtina) — problemos tipą DI atpažins iš nuotraukos",
-            "Pvz.: Kalvarijų g. 98",
+            "Problemos apibūdinimas",
+            "Pvz.: 0.2 metrų diametro kelio duobė.",
           )}
           <div className="row">
             <button type="button" className="btn" style={{ flex: 1 }} onClick={() => void analyze()}>
@@ -491,7 +493,7 @@ export function ReportSheet() {
             <input className="inp" maxLength={60} value={form.title} onChange={(e) => patch({ title: e.target.value })} />
           </label>
           <div className="fld">
-            <label htmlFor="report-address">Adresas ar orientyras</label>
+            <label htmlFor="report-address">Adresas</label>
             <div className="row" style={{ flexWrap: "nowrap", alignItems: "stretch" }}>
               <input
                 id="report-address"

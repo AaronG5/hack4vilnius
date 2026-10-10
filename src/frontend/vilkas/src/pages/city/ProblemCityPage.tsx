@@ -156,6 +156,8 @@ export function ProblemCityPage() {
   // Photos: newest first; the board shows one large and two small.
   const photos = v.photos.slice().reverse();
   const descriptions = v.detail.reports.map((r) => r.description).filter(Boolean);
+  // Residents who wrote more than their yes/no answer.
+  const accounts = v.detail.validations.filter((a) => a.description.trim());
   const merged = duplicatesMerged(v);
   const mx = Math.max(1, v.urgVotes);
   const severity = v.urgency === "dangerous_to_life" ? 3 : v.urgency === "urgent" ? 2 : 1;
@@ -166,7 +168,7 @@ export function ProblemCityPage() {
   const assignedNames = assignment?.institutions.join(" + ") ?? v.detail.institution?.name ?? "vykdytojas";
   const dueText = assignment ? shortDate(assignment.due) : null;
   const citizenView = v.isFixed
-    ? `„Sutvarkyta — ${assignedNames}.“ Žymė žemėlapyje tapo žalia, o kaimynai prašomi patvirtinti sutvarkymą (${v.fixedVotes} jau patvirtino).`
+    ? `„Sutvarkyta — ${assignedNames}.“ Žymė žemėlapyje tapo žalia, o ${v.noVotes} kaimynų jau atsakė, kad problemos nebėra.`
     : assigned
     ?`„Sprendžiama — ${assignedNames}.${dueText ? ` Numatyta iki ${dueText}.` : ""}“ ${count(followers, ["sekėjas gavo", "sekėjai gavo", "sekėjų gavo"])} pranešimą, o žymė žemėlapyje tapo geltona.`
     : `„${status === "unconfirmed" ? "Laukia kaimynų patvirtinimo" : "Patvirtinta, laukia sprendimo"}.“ Kai priskirsite, ${count(followers, ["sekėjas gaus", "sekėjai gaus", "sekėjų gaus"])} pranešimą, o žymė žemėlapyje taps geltona.`;
@@ -211,7 +213,7 @@ export function ProblemCityPage() {
                   <figcaption>
                     {i === 0 ? "Naujausia · " : ""}
                     {ago(p.at)}
-                    {p.kind === "still" ? " · „vis dar yra“" : p.kind === "fixed" ? " · „sutvarkyta“" : " · pranešta"}
+                    {p.kind === "yes" ? " · „problema yra“" : p.kind === "no" ? " · „problemos nėra“" : " · pranešta"}
                   </figcaption>
                 </figure>
               ))
@@ -222,20 +224,30 @@ export function ProblemCityPage() {
               {descriptions[0] ?? "Aprašymo nėra."}
               {descriptions.length > 1 && <span className="hint"> Aprašymas sujungtas iš {descriptions.length} pranešimų.</span>}
             </p>
+            {accounts.length > 0 && (
+              <div className="pc-desc" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Gyventojų patikslinimai</span>
+                {accounts.map((a) => (
+                  <span key={a.id} className="hint">
+                    „{a.description}“ — {a.is_valid ? "problema yra" : "problemos nėra"}, {ago(Date.parse(a.created_at))}
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
           <div className="pc-grid2">
             <section className="ccard">
               <div className="sec-head">
                 <h2 style={{ fontSize: 16 }}>Bendruomenės patikra</h2>
-                <span className="tag lime">{v.stillVotes} patvirtino</span>
+                <span className="tag lime">{v.yesVotes} patvirtino</span>
               </div>
               <div className="grid3">
                 <div className="pc-stat">
-                  <b>{v.stillVotes}</b>„vis dar yra“
+                  <b>{v.yesVotes}</b>„problema yra“
                 </div>
                 <div className="pc-stat">
-                  <b>{v.fixedVotes}</b>„sutvarkyta“
+                  <b>{v.noVotes}</b>„problemos nėra“
                 </div>
                 <div className="pc-stat">
                   <b>{merged}</b>sujungti dublikatai
@@ -424,8 +436,8 @@ function SentPanel({ view: v, assignment, now, onReassign }: { view: ProblemView
   const names = assignment?.institutions ?? (v.detail.institution ? [v.detail.institution.name] : []);
   const status = v.detail.status;
   // Eiga: 1 priskirta · 2 priėmė · 3 darbai vyksta · 4 pažymėta sutvarkyta · 5 kaimynai patvirtino.
-  const reached = status === "pending" ? 1 : status === "ongoing" ? 3 : v.fixedVotes >= 2 ? 5 : 4;
-  const steps = ["Priskirta", "Vykdytojas priėmė", "Darbai vyksta", "Vykdytojas pažymėjo „sutvarkyta“ + nuotrauka", "Kaimynai patvirtino sutvarkymą"];
+  const reached = status === "pending" ? 1 : status === "ongoing" ? 3 : v.noVotes >= 2 ? 5 : 4;
+  const steps = ["Priskirta", "Vykdytojas priėmė", "Darbai vyksta", "Vykdytojas pažymėjo „sutvarkyta“ + nuotrauka", "Kaimynai atsakė, kad problemos nebėra"];
   const contact = INSTITUTIONS.find((i) => i.name === names[0])?.contact ?? v.detail.institution?.contact_info;
 
   return (
