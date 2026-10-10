@@ -42,9 +42,8 @@ testpaths = ["src/backend"]
 requires = ["uv_build>=0.12.21,<0.13.0"]
 build-backend = "uv_build"
 
-[tool.basedpyright]
-typeCheckingMode = "recommended"
-extraPaths = ["src/backend"]
+# basedpyright/Pyright are configured in pyrightconfig.json, which takes
+# precedence over this file; see the comment there for why it can't live here.
 
 [tool.ruff]
 target-version = "py313"

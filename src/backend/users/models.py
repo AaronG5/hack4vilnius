@@ -2,13 +2,19 @@
 
 import datetime as dt
 import uuid
-from typing import ClassVar, final, override
+from typing import TYPE_CHECKING, ClassVar, final, override
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.db.models.expressions import Combinable
 from django.utils import timezone
+from vilnius_backend.choices import UserRole
+
+if TYPE_CHECKING:
+    from districts.models import District
+
+_DEFAULT_TRUST_SCORE = 100.0
 
 
 @final
@@ -79,6 +85,26 @@ class User(AbstractBaseUser, PermissionsMixin):
             null=True,
             blank=True,
             help_text="Subject identifier returned by Google for this account.",
+        )
+    )
+
+    role: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=32,
+        choices=UserRole.choices,
+        default=UserRole.REGULAR_USER,
+    )
+    trust_score: models.FloatField[float | Combinable, float] = models.FloatField(
+        default=_DEFAULT_TRUST_SCORE,
+    )
+    points: models.IntegerField[int | Combinable, int] = models.IntegerField(default=0)
+    district: models.ForeignKey["District | Combinable | None", "District | None"] = (
+        models.ForeignKey(
+            "districts.District",
+            on_delete=models.SET_NULL,
+            null=True,
+            blank=True,
+            related_name="residents",
+            help_text="Home district.",
         )
     )
 
