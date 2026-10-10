@@ -59,16 +59,16 @@ function locationError(error: unknown): string {
   // the global is missing on older Safari, where that would throw.
   const code = typeof error === "object" && error !== null && "code" in error ? Number((error as { code: unknown }).code) : 0;
   if (code === PERMISSION_DENIED) {
-    // Browsers refuse geolocation outright on an insecure origin — which is
+    // Browsers refuse geolocation outright on an insecure origin – which is
     // what opening the dev server by LAN address looks like from a phone.
     return window.isSecureContext
-      ? "Vietos prieiga uždrausta — leiskite ją naršyklės nustatymuose arba pažymėkite vietą žemėlapyje."
-      : "Vietos nustatymas veikia tik saugiu ryšiu (https arba localhost) — pažymėkite vietą žemėlapyje.";
+      ? "Vietos prieiga uždrausta – leiskite ją naršyklės nustatymuose arba pažymėkite vietą žemėlapyje."
+      : "Vietos nustatymas veikia tik saugiu ryšiu (https arba localhost) – pažymėkite vietą žemėlapyje.";
   }
   if (code === TIMEOUT) {
-    return "Vietos nustatymas užtruko per ilgai — bandykite dar kartą arba pažymėkite vietą žemėlapyje.";
+    return "Vietos nustatymas užtruko per ilgai – bandykite dar kartą arba pažymėkite vietą žemėlapyje.";
   }
-  return "Nepavyko nustatyti vietos — pažymėkite ją žemėlapyje.";
+  return "Nepavyko nustatyti vietos – pažymėkite ją žemėlapyje.";
 }
 
 export function ReportSheet() {
@@ -314,14 +314,14 @@ export function ReportSheet() {
       // A report a few metres from an open problem of the same type joins it.
       if (views.some((v) => v.id === report.problem)) {
         navigate(`/problems/${report.problem}`);
-        toast("Toks pranešimas čia jau buvo — prisijungėte prie jo! Taškus gausite, kai jis pasitvirtins");
+        toast("Toks pranešimas čia jau buvo – prisijungėte prie jo! Taškus gausite, kai jis pasitvirtins");
       } else {
         navigate("/map");
         toast("Pranešimas išsiųstas! +20 tšk. gausite, kai kaimynai jį patvirtins");
       }
     } catch {
       setStep(from);
-      toast("Nepavyko išsiųsti — pabandykite dar kartą");
+      toast("Nepavyko išsiųsti – pabandykite dar kartą");
     }
   };
 
@@ -350,7 +350,7 @@ export function ReportSheet() {
         return;
       }
       setStep("dupes");
-      toast("Nepavyko išsaugoti — pabandykite dar kartą");
+      toast("Nepavyko išsaugoti – pabandykite dar kartą");
     }
   };
 
@@ -386,7 +386,7 @@ export function ReportSheet() {
         <>
           <Steps n={1} />
           <h1>Pranešti apie problemą</h1>
-          <p className="lead">Nufotografuokite ir aprašykite — tipą ir skubumą pasiūlysime, o jūs patikrinsite.</p>
+          <p className="lead">Nufotografuokite ir aprašykite – tipą ir skubumą pasiūlysime, o jūs patikrinsite.</p>
           <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
           {hasPhoto ? (
             <div className="row">
@@ -419,7 +419,7 @@ export function ReportSheet() {
                 </span>
                 <span>
                   <b>Įkelti nuotraukas</b>
-                  <small>Kelias iš karto — iš telefono galerijos ar kompiuterio</small>
+                  <small>Kelias iš karto – iš telefono galerijos ar kompiuterio</small>
                 </span>
                 {picker("image/*", "Įkelti nuotraukas")}
               </label>
@@ -441,7 +441,7 @@ export function ReportSheet() {
             </span>
             <span>
               <b>{hasClip ? "Pridėti dar įrašą" : "Garso ar vaizdo įrašas"}</b>
-              <small>Nebūtina — kai nuotraukos neužtenka: triukšmas, tekantis vanduo, eismas</small>
+              <small>Nebūtina – kai nuotraukos neužtenka: triukšmas, tekantis vanduo, eismas</small>
             </span>
             {picker("audio/*,video/*", "Įkelti garso ar vaizdo įrašų")}
           </label>
@@ -450,7 +450,7 @@ export function ReportSheet() {
           </button>
           {!described && (
             <span className="sm" style={{ textAlign: "center" }}>
-              Aprašymas privalomas — bent keli žodžiai, kas ir kur
+              Aprašymas privalomas – bent keli žodžiai, kas ir kur
               {!hasPhoto && ". Nuotrauka nebūtina, bet labai padeda"}
             </span>
           )}
@@ -485,7 +485,7 @@ export function ReportSheet() {
           {aiNote && <div className="note warn">{aiNote}</div>}
           <h1>Patikrinkite detales</h1>
           <div className="fld" role="group" aria-label="Problemos tipas">
-            {shortList ? "Problemos tipas — DI siūlo, tinkamiausias pirmas" : "Problemos tipas — palieskite, jei reikia pataisyti"}
+            {shortList ? "Problemos tipas – DI siūlo, tinkamiausias pirmas" : "Problemos tipas – palieskite, jei reikia pataisyti"}
             <div className="cats">
               {pickerCategories.map((c) => (
                 <button key={c.id} type="button" className="cat" aria-pressed={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id })}>
@@ -500,7 +500,7 @@ export function ReportSheet() {
             </div>
           </div>
           <div className="fld" role="group" aria-label="Skubumas">
-            Skubumas{ai ? " · pasiūlytas" : ""} — kiti gyventojai galės balsuoti
+            Skubumas{ai ? " · pasiūlytas" : ""} – kiti gyventojai galės balsuoti
             <div className="seg">
               {URGENCIES.map((u) => (
                 <button key={u} type="button" aria-pressed={form.urgency === u} onClick={() => patch({ urgency: u })}>
@@ -565,14 +565,14 @@ export function ReportSheet() {
             {matched && (
               <span style={{ fontWeight: 500 }}>
                 ✓ Rasta: {matched.address}
-                {matched.locality && `, ${matched.locality}`} — vietos žymėti nereikės.
+                {matched.locality && `, ${matched.locality}`} – vietos žymėti nereikės.
               </span>
             )}
             {notFound && !searching && (
-              <span style={{ fontWeight: 500 }}>Tokio adreso nerasta — vietą pažymėsite žemėlapyje.</span>
+              <span style={{ fontWeight: 500 }}>Tokio adreso nerasta – vietą pažymėsite žemėlapyje.</span>
             )}
             {lookupFailed && !searching && (
-              <span style={{ fontWeight: 500 }}>Adresų paieška neveikia — vietą pažymėsite žemėlapyje.</span>
+              <span style={{ fontWeight: 500 }}>Adresų paieška neveikia – vietą pažymėsite žemėlapyje.</span>
             )}
             {fix && (
               <span style={{ fontWeight: 500 }}>
@@ -601,7 +601,7 @@ export function ReportSheet() {
             disabled={!form.categoryId || !form.title.trim()}
             onClick={() => (at ? void checkDuplicates("form") : setStep("place"))}
           >
-            {at ? "Toliau — peržiūrėti" : "Toliau — pažymėti vietą"}
+            {at ? "Toliau – peržiūrėti" : "Toliau – pažymėti vietą"}
           </button>
           {at && (
             <button type="button" className="btn link" onClick={() => setStep("place")}>
@@ -610,7 +610,7 @@ export function ReportSheet() {
           )}
           {/* Going back re-runs the suggestion on "Toliau", so a changed description is read again. */}
           <button type="button" className="btn link" onClick={() => setStep("compose")}>
-            Atgal — nuotraukos ir aprašymas
+            Atgal – nuotraukos ir aprašymas
           </button>
         </>
       );
@@ -642,7 +642,7 @@ export function ReportSheet() {
             }}
             center={focus}
           />
-          <p style={{ fontWeight: 600 }}>{at ? `Rajonas: ${districtOf(at, districts)?.name ?? "—"}` : "Vieta dar nepažymėta"}</p>
+          <p style={{ fontWeight: 600 }}>{at ? `Rajonas: ${districtOf(at, districts)?.name ?? "–"}` : "Vieta dar nepažymėta"}</p>
           <div className="row">
             <button type="button" className="btn" style={{ flex: 1 }} disabled={!at} onClick={() => void checkDuplicates("place")}>
               Toliau
@@ -679,7 +679,7 @@ export function ReportSheet() {
             ))}
           </div>
           <button type="button" className="btn" disabled={dupSel === null} onClick={() => void confirmDuplicate()}>
-            Taip — patvirtinti pažymėtą
+            Taip – patvirtinti pažymėtą
           </button>
           <button type="button" className="btn link" onClick={() => void submit("dupes")}>
             Ne, tai nauja problema
