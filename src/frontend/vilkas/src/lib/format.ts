@@ -1,6 +1,7 @@
 // Lithuanian number/time formatting helpers.
 
-const HOUR = 3_600_000;
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 /**
@@ -20,15 +21,24 @@ export function count(n: number, forms: [string, string, string]): string {
   return `${n} ${plural(n, forms)}`;
 }
 
-/** Demo-style relative time: "ką tik", "prieš 3 val.", "vakar", "prieš 5 d.". */
+/** Calendar days between two times, by local midnight. */
+function calendarDays(time: number, now: number): number {
+  const day = (t: number) => {
+    const d = new Date(t);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+  return Math.round((day(now) - day(time)) / DAY);
+}
+
+/** Relative time: "ką tik", "prieš 12 min.", "prieš 3 val.", "vakar", "prieš 5 d.", then the date. */
 export function ago(time: number, now = Date.now()): string {
-  const diff = now - time;
-  const days = Math.floor(diff / DAY);
-  if (days <= 0) {
-    const hours = Math.floor(diff / HOUR);
-    return hours <= 0 ? "ką tik" : `prieš ${hours} val.`;
-  }
-  return days === 1 ? "vakar" : `prieš ${days} d.`;
+  const diff = Math.max(0, now - time);
+  if (diff < MINUTE) return "ką tik";
+  if (diff < HOUR) return `prieš ${Math.floor(diff / MINUTE)} min.`;
+  if (diff < DAY) return `prieš ${Math.floor(diff / HOUR)} val.`;
+  const days = calendarDays(time, now);
+  if (days <= 1) return "vakar";
+  return days < 30 ? `prieš ${days} d.` : shortDate(time);
 }
 
 const MONTHS = ["saus.", "vas.", "kov.", "bal.", "geg.", "birž.", "liep.", "rugp.", "rugs.", "spal.", "lapkr.", "gruod."];

@@ -32,6 +32,13 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   const [filter, setFilter] = useState<MapFilter>("all");
   const [toastMessage, setToastMessage] = useState<string>();
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [clock, setClock] = useState(0);
+
+  // Re-render every minute so "prieš 5 min." doesn't freeze while the page is open.
+  useEffect(() => {
+    const timer = setInterval(() => setClock((n) => n + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   // TODO(api-gap): GET /problems lacks list summaries, so details are fetched per problem.
   const reload = useCallback(async () => {
@@ -94,8 +101,8 @@ export function AppStateProvider({ ready, children }: { ready: boolean; children
   }, [views, me, toast]);
 
   const value = useMemo(
-    () => ({ me, districts, categories, views, notifications, markRead, loaded, error, reload, filter, setFilter, toast }),
-    [me, districts, categories, views, notifications, markRead, loaded, error, reload, filter, toast],
+    () => ({ me, districts, categories, views, notifications, markRead, loaded, error, reload, filter, setFilter, toast, clock }),
+    [me, districts, categories, views, notifications, markRead, loaded, error, reload, filter, toast, clock],
   );
 
   return (

@@ -20,6 +20,8 @@ export interface AppState {
   filter: MapFilter;
   setFilter: (f: MapFilter) => void;
   toast: (message: string) => void;
+  /** Ticks every minute, so relative times ("prieš 5 min.") stay current. */
+  clock: number;
 }
 
 export const AppStateContext = createContext<AppState | null>(null);
