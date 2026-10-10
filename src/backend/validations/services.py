@@ -6,6 +6,7 @@ decision are real: a validation is where a resident says whether the
 problem is there at all, and how urgent it looks.
 """
 
+from notifications.services import notify_problem_status_change
 from problems.models import Problem
 from users.models import User
 from validations.models import Validation
@@ -102,8 +103,8 @@ def evaluate_problem_validations(problem: Problem) -> None:
     the municipality also writes this status, and a single late answer
     must not undo what a case worker set.
 
-    Still a stub: answers count one each, rather than by their author's
-    trust score, and nobody is notified of the change.
+    Everyone involved is notified of a change. Still a stub: answers count
+    one each, rather than by their author's trust score.
     """
     # TODO:
     if problem.status not in _RESIDENTS_DECIDE:
@@ -122,3 +123,4 @@ def evaluate_problem_validations(problem: Problem) -> None:
     if decided is not None and decided != problem.status:
         problem.status = decided
         problem.save(update_fields=["status", "updated_at"])
+        _ = notify_problem_status_change(problem)

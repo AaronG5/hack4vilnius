@@ -31,6 +31,14 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
 
+# There is no staff login screen yet, so while developing (or demoing) any
+# signed-in user may use the municipality's endpoints: change a problem's
+# status, review moderation flags. Off by default whenever DEBUG is off; set
+# CITY_TOOLS_FOR_EVERYONE=false to test the real staff-only rules locally.
+CITY_TOOLS_FOR_EVERYONE = (
+    os.environ.get("CITY_TOOLS_FOR_EVERYONE", str(DEBUG)).lower() == "true"
+)
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")

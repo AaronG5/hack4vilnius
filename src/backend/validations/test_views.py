@@ -6,7 +6,9 @@ from uuid import uuid4
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from notifications.models import Notification
 from problems.models import Problem
+from reports.models import Report
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 from users.models import User
@@ -254,6 +256,38 @@ class TestValidationCreate:
 
         problem.refresh_from_db()
         assert problem.status == ProblemStatus.CONFIRMED
+
+    def test_confirming_tells_the_people_involved(
+        self,
+        auth_client: APIClient,
+        other_auth_client: APIClient,
+        problem: Problem,
+        report: Report,
+    ) -> None:
+        """When answers confirm a problem, its reporter hears about it."""
+        problem.status = ProblemStatus.UNCONFIRMED
+        problem.save(update_fields=["status"])
+
+        for client in (auth_client, other_auth_client):
+            _ = client.post(_url(problem), {"is_valid": True}, format="multipart")
+
+        note = Notification.objects.get(user=report.user, problem=problem)
+        assert note.message.startswith("Kaimynai patvirtino problemą!")
+
+    def test_one_answer_notifies_nobody(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        report: Report,
+    ) -> None:
+        """An answer that decides nothing sends nothing."""
+        del report
+        problem.status = ProblemStatus.UNCONFIRMED
+        problem.save(update_fields=["status"])
+
+        _ = auth_client.post(_url(problem), {"is_valid": True}, format="multipart")
+
+        assert not Notification.objects.exists()
 
     def test_two_disputing_answers_cancel_the_problem(
         self,

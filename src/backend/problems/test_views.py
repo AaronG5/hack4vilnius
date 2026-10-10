@@ -1,7 +1,7 @@
 """Tests for the problem endpoints."""
 
 from http import HTTPStatus
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 import pytest
@@ -15,6 +15,9 @@ from rest_framework.test import APIClient
 from users.models import User
 from validations.models import Validation
 from vilnius_backend.choices import ProblemStatus, ProblemUrgency
+
+if TYPE_CHECKING:
+    from pytest_django.fixtures import Settings
 
 PROBLEMS_URL = "/api/problems"
 NEUTRAL_SCORE = 50.0
@@ -185,6 +188,53 @@ class TestProblemStatusUpdate:
         )
 
         assert response.status_code == HTTPStatus.FORBIDDEN
+
+    def test_anyone_signed_in_may_while_city_tools_are_open(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        settings: "Settings",
+    ) -> None:
+        """With no staff login yet, development lets any signed-in user act."""
+        settings.CITY_TOOLS_FOR_EVERYONE = True
+        response = auth_client.put(
+            f"{PROBLEMS_URL}/{problem.id}/status",
+            {"status": ProblemStatus.ONGOING},
+            format="json",
+        )
+
+        assert response.status_code == HTTPStatus.OK
+
+    def test_open_city_tools_still_need_a_session(
+        self,
+        api_client: APIClient,
+        problem: Problem,
+        settings: "Settings",
+    ) -> None:
+        """Opening the tools never extends to anonymous callers."""
+        settings.CITY_TOOLS_FOR_EVERYONE = True
+        response = api_client.put(
+            f"{PROBLEMS_URL}/{problem.id}/status",
+            {"status": ProblemStatus.ONGOING},
+            format="json",
+        )
+
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_handing_over_assigns_the_categorys_institution(
+        self,
+        staff_client: APIClient,
+        problem: Problem,
+    ) -> None:
+        """A problem passed on without an institution goes to its category's."""
+        _ = staff_client.put(
+            f"{PROBLEMS_URL}/{problem.id}/status",
+            {"status": ProblemStatus.PENDING},
+            format="json",
+        )
+
+        problem.refresh_from_db()
+        assert problem.institution == problem.category.institution
 
     def test_staff_can_change_the_status(
         self,

@@ -105,6 +105,8 @@ _INSTITUTIONS: Final[tuple[tuple[str, str], ...]] = (
     ("Gatvių apšvietimas", "info@apsvietimas.lt"),
     ("VASA", "info@vasa.lt"),
     ("Susisiekimo paslaugos", "info@judu.lt"),
+    ("Vilniaus vandenys", "info@vv.lt"),
+    ("Seniūnija", "seniunija@vilnius.lt"),
 )
 
 _CATEGORIES: Final[tuple[_CategorySeed, ...]] = (
@@ -117,10 +119,10 @@ _CATEGORIES: Final[tuple[_CategorySeed, ...]] = (
         ProblemUrgency.DANGEROUS_TO_LIFE,
         "Susisiekimo paslaugos",
     ),
-    _CategorySeed("Triukšmas", ProblemUrgency.CAN_WAIT, None),
-    _CategorySeed("Vandalizmas", ProblemUrgency.CAN_WAIT, None),
-    _CategorySeed("Medžiai ir želdiniai", ProblemUrgency.CAN_WAIT, None),
-    _CategorySeed("Kita", ProblemUrgency.CAN_WAIT, None),
+    _CategorySeed("Triukšmas", ProblemUrgency.CAN_WAIT, "Seniūnija"),
+    _CategorySeed("Vandalizmas", ProblemUrgency.CAN_WAIT, "Seniūnija"),
+    _CategorySeed("Medžiai ir želdiniai", ProblemUrgency.CAN_WAIT, "Seniūnija"),
+    _CategorySeed("Kita", ProblemUrgency.CAN_WAIT, "Seniūnija"),
 )
 
 _BADGES: Final[tuple[_BadgeSeed, ...]] = (

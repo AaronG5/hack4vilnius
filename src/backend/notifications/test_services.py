@@ -59,7 +59,7 @@ class TestNotifyProblemStatusChange:
         problem: Problem,
         report: Report,
     ) -> None:
-        """The message names the new status and the event type is status_changed."""
+        """The message says what happened, in Lithuanian, and names the problem."""
         del report
         problem.status = ProblemStatus.ONGOING
         problem.save(update_fields=["status"])
@@ -67,8 +67,25 @@ class TestNotifyProblemStatusChange:
         created = notify_problem_status_change(problem)
 
         assert created[0].event_type == EVENT_STATUS_CHANGED
-        assert "Ongoing" in created[0].message
+        assert created[0].message.startswith("Darbai prasidėjo!")
+        assert problem.category.name in created[0].message
         assert created[0].problem == problem
+
+    def test_names_the_problem_by_its_title(
+        self,
+        problem: Problem,
+        report: Report,
+    ) -> None:
+        """A problem with a title is named by it rather than its category."""
+        del report
+        problem.title = "Gili duobė"
+        problem.status = ProblemStatus.COMPLETED
+        problem.save(update_fields=["title", "status"])
+
+        created = notify_problem_status_change(problem)
+
+        assert created[0].message.startswith("Sutvarkyta! ")
+        assert "„Gili duobė“" in created[0].message
 
     def test_nobody_involved_means_no_notifications(self, problem: Problem) -> None:
         """A problem with no reports or validations notifies nobody."""

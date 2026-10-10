@@ -64,6 +64,12 @@ form. It proxies [Photon](https://photon.komoot.io/) (OpenStreetMap data);
 point it at another instance with `GEOCODER_URL`, and identify your
 deployment with `GEOCODER_USER_AGENT`.
 
+### Municipality tools without a staff login
+There is no staff login screen yet. While `DEBUG` is on, any signed-in user may
+use the municipality endpoints (changing a problem's status, moderation), so the
+`/city` dashboard works out of the box. Set `CITY_TOOLS_FOR_EVERYONE=false` to
+test the real staff-only rules; with `DEBUG` off they always apply.
+
 ## Frontend
 
 A Vite + React + TypeScript app in `src/frontend/vilkas`, with a typed client

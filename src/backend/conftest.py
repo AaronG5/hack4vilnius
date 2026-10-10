@@ -42,6 +42,12 @@ def _media_root(settings: "Settings", tmp_path: Path) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _staff_only_city_tools(settings: "Settings") -> None:
+    """Test the real staff-only rules, whatever the developer's DEBUG says."""
+    settings.CITY_TOOLS_FOR_EVERYONE = False
+
+
+@pytest.fixture(autouse=True)
 def _no_anthropic_api_key(settings: "Settings") -> None:
     """Never call the real Anthropic API, even if the developer's env has a key."""
     settings.ANTHROPIC_API_KEY = ""

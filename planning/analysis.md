@@ -183,8 +183,8 @@ These run in the browser today. They should live in one place so the resident ap
 | 1 | ✅ Apply points to `User.points` on report and validation, with a backfill for past actions — checkpoint 3, 2026-10-11 (`points_awarded` notification moves to item 4) | BE | Profile, levels, prizes, every toast |
 | 2 | ✅ `evaluate_problem_validations`: unconfirmed → confirmed / canceled by agreeing answers — done by the backend team (4f61545) | BE | Map colours, dashboard, "fixed" flow |
 | 3 | ✅ Store `title`, `address`, `near_sensitive`, reporter urgency on report create — checkpoint 3, 2026-10-11 | BE | Every list and card |
-| 4 | Lithuanian notification texts + `validation_requested` | BE | Notifications screen |
-| 5 | Staff login form + seeded admin; "accepted / fixed" buttons on the city card | FE + BE | Whole municipality flow end to end |
+| 4 | ✅ Lithuanian notification texts, sent also when residents' answers confirm or cancel — checkpoint 4, 2026-10-11. `validation_requested` deferred: no nearby residents to ask yet | BE | Notifications screen |
+| 5 | ✅ (no login, by decision) `CITY_TOOLS_FOR_EVERYONE` in development + "accepted / fixed" buttons on the city card — checkpoint 4, 2026-10-11 | FE + BE | Whole municipality flow end to end |
 | 6 | ✅ Remove or replace the fake challenge numbers (deadlines from `end_date`, empty leaderboards, no fake counter) — checkpoint 1, 2026-10-10 | FE | Challenges |
 | 7 | ✅ Hide or relabel prizes and the DI confidence; anonymous default name + name field — checkpoint 2, 2026-10-11 | FE | Profile, report form |
 | 8 | `GET /problems/nearby` + backend duplicate check | BE | Validation and clustering (core problem #1) |

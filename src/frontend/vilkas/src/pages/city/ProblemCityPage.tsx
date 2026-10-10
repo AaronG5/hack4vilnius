@@ -125,8 +125,9 @@ export function ProblemCityPage() {
     store.setAssignments(all);
   };
 
-  // TODO(api-gap): there is no city-staff login yet, so the anonymous session
-  // these pages run on is refused by PUT /problems/{id}/status.
+  // TODO(api-gap): there is no city-staff login yet. In development the backend
+  // lets any session use PUT /problems/{id}/status (CITY_TOOLS_FOR_EVERYONE);
+  // otherwise only staff accounts may.
   const statusError = (err: unknown, fallback: string) =>
     err instanceof ApiError && (err.status === 401 || err.status === 403)
       ? "Reikia savivaldybės darbuotojo paskyros"
@@ -140,6 +141,17 @@ export function ProblemCityPage() {
       toast(`Užduotis išsiųsta: ${a.institutions.join(" + ")}`);
     } catch (err) {
       toast(statusError(err, "Nepavyko priskirti — pabandykite dar kartą"));
+    }
+  };
+
+  // The executor's side, done from here until institutions have their own access.
+  const advance = async (next: "ongoing" | "completed") => {
+    try {
+      await updateProblemStatus(v.id, { status: next });
+      await reload();
+      toast(next === "ongoing" ? "Pažymėta: vykdytojas priėmė" : "Pažymėta: sutvarkyta. Gyventojai gavo pranešimą");
+    } catch (err) {
+      toast(statusError(err, "Nepavyko — pabandykite dar kartą"));
     }
   };
 
@@ -325,7 +337,7 @@ export function ProblemCityPage() {
 
         <aside style={{ flex: "1 1 420px", minWidth: 0, display: "flex", flexDirection: "column", gap: 18 }}>
           {assigned ? (
-            <SentPanel view={v} assignment={assignment} now={now} onReassign={reassign} />
+            <SentPanel view={v} assignment={assignment} now={now} onReassign={reassign} onAdvance={advance} />
           ) : (
             <AssignPanel key={v.id} view={v} followers={followers} now={now} onAssign={assign} />
           )}
@@ -444,7 +456,25 @@ function AssignPanel({ view: v, followers, now, onAssign }: { view: ProblemView;
   );
 }
 
-function SentPanel({ view: v, assignment, now, onReassign }: { view: ProblemView; assignment?: Assignment; now: number; onReassign: () => Promise<void> }) {
+function SentPanel({
+  view: v,
+  assignment,
+  now,
+  onReassign,
+  onAdvance,
+}: {
+  view: ProblemView;
+  assignment?: Assignment;
+  now: number;
+  onReassign: () => Promise<void>;
+  onAdvance: (next: "ongoing" | "completed") => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const step = async (next: "ongoing" | "completed") => {
+    setBusy(true);
+    await onAdvance(next);
+    setBusy(false);
+  };
   const names = assignment?.institutions ?? (v.detail.institution ? [v.detail.institution.name] : []);
   const status = v.detail.status;
   // Eiga: 1 priskirta · 2 priėmė · 3 darbai vyksta · 4 pažymėta sutvarkyta · 5 kaimynai patvirtino.
@@ -492,6 +522,11 @@ function SentPanel({ view: v, assignment, now, onReassign }: { view: ProblemView
           </li>
         ))}
       </ol>
+      {status !== "completed" && (
+        <button type="button" className="btn bright" disabled={busy} onClick={() => void step(status === "pending" ? "ongoing" : "completed")}>
+          {status === "pending" ? "Vykdytojas priėmė — pradėti darbus" : "Pažymėti sutvarkyta"}
+        </button>
+      )}
       {status !== "completed" && (
         <div className="grid3" style={{ gridTemplateColumns: "1fr 1fr" }}>
           <button type="button" className="btn ghost" style={{ height: 46 }} onClick={() => void onReassign()}>
