@@ -1,0 +1,11 @@
+.city-shell {
+  min-height: 100dvh;
+  background: #f4f4f4;
+  padding: 32px 40px;
+}
+
+@media (max-width: 700px) {
+  .city-shell {
+    padding: 16px;
+  }
+}
