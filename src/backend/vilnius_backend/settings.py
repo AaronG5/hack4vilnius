@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "challenges",
     "notifications",
     "moderation",
+    "geocoding",
 ]
 
 AUTH_USER_MODEL = "users.User"
@@ -210,6 +211,18 @@ SPECTACULAR_SETTINGS = {
 # ID of the OAuth 2.0 client registered in Google Cloud Console; ID tokens
 # presented to the Google auth endpoint must be issued for this audience.
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+
+
+# Address lookup
+# The external geocoder behind `GET /api/geocode`. Photon is OpenStreetMap
+# data served by an endpoint meant for type-ahead search; swap in a private
+# instance by setting GEOCODER_URL. The user agent identifies this app, as
+# the OSM geocoding services ask callers to do.
+GEOCODER_URL = os.environ.get("GEOCODER_URL", "https://photon.komoot.io/api/")
+GEOCODER_USER_AGENT = os.environ.get(
+    "GEOCODER_USER_AGENT",
+    "vilkas-hack4vilnius (https://hack4vilnius.lt)",
+)
 
 
 # AI category suggestion

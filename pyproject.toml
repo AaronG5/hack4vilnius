@@ -16,6 +16,7 @@ dependencies = [
     "djangorestframework>=3.18.3",
     "drf-spectacular>=0.30.0",
     "google-auth[requests]>=2.61.0",
+    "requests>=2.34.2",
 ]
 
 [dependency-groups]

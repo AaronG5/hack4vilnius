@@ -258,6 +258,26 @@ export const handlers = [
     return report ? HttpResponse.json(report) : notFound();
   }),
 
+  // -- geocoding -------------------------------------------------------------
+  http.get(`${API}/geocode`, ({ request }) => {
+    if (!isAuthed(request)) return unauthorized();
+    const q = (new URL(request.url).searchParams.get("q") ?? "").trim();
+    if (q.length < 3) {
+      return HttpResponse.json({ detail: "Užklausa per trumpa." }, { status: 400 });
+    }
+    // The fixtures' own addresses stand in for the geocoder.
+    const matches = db.problems
+      .filter((p) => (p.address ?? "").toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 5)
+      .map((p) => ({
+        address: p.address ?? "",
+        locality: "Vilnius",
+        latitude: p.location.coordinates[1],
+        longitude: p.location.coordinates[0],
+      }));
+    return HttpResponse.json(matches);
+  }),
+
   // -- reference data --------------------------------------------------------
   http.get(`${API}/categories`, () => HttpResponse.json(fx.categories)),
   http.get(`${API}/districts`, () => HttpResponse.json(fx.districts)),

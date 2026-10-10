@@ -31,6 +31,8 @@ tags:
     description: Per-user status change notifications.
   - name: moderation
     description: Staff review of flagged reports.
+  - name: geocoding
+    description: Turning a typed address into a location.
 
 paths:
   /session:
@@ -354,6 +356,55 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/District"
+
+  /geocode:
+    get:
+      tags: [geocoding]
+      summary: Find places in Vilnius matching a typed address
+      description: >-
+        Backs the address field of the report form, so a resident who knows
+        the address doesn't have to place a pin by hand. Proxies an external
+        OpenStreetMap geocoder: the lookup can't run in the browser, where
+        type-ahead traffic can't honour the usage policies those services
+        ask for.
+      security:
+        - tokenAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The address as typed, at least 3 characters.
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 5
+      responses:
+        "200":
+          description: Matching places, best match first; empty if none match.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          description: The geocoder is unavailable; place the pin by hand instead.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /challenges:
     get:
@@ -730,6 +781,22 @@ components:
         region:
           type: string
       required: [id, name, boundary, city]
+
+    Place:
+      type: object
+      description: A geocoder result, named so it can be shown in two lines.
+      properties:
+        address:
+          type: string
+          description: The street line, e.g. "Kalvarijų g. 98".
+        locality:
+          type: string
+          description: What follows it, e.g. "Šnipiškės, Vilnius".
+        latitude:
+          type: number
+        longitude:
+          type: number
+      required: [address, locality, latitude, longitude]
 
     Institution:
       type: object
