@@ -1,3 +1,4 @@
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
@@ -6,13 +7,20 @@ export default defineConfig(({ mode }) => {
   // Where the Django dev server (manage.py runserver) listens.
   const backend = loadEnv(mode, process.cwd(), 'VITE_').VITE_BACKEND_URL || 'http://127.0.0.1:8000'
 
+  // `npm run dev:lan`: reachable from phones on the same network. Served over HTTPS with a
+  // self-signed certificate, because phone browsers only allow location on secure pages;
+  // the phone shows a certificate warning once, which you accept.
+  const lan = mode === 'lan'
+
   return {
-    plugins: [react()],
+    plugins: [react(), ...(lan ? [basicSsl()] : [])],
     build: {
       // MapLibre GL is ~1 MB minified; it's split into its own chunk and loaded only when a map is shown.
       chunkSizeWarningLimit: 1100,
     },
     server: {
+      // Listen on all network interfaces in LAN mode (default: localhost only).
+      host: lan ? true : undefined,
       proxy: {
         // Forward API calls to Django, so the browser sees one origin and
         // needs no CORS setup. `changeOrigin: false` keeps the browser's Host

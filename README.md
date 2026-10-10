@@ -87,6 +87,46 @@ is needed; set `VITE_BACKEND_URL` to point at a backend somewhere else.
 To work on the frontend without a backend, `npm run dev:mocks` serves the same
 endpoints from [MSW](https://mswjs.io/) fixtures instead.
 
+### Test on a phone (same Wi-Fi)
+The phone talks to the Vite dev server, which forwards `/api` and `/media` to
+Django, so only the dev server has to be reachable. Find the computer's Wi-Fi
+address first (`ipconfig` on Windows, `ip addr` on Linux, e.g. `10.194.94.151`).
+
+Terminal 1 — the API. Django must accept the phone's Host header (the Wi-Fi IP);
+binding to `0.0.0.0` also lets the phone open `http://<ip>:8000/api/schema/swagger-ui/`.
+
+```powershell
+# Windows PowerShell (the variable lasts for this terminal window)
+$env:DJANGO_ALLOWED_HOSTS="<ip>,localhost,127.0.0.1"
+uv --directory ./src/backend run python manage.py runserver 0.0.0.0:8000
+```
+
+```bash
+# bash / Git Bash / macOS / Linux
+DJANGO_ALLOWED_HOSTS=<ip>,localhost,127.0.0.1 uv --directory ./src/backend run python manage.py runserver 0.0.0.0:8000
+```
+
+Terminal 2 — the app, on all network interfaces, over HTTPS:
+
+```bash
+cd src/frontend/vilkas
+npm run dev:lan
+```
+
+On the phone open `https://<ip>:5173` and accept the certificate warning once.
+HTTPS (a self-signed certificate) is needed because phone browsers only allow
+location on secure pages. (The mock API can't run here: browsers won't start
+its service worker on a self-signed certificate, so use the real backend.)
+
+If the phone can't connect, the firewall is blocking it. On Windows, when the
+Wi-Fi network is marked *Public*, run once in an **administrator** PowerShell:
+
+```powershell
+New-NetFirewallRule -DisplayName "Vilkas dev (5173, 8000)" -Direction Inbound -Protocol TCP -LocalPort 5173,8000 -Action Allow -Profile Private,Public
+```
+
+Only do this on networks you trust: the dev servers run with `DEBUG` on.
+
 ### Checks
 ```bash
 cd src/frontend/vilkas
