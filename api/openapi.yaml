@@ -257,6 +257,51 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /reports/analyze:
+    post:
+      tags: [reports]
+      summary: Suggest categories for a report before it is filed
+      description: >-
+        Backs the report form: instead of the full category list, the
+        resident is offered the few categories AI thinks most likely, best
+        first. Returns an empty list when no suggestion can be made (AI not
+        configured or unavailable); the form then shows every category.
+      security:
+        - tokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  minLength: 1
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 3
+              required: [description]
+      responses:
+        "200":
+          description: Suggested categories, most likely first; possibly empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+                required: [categories]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /reports/{id}:
     parameters:
       - name: id

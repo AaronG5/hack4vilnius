@@ -5,18 +5,24 @@ from typing import TYPE_CHECKING, cast, final, override
 import problems.services as problem_services
 import reports.services as report_services
 from categories.models import Category
+from categories.serializers import CategorySerializer
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import UploadedFile
 from media_assets.models import Media
 from media_assets.services import infer_media_type
 from problems.models import Problem
 from reports.models import Report
-from reports.serializers import ReportCreateSerializer, ReportSerializer
+from reports.serializers import (
+    ReportAnalyzeSerializer,
+    ReportCreateSerializer,
+    ReportSerializer,
+)
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from users.models import User
 from vilnius_backend.choices import ProblemStatus, UserRole
 from vilnius_backend.generic_views import (
@@ -133,6 +139,35 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
             cast("ReturnDict[str, object]", output.data),
             status=status.HTTP_201_CREATED,
         )
+
+
+@final
+class ReportAnalyzeView(APIView):
+    """
+    `POST /api/reports/analyze` — suggest categories before a report is filed.
+
+    Lets the report form offer a few likely categories instead of the full
+    list. Authenticated: each call spends the AI provider's quota.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request) -> Response:
+        """Return up to `limit` suggested categories, most likely first."""
+        query = ReportAnalyzeSerializer(data=request.data)
+        _ = query.is_valid(raise_exception=True)
+        data = cast("dict[str, object]", query.validated_data)
+
+        # Empty when the AI is unavailable: the form then shows every category.
+        suggestions = report_services.suggest_category(
+            cast("str", data["description"]),
+            cast("int", data["limit"]),
+        )
+        categories = [
+            cast("ReturnDict[str, object]", CategorySerializer(category).data)
+            for category in suggestions
+        ]
+        return Response({"categories": categories}, status=status.HTTP_200_OK)
 
 
 @final

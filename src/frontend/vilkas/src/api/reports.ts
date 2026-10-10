@@ -1,7 +1,17 @@
 // Tag: reports — user-submitted reports of problems.
 
 import { request, toFormData } from "./client";
-import type { Report, ReportCreate, Uuid } from "./types";
+import type { Category, Report, ReportCreate, Uuid } from "./types";
+
+/** POST /reports/analyze — AI's likeliest categories for a description, best first; empty if AI is unavailable. */
+export async function suggestCategories(description: string, limit?: number, signal?: AbortSignal): Promise<Category[]> {
+  const res = await request<{ categories: Category[] }>("/reports/analyze", {
+    method: "POST",
+    body: { description, limit },
+    signal,
+  });
+  return res.categories;
+}
 
 /** POST /reports — submit a new report (multipart: media + description). */
 export function createReport(report: ReportCreate, signal?: AbortSignal): Promise<Report> {

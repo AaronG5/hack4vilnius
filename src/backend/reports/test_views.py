@@ -402,3 +402,104 @@ class TestReportDetail:
         response = auth_client.get(f"{REPORTS_URL}/{uuid4()}")
 
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+ANALYZE_URL = f"{REPORTS_URL}/analyze"
+
+
+@pytest.mark.django_db
+class TestReportAnalyze:
+    """Tests for `POST /api/reports/analyze`."""
+
+    def test_requires_authentication(self, api_client: APIClient) -> None:
+        """Each call spends AI quota, so anonymous callers are refused."""
+        response = api_client.post(
+            ANALYZE_URL, {"description": "Duobe."}, format="json"
+        )
+
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_returns_the_suggested_categories_in_order(
+        self,
+        auth_client: APIClient,
+        category: Category,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The AI's ranking comes back as full categories, best first."""
+        other = Category.objects.create(
+            name="Other",
+            description="Anything else.",
+            icon="https://example.com/icons/other.svg",
+            default_urgency=ProblemUrgency.CAN_WAIT,
+        )
+        calls: list[tuple[str, int]] = []
+
+        def _suggest(description: str, limit: int = 3) -> list[Category]:
+            calls.append((description, limit))
+            return [other, category]
+
+        monkeypatch.setattr("reports.views.report_services.suggest_category", _suggest)
+
+        response = auth_client.post(
+            ANALYZE_URL,
+            {"description": "  Duobe kelyje.  ", "limit": 2},
+            format="json",
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        categories = cast("list[dict[str, object]]", _body(response)["categories"])
+        assert [c["id"] for c in categories] == [str(other.id), str(category.id)]
+        assert categories[1]["name"] == category.name
+        assert calls == [("Duobe kelyje.", 2)]
+
+    def test_defaults_to_three_suggestions(
+        self,
+        auth_client: APIClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Without `limit`, the form asks for three options."""
+        limits: list[int] = []
+
+        def _suggest(description: str, limit: int = 3) -> list[Category]:
+            del description
+            limits.append(limit)
+            return []
+
+        monkeypatch.setattr("reports.views.report_services.suggest_category", _suggest)
+
+        _ = auth_client.post(ANALYZE_URL, {"description": "Duobe."}, format="json")
+
+        assert limits == [3]
+
+    def test_returns_an_empty_list_without_an_api_key(
+        self,
+        auth_client: APIClient,
+        category: Category,
+    ) -> None:
+        """With AI unavailable the answer is empty, not an error."""
+        del category
+        response = auth_client.post(
+            ANALYZE_URL, {"description": "Duobe."}, format="json"
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert _body(response) == {"categories": []}
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {},
+            {"description": "   "},
+            {"description": "Duobe.", "limit": 0},
+            {"description": "Duobe.", "limit": 6},
+        ],
+    )
+    def test_rejects_invalid_input(
+        self,
+        auth_client: APIClient,
+        payload: dict[str, object],
+    ) -> None:
+        """A missing or blank description, or an out-of-range limit, is a 400."""
+        response = auth_client.post(ANALYZE_URL, payload, format="json")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST

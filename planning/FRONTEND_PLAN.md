@@ -103,7 +103,7 @@ Decision (2026-10-10): gaps stay listed here and stubbed in the frontend; they a
 | Urgency chosen when reporting | report sheet | optional `urgency` on `ReportCreate` | add field |
 | Priority score | map list, sheet, dashboard | computed client-side (`src/lib/priority.ts`, the demo formula) | `priority_score` + factors on `Problem` |
 | List summaries | map list | `getProblem()` per problem | title, thumb, confirmation counts in `GET /problems` |
-| AI analysis before submit | report sheet | keyword stand-in in `src/lib/gaps.ts` | `POST /reports/analyze` |
+| AI analysis before submit | report sheet | categories come from `POST /reports/analyze` (keywords only when it returns none); title, address, urgency and photos are still the stand-in in `src/lib/gaps.ts` | those fields (and photo analysis) on `POST /reports/analyze` |
 | Reverse geocoding (point → address) | report sheet, after picking on the map or using GPS | the district stands in for a street | extend `GET /geocode` with a point → address lookup |
 | Notification title vs body, deep-link target | notifications | split `message` at the first sentence | `title` + `body` on `Notification` |
 | Private challenges, join by code | challenges | browser-local stand-in | `POST /challenges`, `POST /challenges/join-by-code`, leaderboard on `ChallengeDetail` |
@@ -130,7 +130,7 @@ Ideas parked until the frontend phases are done; none are commitments.
   - Matches the demo screenshot for screenshot (light + dark). The demo's "Pavyzdžiai" toggle is omitted: sample data comes from the mock API.
 - [x] Phase 2 — Report sheet
   - Camera opens straight from "Nufotografuoti" (no separate capture page).
-  - AI step is a keyword stand-in (`src/lib/gaps.ts`); photo recognition waits for the backend and says so in the form.
+  - AI step: `POST /reports/analyze` suggests up to 3 categories from the text and the picker shows only those until "Kiti tipai"; keywords stand in when it returns none (no API key). Photo recognition waits for the backend and says so in the form.
   - Confirming a duplicate sends a "still there" validation with the user's photo (the demo dropped the photo).
 - [x] Phase 3 — Problem sheet
   - For problems older than a day, the answer is sent together with the optional fresh photo (one validation instead of two).

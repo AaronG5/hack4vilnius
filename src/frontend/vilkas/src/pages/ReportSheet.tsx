@@ -70,7 +70,9 @@ export function ReportSheet() {
   const [step, setStep] = useState<Step>("source");
   const [text, setText] = useState("");
   const [form, setForm] = useState<Form>(BLANK);
-  const [suggested, setSuggested] = useState(false);
+  // What pre-filled the type: AI's suggested ids (best first) or keywords. The picker shows only the suggestions until "Kiti tipai".
+  const [ai, setAi] = useState<{ suggestions: string[]; source: "ai" | "keywords" }>();
+  const [allCats, setAllCats] = useState(false);
   const [aiNote, setAiNote] = useState("");
   const [at, setAt] = useState<LngLat>();
   // Where the map should move to after "Mano vieta".
@@ -245,7 +247,8 @@ export function ReportSheet() {
         description: r.description,
         nearSensitive: r.nearSensitive,
       });
-      setSuggested(true);
+      setAi({ suggestions: r.suggestions, source: r.source });
+      setAllCats(false);
       setAiNote(r.note ?? "");
       setStep("form");
     } catch {
@@ -256,7 +259,8 @@ export function ReportSheet() {
   const stopAI = () => {
     aiCtl.current?.abort();
     setForm({ ...BLANK, description: text });
-    setSuggested(false);
+    setAi(undefined);
+    setAllCats(false);
     setStep("form");
   };
 
@@ -335,6 +339,13 @@ export function ReportSheet() {
       <textarea className="inp" autoFocus placeholder={placeholder} value={text} onChange={(e) => setText(e.target.value)} />
     </label>
   );
+
+  // With AI suggestions the picker offers just those (best first) until the user asks for the rest.
+  const suggested = (ai?.suggestions ?? [])
+    .map((id) => categories.find((c) => c.id === id))
+    .filter((c): c is (typeof categories)[number] => c !== undefined);
+  const shortList = !allCats && suggested.length > 0 && suggested.length < categories.length;
+  const pickerCategories = shortList ? suggested : categories;
 
   let body;
   switch (step) {
@@ -504,25 +515,30 @@ export function ReportSheet() {
         <>
           <Steps n={2} />
           <AttachmentStrip files={files} previewFor={previewFor} onRemove={removeFile} />
-          {suggested && !aiNote && (
+          {ai && !aiNote && (
             <span className="tag ai" style={{ alignSelf: "flex-start" }}>
-              ✦ Pasiūlyta pagal jūsų aprašymą
+              {ai.source === "ai" ? "✦ DI pasiūlė tipą pagal aprašymą" : "✦ Pasiūlyta pagal jūsų aprašymą"}
             </span>
           )}
           {aiNote && <div className="note warn">{aiNote}</div>}
           <h1>Patikrinkite detales</h1>
           <div className="fld" role="group" aria-label="Problemos tipas">
-            Problemos tipas — palieskite, jei reikia pataisyti
+            {shortList ? "Problemos tipas — DI siūlo, tinkamiausias pirmas" : "Problemos tipas — palieskite, jei reikia pataisyti"}
             <div className="cats">
-              {categories.map((c) => (
+              {pickerCategories.map((c) => (
                 <button key={c.id} type="button" className="cat" aria-pressed={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id })}>
                   {c.name}
                 </button>
               ))}
+              {shortList && (
+                <button type="button" className="cat" onClick={() => setAllCats(true)}>
+                  Kiti tipai ({categories.length - pickerCategories.length})
+                </button>
+              )}
             </div>
           </div>
           <div className="fld" role="group" aria-label="Skubumas">
-            Skubumas{suggested ? " · pasiūlytas" : ""} — kiti gyventojai galės balsuoti
+            Skubumas{ai ? " · pasiūlytas" : ""} — kiti gyventojai galės balsuoti
             <div className="seg">
               {URGENCIES.map((u) => (
                 <button key={u} type="button" aria-pressed={form.urgency === u} onClick={() => patch({ urgency: u })}>

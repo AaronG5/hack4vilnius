@@ -52,6 +52,23 @@ class ReportSerializer(serializers.ModelSerializer[Report]):
         return ModerationFlag.objects.filter(report=report).exists()
 
 
+MAX_SUGGESTIONS = 5
+DEFAULT_SUGGESTIONS = 3
+
+
+@final
+class ReportAnalyzeSerializer(serializers.Serializer[object]):
+    """Validates a pre-submit analysis request (`POST /api/reports/analyze`)."""
+
+    description: serializers.CharField = serializers.CharField(trim_whitespace=True)
+    limit: serializers.IntegerField = serializers.IntegerField(
+        min_value=1,
+        max_value=MAX_SUGGESTIONS,
+        required=False,
+        default=DEFAULT_SUGGESTIONS,
+    )
+
+
 @final
 class ReportCreateSerializer(serializers.Serializer[Report]):
     """
