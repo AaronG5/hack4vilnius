@@ -1,0 +1,24 @@
+// Shared type-checker config for BOTH basedpyright (the CLI gate, see
+// README.md) and plain Pyright, which is what most editors run as their
+// language server.
+//
+// It can't live in pyproject.toml: basedpyright refuses a file containing both
+// [tool.pyright] and [tool.basedpyright] ("pick one"), so a plain-Pyright
+// editor would get no `extraPaths` and report a spurious
+// `reportMissingImports` on every first-party import. This file is read by
+// both tools and takes precedence over pyproject.toml.
+//
+// `typeCheckingMode: "recommended"` is basedpyright-only; plain Pyright notes
+// that it doesn't recognise the value and falls back to its own default.
+//
+// `ignore` covers Django's generated migrations: `makemigrations` writes
+// `settings.AUTH_USER_MODEL` (typed `Any`, since django-stubs resolves custom
+// settings through `LazySettings.__getattr__`), so every regeneration would
+// otherwise reintroduce `reportAny` warnings that can't be fixed in-file.
+{
+  "typeCheckingMode": "recommended",
+  "ignore": ["src/backend/**/migrations/"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": ["src/backend"]
+}

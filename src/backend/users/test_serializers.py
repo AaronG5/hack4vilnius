@@ -10,8 +10,10 @@ from users.serializers import (
     GoogleAuthSerializer,
     LoginSerializer,
     RegisterSerializer,
-    UserSerializer,
+    UserProfileSerializer,
+    UserRefSerializer,
 )
+from vilnius_backend.choices import UserRole
 
 if TYPE_CHECKING:
     from rest_framework.exceptions import ErrorDetail
@@ -22,16 +24,42 @@ def _errors(serializer: serializers.Serializer[User]) -> dict[str, object]:
     return cast("dict[str, object]", serializer.errors)
 
 
-class TestUserSerializer:
-    """Tests for `UserSerializer`."""
+class TestUserRefSerializer:
+    """Tests for `UserRefSerializer`."""
 
-    def test_exposes_public_fields_only(self) -> None:
-        """Only id, email and display_name are exposed; password never is."""
+    def test_exposes_only_id_and_name(self) -> None:
+        """Need-to-know basis: a public user reference leaks nothing else."""
         user = User(id=1, email="agent@example.com", display_name="Agent")
 
-        data = cast("dict[str, object]", UserSerializer(user).data)
+        data = cast("dict[str, object]", UserRefSerializer(user).data)
 
-        assert data == {"id": 1, "email": "agent@example.com", "display_name": "Agent"}
+        assert data == {"id": 1, "name": "Agent"}
+
+
+class TestUserProfileSerializer:
+    """Tests for `UserProfileSerializer`."""
+
+    def test_exposes_the_contract_user_fields(self) -> None:
+        """The own-profile shape carries the contract's `User` fields."""
+        user = User(id=1, email="agent@example.com", display_name="Agent")
+
+        data = cast("dict[str, object]", UserProfileSerializer(user).data)
+
+        assert data["id"] == 1
+        assert data["name"] == "Agent"
+        assert data["email"] == "agent@example.com"
+        assert data["role"] == UserRole.REGULAR_USER
+        assert data["points"] == 0
+        assert data["district"] is None
+
+    def test_never_exposes_the_password(self) -> None:
+        """The password hash is never part of the serialized profile."""
+        user = User(id=1, email="agent@example.com", display_name="Agent")
+        user.set_password("a-very-sturdy-passphrase")
+
+        data = cast("dict[str, object]", UserProfileSerializer(user).data)
+
+        assert "password" not in data
 
 
 @pytest.mark.django_db

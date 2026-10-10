@@ -17,6 +17,10 @@ Including another URLconf
 
 """
 
+from typing import cast
+
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import (
@@ -24,11 +28,23 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from users.views import ProfileView, SessionView
 from vilnius_backend.views import ManualOpenApiSchemaView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
+    path("api/session", SessionView.as_view(), name="session"),
+    path("api/users/me", ProfileView.as_view(), name="profile"),
+    path("api/", include("districts.urls")),
+    path("api/", include("categories.urls")),
+    path("api/", include("problems.urls")),
+    path("api/", include("reports.urls")),
+    path("api/", include("validations.urls")),
+    path("api/", include("badges.urls")),
+    path("api/", include("challenges.urls")),
+    path("api/", include("notifications.urls")),
+    path("api/", include("moderation.urls")),
     path("api/openapi.yaml", ManualOpenApiSchemaView.as_view(), name="manual-schema"),
     path(
         "api/",
@@ -50,3 +66,11 @@ urlpatterns = [
         name="redoc",
     ),
 ]
+
+# `cast`s because django-stubs resolves project settings through
+# `LazySettings.__getattr__`, which is typed `Any`.
+if cast("bool", settings.DEBUG):
+    urlpatterns += static(
+        cast("str", settings.MEDIA_URL),
+        document_root=cast("str", settings.MEDIA_ROOT),
+    )

@@ -6,7 +6,8 @@ from typing import final
 from django.http import HttpRequest, HttpResponse
 from django.views import View
 
-_SCHEMA_PATH = Path(__file__).resolve().parent / "openapi.yaml"
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_SCHEMA_PATH = _REPO_ROOT / "api" / "openapi.yaml"
 
 
 @final

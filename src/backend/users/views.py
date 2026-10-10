@@ -1,5 +1,6 @@
-"""Registration, login, logout and Google sign-in endpoints."""
+"""Registration, login, logout, Google sign-in and session endpoints."""
 
+import uuid
 from collections.abc import Callable, Mapping
 from typing import cast, final
 
@@ -15,24 +16,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.anonymous import AnonymousIdentityMixin
 from users.models import User
-from users.openapi import OpenApiParameter, OpenApiResponse, extend_schema
 from users.serializers import (
-    AuthResponseSerializer,
     GoogleAuthSerializer,
     LoginSerializer,
     RegisterSerializer,
-    UserSerializer,
-)
-
-_ANON_COOKIE_PARAMETER = OpenApiParameter(
-    name=cast("str", settings.ANONYMOUS_IDENTITY_COOKIE_NAME),
-    type=str,
-    location=OpenApiParameter.COOKIE,
-    required=False,
-    description=(
-        "Anonymous-visitor identity cookie (set automatically by prior "
-        "requests). If present, its data is attributed to this account."
-    ),
+    UserProfileSerializer,
+    UserProfileUpdateSerializer,
 )
 
 _VerifyOAuth2Token = Callable[[str, google_requests.Request, str], Mapping[str, object]]
@@ -41,7 +30,7 @@ _VerifyOAuth2Token = Callable[[str, google_requests.Request, str], Mapping[str, 
 def _authenticated_response(user: User, status_code: int) -> Response:
     token, _created = Token.objects.get_or_create(user=user)
     key = cast("str", token.key)
-    data = cast("dict[str, object]", UserSerializer(user).data)
+    data = cast("dict[str, object]", UserProfileSerializer(user).data)
     return Response({"token": key, "user": data}, status=status_code)
 
 
@@ -51,18 +40,6 @@ class RegisterView(AnonymousIdentityMixin):
 
     permission_classes = (AllowAny,)
 
-    @extend_schema(
-        summary="Register with email and password",
-        description="Create an account directly with an email and password.",
-        parameters=[_ANON_COOKIE_PARAMETER],
-        request=RegisterSerializer,
-        responses={
-            201: AuthResponseSerializer,
-            400: OpenApiResponse(
-                description="Invalid data: duplicate email or a weak password.",
-            ),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Create the account and return an auth token for it."""
         serializer = RegisterSerializer(data=request.data)
@@ -79,18 +56,6 @@ class LoginView(AnonymousIdentityMixin):
 
     permission_classes = (AllowAny,)
 
-    @extend_schema(
-        summary="Log in with email and password",
-        description="Authenticate with an email and password.",
-        parameters=[_ANON_COOKIE_PARAMETER],
-        request=LoginSerializer,
-        responses={
-            200: AuthResponseSerializer,
-            400: OpenApiResponse(
-                description="Invalid credentials or an inactive/Google-only account.",
-            ),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Validate credentials and return an auth token for the account."""
         serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -107,15 +72,6 @@ class LogoutView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @extend_schema(
-        summary="Log out",
-        description="Revoke the current user's API token.",
-        request=None,
-        responses={
-            204: OpenApiResponse(description="Token revoked."),
-            401: OpenApiResponse(description="Missing or invalid token."),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Revoke the current user's API token."""
         _ = Token.objects.filter(user=request.user).delete()
@@ -128,23 +84,6 @@ class GoogleAuthView(AnonymousIdentityMixin):
 
     permission_classes = (AllowAny,)
 
-    @extend_schema(
-        summary="Register or log in with Google",
-        description=(
-            "Verify a Google-issued ID token (Sign in with Google) and create or "
-            "log into the account with the matching email."
-        ),
-        parameters=[_ANON_COOKIE_PARAMETER],
-        request=GoogleAuthSerializer,
-        responses={
-            200: AuthResponseSerializer,
-            201: AuthResponseSerializer,
-            401: OpenApiResponse(
-                description="Invalid, expired or unverified Google ID token.",
-            ),
-            503: OpenApiResponse(description="Google sign-in is not configured."),
-        },
-    )
     def post(self, request: Request) -> Response:
         """Verify the Google ID token and return an auth token for the account."""
         serializer = GoogleAuthSerializer(data=request.data)
@@ -213,3 +152,49 @@ def _get_or_create_google_user(
     user.google_sub = google_sub
     user.save(update_fields=["google_sub"])
     return user, False
+
+
+@final
+class SessionView(AnonymousIdentityMixin):
+    """
+    `POST /api/session` — create an anonymous session for a new user.
+
+    Mints a throwaway `User` with no usable password, so the frontend's
+    "report right away" flow never has to block on registration first.
+    """
+
+    permission_classes = (AllowAny,)
+
+    def post(self, request: Request) -> Response:
+        """Create the anonymous account and return an auth token for it."""
+        del request
+        email = f"anon-{uuid.uuid4()}@anon.hack4vilnius.local"
+        user = User.objects.create_user(email=email, password=None)
+        if self.anonymous_identity is not None:
+            self.anonymous_identity.claim(user)
+        return _authenticated_response(user, status.HTTP_201_CREATED)
+
+
+@final
+class ProfileView(APIView):
+    """`GET`/`PUT /api/users/me` — the current user's profile."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request) -> Response:
+        """Return the current user's own profile."""
+        user = cast("User", request.user)
+        data = cast("dict[str, object]", UserProfileSerializer(user).data)
+        return Response(data)
+
+    def put(self, request: Request) -> Response:
+        """Update the fields the client supplied on the current user."""
+        serializer = UserProfileUpdateSerializer(
+            cast("User", request.user),
+            data=request.data,
+            partial=True,
+        )
+        _ = serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        data = cast("dict[str, object]", UserProfileSerializer(user).data)
+        return Response(data)

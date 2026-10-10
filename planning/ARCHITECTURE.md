@@ -2,6 +2,9 @@
 
 ## Practices
 
+### Complex logic lives seperatly
+All complex logic like validation, rating, etc. does not live in the views.py it is located in the services.py.
+
 ### DRY
 Don't Repeat Yourself. Try not to duplicate code.
 
