@@ -1,0 +1,1122 @@
+openapi: 3.0.3
+info:
+  title: Hack4Vilnius API
+  description: >-
+    Hand-written contract for the Hack4Vilnius API, derived from
+    planning/ARCHITECTURE.md. This is the source of truth for the API surface:
+    implementations must conform to this document, not the other way around.
+  version: "1.0.0"
+servers:
+  - url: /api
+tags:
+  - name: session
+    description: Anonymous sessions and authentication.
+  - name: users
+    description: The current user's profile and badges.
+  - name: problems
+    description: Reported city problems and their lifecycle.
+  - name: reports
+    description: User-submitted reports of problems.
+  - name: validations
+    description: User validations of problems.
+  - name: categories
+    description: Problem classification.
+  - name: districts
+    description: City districts.
+  - name: challenges
+    description: City-created challenges.
+  - name: badges
+    description: Badges users can earn.
+  - name: notifications
+    description: Per-user status change notifications.
+  - name: moderation
+    description: Staff review of flagged reports.
+
+paths:
+  /session:
+    post:
+      tags: [session]
+      summary: Create an anonymous session for a new user
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "201":
+          description: Anonymous session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      tags: [session]
+      summary: Log in a registered user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /auth/logout:
+    post:
+      tags: [session]
+      summary: End the current session
+      security:
+        - tokenAuth: []
+      responses:
+        "204":
+          description: Session ended.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/me:
+    get:
+      tags: [users]
+      summary: Current user's profile, points, trust score
+      security:
+        - tokenAuth: []
+      responses:
+        "200":
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [users]
+      summary: Update profile fields
+      security:
+        - tokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: The updated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/me/badges:
+    get:
+      tags: [users]
+      summary: Badges earned by the current user
+      security:
+        - tokenAuth: []
+      responses:
+        "200":
+          description: Badges earned by the current user.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EarnedBadge"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /problems:
+    get:
+      tags: [problems]
+      summary: List problems
+      description: Filterable by status, urgency, district and category.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/ProblemStatus"
+        - name: urgency
+          in: query
+          schema:
+            $ref: "#/components/schemas/ProblemUrgency"
+        - name: district
+          in: query
+          description: District id.
+          schema:
+            type: string
+            format: uuid
+        - name: category
+          in: query
+          description: Category id.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Matching problems.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Problem"
+
+  /problems/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [problems]
+      summary: Problem details, including its reports and validations
+      responses:
+        "200":
+          description: The problem.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /problems/{id}/status:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [problems]
+      summary: Admin/institution updates status (ongoing, fixed, etc.)
+      security:
+        - tokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProblemStatusUpdate"
+      responses:
+        "200":
+          description: The updated problem.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /reports:
+    post:
+      tags: [reports]
+      summary: Submit a new report (media + description)
+      security:
+        - tokenAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ReportCreate"
+      responses:
+        "201":
+          description: The created report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /reports/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [reports]
+      summary: Report details
+      security:
+        - tokenAuth: []
+      responses:
+        "200":
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /problems/{id}/validations:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [validations]
+      summary: Submit a validation for a problem
+      security:
+        - tokenAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ValidationCreate"
+      responses:
+        "201":
+          description: The created validation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Validation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    get:
+      tags: [validations]
+      summary: List validations for a problem
+      responses:
+        "200":
+          description: Validations for the problem.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Validation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /categories:
+    get:
+      tags: [categories]
+      summary: List available problem categories
+      responses:
+        "200":
+          description: Available categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /districts:
+    get:
+      tags: [districts]
+      summary: List districts and their boundaries
+      responses:
+        "200":
+          description: Districts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/District"
+
+  /challenges:
+    get:
+      tags: [challenges]
+      summary: List challenges
+      responses:
+        "200":
+          description: Challenges.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Challenge"
+
+  /challenges/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [challenges]
+      summary: Challenge details (milestones, participants)
+      responses:
+        "200":
+          description: The challenge.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChallengeDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /challenges/{id}/join:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [challenges]
+      summary: Join a challenge
+      security:
+        - tokenAuth: []
+      responses:
+        "204":
+          description: Joined the challenge.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /badges:
+    get:
+      tags: [badges]
+      summary: List all available badges
+      responses:
+        "200":
+          description: Available badges.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Badge"
+
+  /notifications:
+    get:
+      tags: [notifications]
+      summary: List current user's notifications
+      security:
+        - tokenAuth: []
+      responses:
+        "200":
+          description: The current user's notifications.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/{id}/read:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [notifications]
+      summary: Mark a notification as read
+      security:
+        - tokenAuth: []
+      responses:
+        "200":
+          description: The updated notification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /moderation/flags:
+    get:
+      tags: [moderation]
+      summary: List flagged reports pending review
+      security:
+        - tokenAuth: []
+      responses:
+        "200":
+          description: Moderation flags.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModerationFlag"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /moderation/flags/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags: [moderation]
+      summary: Approve or dismiss a flag
+      security:
+        - tokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationFlagUpdate"
+      responses:
+        "200":
+          description: The updated flag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationFlag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'Format: "Token &lt;key&gt;"'
+
+  responses:
+    BadRequest:
+      description: Invalid request data.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid session/token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated, but not allowed to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: No resource with this id.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required: [detail]
+
+    # -- Shared / cross-cutting -------------------------------------------
+
+    UserRef:
+      description: >-
+        Minimal public reference to a user. Full user records (email, trust
+        score, points) are only exposed to the user themself via /users/me,
+        per the "need to know basis" practice.
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+      required: [id, name]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: "#/components/schemas/UserRole"
+        trust_score:
+          type: number
+        points:
+          type: integer
+        district:
+          $ref: "#/components/schemas/District"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required: [id, name, email, role, trust_score, points, created_at]
+
+    UserRole:
+      type: string
+      enum: [regular_user, city_administrator, staff]
+
+    UserUpdate:
+      description: Partial update of the current user's own profile fields.
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        district:
+          type: string
+          format: uuid
+          description: District id.
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required: [email, password]
+
+    # -- Badges -------------------------------------------------------------
+
+    Badge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+          format: uri
+        criteria:
+          type: string
+          description: Human-readable rule that triggers awarding it.
+        required_validation_count:
+          type: integer
+          nullable: true
+          description: >-
+            Number of validations needed to earn the badge, scoped to
+            `district` when one is set. Null means this badge isn't a
+            validation-count badge.
+        district:
+          allOf:
+            - $ref: "#/components/schemas/District"
+          nullable: true
+          description: >-
+            When set, only validations on problems located in this district
+            count toward required_validation_count. Null means any district
+            counts.
+      required: [id, name, description, icon, criteria]
+
+    EarnedBadge:
+      type: object
+      properties:
+        badge:
+          $ref: "#/components/schemas/Badge"
+        earned_at:
+          type: string
+          format: date-time
+      required: [badge, earned_at]
+
+    # -- Categories / Districts / Institutions ------------------------------
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+          format: uri
+        default_urgency:
+          $ref: "#/components/schemas/ProblemUrgency"
+        institution:
+          $ref: "#/components/schemas/Institution"
+      required: [id, name, description, icon, default_urgency]
+
+    District:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        boundary:
+          $ref: "#/components/schemas/GeoPolygon"
+        city:
+          type: string
+        region:
+          type: string
+      required: [id, name, boundary, city]
+
+    Institution:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        contact_info:
+          type: string
+      required: [id, name, contact_info]
+
+    GeoPoint:
+      description: GeoJSON Point.
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Point]
+        coordinates:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+          description: "[longitude, latitude]"
+      required: [type, coordinates]
+
+    GeoPolygon:
+      description: GeoJSON Polygon.
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Polygon]
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+      required: [type, coordinates]
+
+    # -- Challenges -----------------------------------------------------------
+
+    ChallengeStatus:
+      type: string
+      enum: [upcoming, active, ended]
+
+    Challenge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reward_points:
+          type: integer
+        status:
+          $ref: "#/components/schemas/ChallengeStatus"
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+      required:
+        [id, name, description, start_date, end_date, reward_points, status]
+
+    ChallengeDetail:
+      description: Challenge with progress milestones and participant count.
+      allOf:
+        - $ref: "#/components/schemas/Challenge"
+        - type: object
+          properties:
+            participant_count:
+              type: integer
+            milestones:
+              type: array
+              items:
+                type: object
+                properties:
+                  label:
+                    type: string
+                  target:
+                    type: integer
+                  reached:
+                    type: boolean
+                required: [label, target, reached]
+
+    # -- Media ----------------------------------------------------------------
+
+    MediaType:
+      type: string
+      enum: [photo, video, audio]
+
+    Media:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          $ref: "#/components/schemas/MediaType"
+        file_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        uploaded_by:
+          $ref: "#/components/schemas/UserRef"
+      required: [id, type, file_url, created_at, uploaded_by]
+
+    # -- Problems / Reports / Validations --------------------------------------
+
+    ProblemStatus:
+      type: string
+      enum: [unconfirmed, confirmed, ongoing, pending, completed, canceled]
+
+    ProblemUrgency:
+      type: string
+      enum: [can_wait, urgent, dangerous_to_life]
+
+    Problem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          $ref: "#/components/schemas/ProblemStatus"
+        urgency:
+          $ref: "#/components/schemas/ProblemUrgency"
+        legitimacy_score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: AI-estimated percentage.
+        location:
+          $ref: "#/components/schemas/GeoPoint"
+        category:
+          $ref: "#/components/schemas/Category"
+        institution:
+          allOf:
+            - $ref: "#/components/schemas/Institution"
+          nullable: true
+          description: Institution currently handling it, once confirmed.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        [
+          id,
+          status,
+          urgency,
+          legitimacy_score,
+          location,
+          category,
+          created_at,
+          updated_at,
+        ]
+
+    ProblemDetail:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            reports:
+              type: array
+              items:
+                $ref: "#/components/schemas/Report"
+            validations:
+              type: array
+              items:
+                $ref: "#/components/schemas/Validation"
+          required: [reports, validations]
+
+    ProblemStatusUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/ProblemStatus"
+      required: [status]
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        description:
+          type: string
+        ai_category_suggestion:
+          type: string
+          nullable: true
+        ai_abuse_flag:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/UserRef"
+        problem:
+          type: string
+          format: uuid
+          description: Id of the problem this report belongs to.
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/Media"
+        has_moderation_flag:
+          type: boolean
+          description: Whether this report was flagged for staff review.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        [
+          id,
+          description,
+          ai_abuse_flag,
+          user,
+          problem,
+          media,
+          has_moderation_flag,
+          created_at,
+        ]
+
+    ReportCreate:
+      type: object
+      properties:
+        description:
+          type: string
+        category:
+          type: string
+          format: uuid
+          description: >-
+            Category id chosen by the user. Omit to let AI suggest one.
+        problem:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            Id of an existing nearby problem this report should be attached
+            to, if the user confirmed it's a duplicate. Omit to report a new
+            problem.
+        media:
+          type: array
+          items:
+            type: string
+            format: binary
+      required: [description, media]
+
+    Validation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        is_valid:
+          type: boolean
+        description:
+          type: string
+        points_awarded:
+          type: integer
+          readOnly: true
+        user:
+          $ref: "#/components/schemas/UserRef"
+        problem:
+          type: string
+          format: uuid
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/Media"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        [
+          id,
+          is_valid,
+          description,
+          points_awarded,
+          user,
+          problem,
+          media,
+          created_at,
+        ]
+
+    ValidationCreate:
+      type: object
+      properties:
+        is_valid:
+          type: boolean
+        description:
+          type: string
+        media:
+          type: array
+          items:
+            type: string
+            format: binary
+      required: [is_valid, description, media]
+
+    # -- Notifications / Moderation --------------------------------------------
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        message:
+          type: string
+        event_type:
+          type: string
+          description: >-
+            e.g. status_changed, validation_requested, points_awarded.
+        read:
+          type: boolean
+        problem:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required: [id, message, event_type, read, created_at]
+
+    ModerationFlagStatus:
+      type: string
+      enum: [pending, confirmed_harmful, dismissed]
+
+    ModerationFlag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          type: string
+        status:
+          $ref: "#/components/schemas/ModerationFlagStatus"
+        report:
+          type: string
+          format: uuid
+        reviewed_by:
+          allOf:
+            - $ref: "#/components/schemas/UserRef"
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, reason, status, report]
+
+    ModerationFlagUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [confirmed_harmful, dismissed]
+      required: [status]
