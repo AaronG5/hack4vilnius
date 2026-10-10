@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getLeaderboard } from "../../api";
 import { CH_ICON } from "../../data/challengeMeta";
+import { useApi } from "../../hooks/useApi";
 import { ChevronIcon, PlusIcon } from "../../components/icons";
 import { weekChecks } from "../../lib/activity";
+import { count } from "../../lib/format";
 import { useAppState } from "../../state/appState";
 import { useChallenges, type ChallengeCard } from "./useChallenges";
 import "./challenges.css";
@@ -27,6 +30,7 @@ function Card({ c, onOpen }: { c: ChallengeCard; onOpen: () => void }) {
         <span style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           <span className="tag ex">{c.tag}</span>
           {c.joined && <span className="joined">● Dalyvaujate</span>}
+          {c.participants !== undefined && <span className="m">{count(c.participants, ["dalyvis", "dalyviai", "dalyvių"])}</span>}
         </span>
         <b style={{ fontSize: 15, lineHeight: 1.2 }}>{c.title}</b>
         <span className="m">{c.short}</span>
@@ -43,7 +47,8 @@ function Card({ c, onOpen }: { c: ChallengeCard; onOpen: () => void }) {
 
 export function ChallengesPage() {
   const navigate = useNavigate();
-  const { setFilter } = useAppState();
+  const { setFilter, me } = useAppState();
+  const { data: board } = useApi((signal) => getLeaderboard({ limit: 1 }, signal), `leaderboard-top-${me?.points ?? 0}`);
   const { cards, acts, loading } = useChallenges();
   const [code, setCode] = useState("");
   const [codeMsg, setCodeMsg] = useState("");
@@ -89,7 +94,7 @@ export function ChallengesPage() {
           </span>
           <span style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--on-navy-muted)" }}>
             <span>
-              {seasonal.city ?? 0} iš {(seasonal.target ?? 0).toLocaleString("lt-LT")} — visas miestas
+              {seasonal.city ?? 0} iš {(seasonal.target ?? 0).toLocaleString("lt-LT")} – visas miestas
             </span>
             <span>
               Jūsų indėlis: <b style={{ color: "#fff" }}>{seasonal.mine}</b>
@@ -98,6 +103,19 @@ export function ChallengesPage() {
           <small style={{ color: "#fff", fontWeight: 600 }}>{seasonal.prize}</small>
         </section>
       )}
+
+      <button type="button" className="chcard" style={{ marginTop: 14 }} onClick={() => navigate("/challenges/leaders")}>
+        <span className="chic" style={{ background: "var(--lime)", color: "var(--chip-ink)" }}>
+          <ChallengeIcon path="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8" />
+        </span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <b style={{ fontSize: 15, lineHeight: 1.2 }}>Lyderių lentelė</b>
+          <span className="m">
+            {board?.me ? `Jūsų vieta: ${board.me.rank} · ${board.me.points} tšk.` : "Surinkite taškų ir patekite į lentelę"}
+          </span>
+        </span>
+        <ChevronIcon size={18} style={{ flexShrink: 0, color: "var(--muted)" }} />
+      </button>
 
       <h2 className="sec" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--muted)" }}>
         Kiti iššūkiai

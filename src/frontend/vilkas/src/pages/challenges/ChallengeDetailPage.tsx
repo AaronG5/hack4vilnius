@@ -156,7 +156,7 @@ export function ChallengeDetailPage() {
                 {copied ? "Nukopijuota ✓" : "Kopijuoti"}
               </button>
             </div>
-            <small>Privatus: iššūkio nerodome kitiems — prisijungti galima tik su šiuo kodu. Kol kas iššūkis saugomas tik jūsų naršyklėje.</small>
+            <small>Privatus: iššūkio nerodome kitiems – prisijungti galima tik su šiuo kodu. Kol kas iššūkis saugomas tik jūsų naršyklėje.</small>
           </section>
           <button type="button" className="btn ghost" style={{ marginTop: 10, width: "100%" }} onClick={leave}>
             Palikti iššūkį

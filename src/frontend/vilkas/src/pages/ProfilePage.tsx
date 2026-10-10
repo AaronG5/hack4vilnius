@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateCurrentUser, type District } from "../api";
+import { getCurrentUserBadges, listBadges, updateCurrentUser, type District } from "../api";
+import { useApi } from "../hooks/useApi";
 import { ProblemItem } from "../components/ProblemItem";
 import { earnedLandmarks, LANDMARKS, level, myDistrict, type Landmark } from "../lib/activity";
 import { initials, plural, shortDate } from "../lib/format";
@@ -15,6 +16,14 @@ import "./ProfilePage.css";
 
 const LOCK = "M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v10H5z";
 
+/** Icon path and colour for each badge rule. */
+const BADGE_LOOK: Record<string, [string, string]> = {
+  first_report: ["M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z M12 8.5 a2 2 0 1 0 .01 0", "var(--red)"],
+  proven_answers: ["M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4", "var(--green)"],
+  challenge: ["M12 2v20 M4 6l16 12 M20 6L4 18", "var(--btn)"],
+  "": ["M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z", "var(--lav)"],
+};
+
 function LandmarkIcon({ landmark, size, locked }: { landmark: Landmark; size: number; locked: boolean }) {
   return (
     <svg viewBox="0 0 256 256" width={size} height={size} aria-hidden="true">
@@ -25,7 +34,7 @@ function LandmarkIcon({ landmark, size, locked }: { landmark: Landmark; size: nu
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { me, views, districts, reload, toast } = useAppState();
+  const { me, views, districts, notifications, reload, toast } = useAppState();
   const [editing, setEditing] = useState(false);
   const points = me?.points ?? 0;
 
@@ -42,12 +51,14 @@ export function ProfilePage() {
   const earnedIds = new Set(earned.map((e) => e.landmark.id));
   const areas = [...new Set(LANDMARKS.map((l) => l.area))];
 
-  // TODO(api-gap): badges should come from GET /users/me/badges once the backend awards them.
-  const badges: [string, boolean, string, string, string][] = [
-    ["Pirmasis pranešėjas", mine.length >= 1, "M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z M12 8.5 a2 2 0 1 0 .01 0", "var(--red)", "pirmas pranešimas"],
-    ["Tiesos tikrintojas", checks >= 5, "M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4", "var(--green)", `dar ${Math.max(0, 5 - checks)} patikr.`],
-    ["Žiemos sargas", false, "M12 2v20 M4 6l16 12 M20 6L4 18", "var(--btn)", "sezono iššūkis"],
-  ];
+  // Badges are awarded by the backend; reload them when points or notifications change.
+  const { data: allBadges } = useApi((signal) => listBadges(signal), "badges");
+  const { data: earnedBadges } = useApi((signal) => getCurrentUserBadges(signal), `my-badges-${points}-${notifications.length}`);
+  const badgeIds = new Set((earnedBadges ?? []).map((e) => e.badge.id));
+  const badges = (allBadges ?? []).map((b) => {
+    const look = BADGE_LOOK[b.rule ?? ""] ?? BADGE_LOOK[""];
+    return { id: b.id, name: b.name, has: badgeIds.has(b.id), icon: look[0], color: look[1], hint: b.description };
+  });
 
   return (
     <main className="app-main">
@@ -55,7 +66,7 @@ export function ProfilePage() {
         <span className="avatar">{initials(me?.name ?? "")}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className="pg" style={{ fontSize: 24 }}>
-            {me?.name || "Miesto agentas"}
+            {me?.name || (me ? `Miesto agentas #${me.id}` : "Miesto agentas")}
           </h1>
           <p className="pgsub" style={{ margin: 0 }}>
             {[level(points), me?.district?.name ?? myDistrict(acts), `${points} tšk.`].filter(Boolean).join(" · ")}
@@ -81,7 +92,7 @@ export function ProfilePage() {
               setEditing(false);
               toast("Profilis išsaugotas");
             } catch {
-              toast("Nepavyko išsaugoti — pabandykite dar kartą");
+              toast("Nepavyko išsaugoti – pabandykite dar kartą");
             }
           }}
         />
@@ -102,7 +113,7 @@ export function ProfilePage() {
         <b style={{ fontSize: 22, lineHeight: 1.2 }}>
           {helped
             ? `Jūsų veiksmai padėjo sutvarkyti ${helped} ${plural(helped, ["problemą", "problemas", "problemų"])}`
-            : "Praneškite ar patikrinkite — ir čia matysite savo poveikį"}
+            : "Praneškite ar patikrinkite – ir čia matysite savo poveikį"}
         </b>
         <small>Taškai skiriami, kai jūsų pranešimas ar atsakymas pasitvirtina: +20 už patvirtintą pranešimą, +10 už teisingą atsakymą.</small>
       </section>
@@ -121,8 +132,8 @@ export function ProfilePage() {
 
       <h2 className="sec">Ženkleliai</h2>
       <div className="grid3">
-        {badges.map(([name, has, icon, color, hint]) => (
-          <div key={name} className={`card badge${has ? "" : " locked"}`}>
+        {badges.map(({ id, name, has, icon, color, hint }) => (
+          <div key={id} className={`card badge${has ? "" : " locked"}`} title={hint}>
             <span className="bic" style={{ background: has ? color : "var(--surface-2)", color: has ? "#fff" : "var(--muted)" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={has ? icon : LOCK} />
@@ -144,7 +155,7 @@ export function ProfilePage() {
           </span>
         </div>
         <p className="m" style={{ margin: "6px 0 10px" }}>
-          Praneškite arba patikrinkite problemą šalia objekto — ženklelis atsiras kolekcijoje.
+          Praneškite arba patikrinkite problemą šalia objekto – ženklelis atsiras kolekcijoje.
         </p>
         {areas.map((area) => {
           const ls = LANDMARKS.filter((l) => l.area === area);

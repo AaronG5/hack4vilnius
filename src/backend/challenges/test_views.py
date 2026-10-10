@@ -57,6 +57,30 @@ class TestChallengeList:
         categories = cast("list[dict[str, object]]", entry["categories"])
         assert categories[0]["id"] == str(category.id)
 
+    def test_says_how_many_joined_and_whether_you_did(
+        self,
+        auth_client: APIClient,
+        challenge: Challenge,
+        user: User,
+    ) -> None:
+        """Each entry carries its participant count and the caller's own status."""
+        challenge.participants.add(user)
+
+        entry = _entries(auth_client.get(CHALLENGES_URL))[0]
+
+        assert entry["participant_count"] == 1
+        assert entry["joined"] is True
+
+    def test_anonymous_callers_have_joined_nothing(
+        self,
+        api_client: APIClient,
+        challenge: Challenge,
+    ) -> None:
+        """Without a session, `joined` is always false."""
+        del challenge
+
+        assert _entries(api_client.get(CHALLENGES_URL))[0]["joined"] is False
+
 
 @pytest.mark.django_db
 class TestChallengeDetail:
@@ -122,6 +146,18 @@ class TestChallengeJoin:
 
         assert response.status_code == HTTPStatus.NO_CONTENT
         assert challenge.participants.count() == 1
+
+    def test_leaving_removes_the_participation(
+        self,
+        auth_client: APIClient,
+        challenge: Challenge,
+    ) -> None:
+        """`DELETE` on the join URL leaves the challenge."""
+        _ = auth_client.post(f"{CHALLENGES_URL}/{challenge.id}/join")
+        response = auth_client.delete(f"{CHALLENGES_URL}/{challenge.id}/join")
+
+        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert challenge.participants.count() == 0
 
     def test_unknown_challenge_is_not_found(self, auth_client: APIClient) -> None:
         """Joining a challenge that doesn't exist is a 404, not a 500."""

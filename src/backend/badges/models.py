@@ -2,11 +2,13 @@
 
 from typing import ClassVar, final, override
 
+from challenges.models import Challenge
 from districts.models import District
 from django.db import models
 from django.db.models.expressions import Combinable
 from users.models import User
 from vilnius_backend.base_models import TimestampedModel, UUIDModel
+from vilnius_backend.choices import BadgeRule
 
 
 @final
@@ -34,6 +36,23 @@ class Badge(UUIDModel):
             blank=True,
             related_name="badges",
             help_text="Restricts the count to one district when set.",
+        )
+    )
+    rule: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=32,
+        choices=BadgeRule.choices,
+        blank=True,
+        default="",
+        help_text="What earns it automatically; empty means awarded by hand.",
+    )
+    challenge: models.ForeignKey[Challenge | Combinable | None, Challenge | None] = (
+        models.ForeignKey(
+            Challenge,
+            on_delete=models.SET_NULL,
+            null=True,
+            blank=True,
+            related_name="badges",
+            help_text="For the challenge rule: joining this challenge earns it.",
         )
     )
     users: models.ManyToManyField[User, User] = models.ManyToManyField(

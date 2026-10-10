@@ -131,8 +131,8 @@ async function send<T>(path: string, options: RequestOptions): Promise<T> {
   return data as T;
 }
 
-// A token the API doesn't know — left over from the mock API, or from a
-// database that has since been reset — makes DRF reject *every* request with
+// A token the API doesn't know – left over from the mock API, or from a
+// database that has since been reset – makes DRF reject *every* request with
 // 401, the public endpoints included: it authenticates before it checks
 // permissions. So a 401 on a request that carried a token means "this token is
 // no good" rather than "you may not do this": drop it, start a fresh anonymous
@@ -152,7 +152,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 }
 
-/** POST /session — start an anonymous session and store its token. */
+/** POST /session – start an anonymous session and store its token. */
 export async function createAnonymousSession(signal?: AbortSignal): Promise<AuthResponse> {
   // The stored token goes first: POST /session carrying an invalid one is itself a 401.
   setToken(null);

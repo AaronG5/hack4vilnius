@@ -52,3 +52,11 @@ class ModerationFlagStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     CONFIRMED_HARMFUL = "confirmed_harmful", "Confirmed harmful"
     DISMISSED = "dismissed", "Dismissed"
+
+
+class BadgeRule(models.TextChoices):
+    """What earns a `Badge`; awarded by `badges.services.check_new_badges`."""
+
+    FIRST_REPORT = "first_report", "First report"
+    PROVEN_ANSWERS = "proven_answers", "Answers that proved right"
+    CHALLENGE = "challenge", "Joining a challenge"

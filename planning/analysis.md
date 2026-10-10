@@ -157,7 +157,7 @@ These run in the browser today. They should live in one place so the resident ap
 | Discovery routes | Missing | **FE:** "Pasivaikščiojimas" builds a loop through the 5–8 nearest unconfirmed problems (client-side ordering is enough for the MVP) and shows it on the map |
 | Trust index | Field exists, never changes | See "Calculations to move" |
 | Moderation | API exists (`/moderation/flags`), no UI; `detect_abuse` is a stub | **FE:** a small staff list at `/city/moderation`. **BE:** let the existing Claude call return an abuse flag too |
-| Comment prompt after a photo | Done (form asks for a description) | — |
+| Comment prompt after a photo | Done (form asks for a description) | – |
 
 ## Seed data for the demo
 
@@ -188,18 +188,18 @@ Decided with the product owner and implemented in `src/backend/problems/lifecycl
 
 | # | Work | Who | Unblocks |
 |---|---|---|---|
-| 1 | ✅ Apply points to `User.points` on report and validation, with a backfill for past actions — checkpoint 3, 2026-10-11 (`points_awarded` notification moves to item 4) | BE | Profile, levels, prizes, every toast |
-| 2 | ✅ `evaluate_problem_validations`: unconfirmed → confirmed / canceled by agreeing answers — done by the backend team (4f61545) | BE | Map colours, dashboard, "fixed" flow |
-| 3 | ✅ Store `title`, `address`, `near_sensitive`, reporter urgency on report create — checkpoint 3, 2026-10-11 | BE | Every list and card |
-| 4 | ✅ Lithuanian notification texts, sent also when residents' answers confirm or cancel — checkpoint 4, 2026-10-11. `validation_requested` deferred: no nearby residents to ask yet | BE | Notifications screen |
-| 5 | ✅ (no login, by decision) `CITY_TOOLS_FOR_EVERYONE` in development + "accepted / fixed" buttons on the city card — checkpoint 4, 2026-10-11 | FE + BE | Whole municipality flow end to end |
-| 6 | ✅ Remove or replace the fake challenge numbers (deadlines from `end_date`, empty leaderboards, no fake counter) — checkpoint 1, 2026-10-10 | FE | Challenges |
-| 7 | ✅ Hide or relabel prizes and the DI confidence; anonymous default name + name field — checkpoint 2, 2026-10-11 | FE | Profile, report form |
-| 8 | ✅ `GET /problems/nearby` + backend duplicate check (same category within 25 m joins automatically) — checkpoint 5, 2026-10-11 | BE | Validation and clustering (core problem #1) |
-| 9 | ✅ Urgency votes, carried by answers instead of a separate endpoint — done by the backend team (4f61545) | BE | Problem sheet, priority |
+| 1 | ✅ Apply points to `User.points` on report and validation, with a backfill for past actions – checkpoint 3, 2026-10-11 (`points_awarded` notification moves to item 4) | BE | Profile, levels, prizes, every toast |
+| 2 | ✅ `evaluate_problem_validations`: unconfirmed → confirmed / canceled by agreeing answers – done by the backend team (4f61545) | BE | Map colours, dashboard, "fixed" flow |
+| 3 | ✅ Store `title`, `address`, `near_sensitive`, reporter urgency on report create – checkpoint 3, 2026-10-11 | BE | Every list and card |
+| 4 | ✅ Lithuanian notification texts, sent also when residents' answers confirm or cancel – checkpoint 4, 2026-10-11. `validation_requested` deferred: no nearby residents to ask yet | BE | Notifications screen |
+| 5 | ✅ (no login, by decision) `CITY_TOOLS_FOR_EVERYONE` in development + "accepted / fixed" buttons on the city card – checkpoint 4, 2026-10-11 | FE + BE | Whole municipality flow end to end |
+| 6 | ✅ Remove or replace the fake challenge numbers (deadlines from `end_date`, empty leaderboards, no fake counter) – checkpoint 1, 2026-10-10 | FE | Challenges |
+| 7 | ✅ Hide or relabel prizes and the DI confidence; anonymous default name + name field – checkpoint 2, 2026-10-11 | FE | Profile, report form |
+| 8 | ✅ `GET /problems/nearby` + backend duplicate check (same category within 25 m joins automatically) – checkpoint 5, 2026-10-11 | BE | Validation and clustering (core problem #1) |
+| 9 | ✅ Urgency votes, carried by answers instead of a separate endpoint – done by the backend team (4f61545) | BE | Problem sheet, priority |
 | 10 | `GET /institutions` + `Assignment` model | BE + FE | Municipality card |
-| 11 | Award badges server-side; FE reads `/users/me/badges` | BE + FE | Profile |
-| 12 | Launch screen setting, user leaderboard, discovery route | FE (+ small BE) | AGENTS.md feature list |
+| 11 | ✅ Badges awarded by the backend by rule (first report, 5 answers that proved right, joining the seasonal challenge); profile reads `/users/me/badges` – checkpoint 7, 2026-10-11 | BE + FE | Profile |
+| 12 | Launch screen setting, ✅ user leaderboard (`GET /api/leaderboard`, checkpoint 7), discovery route | FE (+ small BE) | AGENTS.md feature list |
 | 13 | `priority_score`, trust score, `completed_at` on the backend | BE | Consistency, trust index |
 
 Items 1–7 are the "nothing to pick on" set: each is small, and together they remove every fake number and every action that silently does nothing. Items 8–13 make the core thesis (validation, clustering, trust) real.

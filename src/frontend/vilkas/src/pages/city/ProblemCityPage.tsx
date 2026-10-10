@@ -146,7 +146,7 @@ export function ProblemCityPage() {
       await reload();
       toast(`Užduotis išsiųsta: ${a.institutions.join(" + ")}`);
     } catch (err) {
-      toast(statusError(err, "Nepavyko priskirti — pabandykite dar kartą"));
+      toast(statusError(err, "Nepavyko priskirti – pabandykite dar kartą"));
     }
   };
 
@@ -157,7 +157,7 @@ export function ProblemCityPage() {
       await reload();
       toast(next === "ongoing" ? "Pažymėta: vykdytojas priėmė" : "Pažymėta: sutvarkyta. Gyventojai gavo pranešimą");
     } catch (err) {
-      toast(statusError(err, "Nepavyko — pabandykite dar kartą"));
+      toast(statusError(err, "Nepavyko – pabandykite dar kartą"));
     }
   };
 
@@ -167,7 +167,7 @@ export function ProblemCityPage() {
       saveAssignment(undefined);
       await reload();
     } catch (err) {
-      toast(statusError(err, "Nepavyko — pabandykite dar kartą"));
+      toast(statusError(err, "Nepavyko – pabandykite dar kartą"));
     }
   };
 
@@ -186,9 +186,9 @@ export function ProblemCityPage() {
   const assignedNames = assignment?.institutions.join(" + ") ?? v.detail.institution?.name ?? "vykdytojas";
   const dueText = assignment ? shortDate(assignment.due) : null;
   const citizenView = v.isFixed
-    ? `„Sutvarkyta — ${assignedNames}.“ Žymė žemėlapyje tapo žalia, o ${v.noVotes} kaimynų jau atsakė, kad problemos nebėra.`
+    ? `„Sutvarkyta – ${assignedNames}.“ Žymė žemėlapyje tapo žalia, o ${v.noVotes} kaimynų jau atsakė, kad problemos nebėra.`
     : assigned
-    ?`„Sprendžiama — ${assignedNames}.${dueText ? ` Numatyta iki ${dueText}.` : ""}“ ${count(followers, ["sekėjas gavo", "sekėjai gavo", "sekėjų gavo"])} pranešimą, o žymė žemėlapyje tapo geltona.`
+    ?`„Sprendžiama – ${assignedNames}.${dueText ? ` Numatyta iki ${dueText}.` : ""}“ ${count(followers, ["sekėjas gavo", "sekėjai gavo", "sekėjų gavo"])} pranešimą, o žymė žemėlapyje tapo geltona.`
     : `„${status === "unconfirmed" ? "Laukia kaimynų patvirtinimo" : "Patvirtinta, laukia sprendimo"}.“ Kai priskirsite, ${count(followers, ["sekėjas gaus", "sekėjai gaus", "sekėjų gaus"])} pranešimą, o žymė žemėlapyje taps geltona.`;
 
   return (
@@ -236,7 +236,7 @@ export function ProblemCityPage() {
                 </figure>
               ))
             ) : (
-              <div className="pc-nophoto">Nuotraukų nėra — pranešta tekstu</div>
+              <div className="pc-nophoto">Nuotraukų nėra – pranešta tekstu</div>
             )}
             <p className="pc-desc">
               {descriptions[0] ?? "Aprašymo nėra."}
@@ -259,7 +259,7 @@ export function ProblemCityPage() {
                 <span style={{ fontSize: 13, fontWeight: 700 }}>Gyventojų patikslinimai</span>
                 {accounts.map((a) => (
                   <span key={a.id} className="hint">
-                    „{a.description}“ — {a.is_valid ? "problema yra" : "problemos nėra"}, {ago(Date.parse(a.created_at))}
+                    „{a.description}“ – {a.is_valid ? "problema yra" : "problemos nėra"}, {ago(Date.parse(a.created_at))}
                   </span>
                 ))}
               </div>
@@ -283,7 +283,7 @@ export function ProblemCityPage() {
                   <b>{merged}</b>sujungti dublikatai
                 </div>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 700 }}>Skubumas — gyventojų balsai</span>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>Skubumas – gyventojų balsai</span>
               <div className="pc-bars" style={{ gridTemplateColumns: "130px 1fr 28px" }}>
                 {URGENCIES_DESC.map((u) => (
                   <FactorBar key={u} label={URGENCY_LABEL[u]} pct={(v.tally[u] / mx) * 100} value={String(v.tally[u])} red={u === "dangerous_to_life"} />
@@ -297,17 +297,17 @@ export function ProblemCityPage() {
             <section className="ccard">
               <h2 style={{ fontSize: 16 }}>Kodėl prioritetas {v.score}</h2>
               <div className="pc-bars" style={{ gridTemplateColumns: "150px 1fr 120px" }}>
-                <FactorRow label="Patikimi patvirtinimai" pct={(Math.min(v.confirms, 10) / 10) * 100} value={String(v.confirms)} />
+                <FactorRow label="Patvirtinimai" pct={(Math.min(v.confirms, 10) / 10) * 100} value={String(v.confirms)} />
                 <FactorRow label="Skubumas" pct={(severity / 3) * 100} value={URGENCY_LABEL[v.urgency]} />
-                <FactorRow label="Jautri vieta" pct={v.nearSensitive ? 100 : 0} value={v.nearSensitive ? "Mokykla" : "—"} />
+                <FactorRow label="Jautri vieta" pct={v.nearSensitive ? 100 : 0} value={v.nearSensitive ? "Mokykla" : "–"} />
                 <FactorRow label="Amžius" pct={(Math.min(v.ageDays, 14) / 14) * 100} value={`${Math.floor(v.ageDays)} d.`} />
               </div>
-              <span className="hint">Tendencija: {trend(v, now) === "up" ? "▲ auga" : "— stabili"}</span>
+              <span className="hint">Tendencija: {trend(v, now) === "up" ? "▲ auga" : "– stabili"}</span>
               {ai && (
                 <div className="pc-ai">
                   <span className="tag ai">✦ DI</span>
                   <span>
-                    Atpažinta: <b>{ai}</b> · patikimumas {Math.round(v.detail.legitimacy_score)} %
+                    Pranešimo tipą DI atpažino kaip <b>{ai}</b>
                   </span>
                 </div>
               )}
@@ -395,7 +395,7 @@ function AssignPanel({ view: v, followers, now, onAssign }: { view: ProblemView;
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <h2 style={{ fontSize: 18 }}>Priskirti vykdytojui</h2>
         <span className="hint" style={{ fontSize: 13 }}>
-          Pažymėkite vieną ar kelias institucijas. Pirma pažymėta tampa atsakinga, kitos — bendravykdytojos.
+          Pažymėkite vieną ar kelias institucijas. Pirma pažymėta tampa atsakinga, kitos – bendravykdytojos.
         </span>
       </div>
       {v.detail.status === "unconfirmed" && <div className="note warn">Gyventojai šios problemos dar nepatvirtino. Galite priskirti, bet verta palaukti patvirtinimų.</div>}
@@ -403,7 +403,7 @@ function AssignPanel({ view: v, followers, now, onAssign }: { view: ProblemView;
         <div className="pc-ai" style={{ background: "rgba(255,159,218,.18)" }}>
           <span className="tag ai">✦ DI siūlo</span>
           <span>
-            <b>{suggestion}</b> — pagal kategoriją „{v.category}“
+            <b>{suggestion}</b> – pagal kategoriją „{v.category}“
           </span>
         </div>
       )}
@@ -530,7 +530,7 @@ function SentPanel({
       </ol>
       {status !== "completed" && (
         <button type="button" className="btn bright" disabled={busy} onClick={() => void step(status === "pending" ? "ongoing" : "completed")}>
-          {status === "pending" ? "Vykdytojas priėmė — pradėti darbus" : "Pažymėti sutvarkyta"}
+          {status === "pending" ? "Vykdytojas priėmė – pradėti darbus" : "Pažymėti sutvarkyta"}
         </button>
       )}
       {status !== "completed" && (

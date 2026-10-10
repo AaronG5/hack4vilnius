@@ -157,7 +157,7 @@ def _get_or_create_google_user(
 @final
 class SessionView(AnonymousIdentityMixin):
     """
-    `POST /api/session` — create an anonymous session for a new user.
+    `POST /api/session` - create an anonymous session for a new user.
 
     Mints a throwaway `User` with no usable password, so the frontend's
     "report right away" flow never has to block on registration first.
@@ -177,7 +177,7 @@ class SessionView(AnonymousIdentityMixin):
 
 @final
 class ProfileView(APIView):
-    """`GET`/`PUT /api/users/me` — the current user's profile."""
+    """`GET`/`PUT /api/users/me` - the current user's profile."""
 
     permission_classes = (IsAuthenticated,)
 

@@ -145,7 +145,7 @@ export function niceMax(max: number): number {
   return Math.ceil(max / 10) * 10;
 }
 
-/** "6,2" — Lithuanian decimal comma. */
+/** "6,2" – Lithuanian decimal comma. */
 export function decimal(n: number, digits = 1): string {
   return n.toFixed(digits).replace(".", ",");
 }

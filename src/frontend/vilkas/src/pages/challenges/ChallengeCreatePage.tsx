@@ -44,7 +44,7 @@ export function ChallengeCreatePage() {
       ...privates,
     ]);
     navigate(`/challenges/p:${code}`, { replace: true });
-    toast(`Iššūkis sukurtas — kodas ${code}`);
+    toast(`Iššūkis sukurtas – kodas ${code}`);
   };
 
   return (
@@ -58,7 +58,7 @@ export function ChallengeCreatePage() {
             Naujas iššūkis
           </h1>
           <p className="pgsub" style={{ margin: 0 }}>
-            Privatus — su draugais, šeima ar kaimynais
+            Privatus – su draugais, šeima ar kaimynais
           </p>
         </div>
       </div>

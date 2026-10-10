@@ -79,7 +79,7 @@ class ReportCreateSerializer(serializers.Serializer[Report]):
     `category` is omitted to let AI suggest one; `problem` is omitted to
     report a new problem rather than attach to an existing one. `latitude`
     and `longitude` locate a new problem and are required unless `problem`
-    is given — see the `location` note on `ReportCreate` in api/openapi.yaml.
+    is given - see the `location` note on `ReportCreate` in api/openapi.yaml.
     `media` is optional: a text-only report is allowed. `title`, `address`,
     `urgency` and `near_sensitive` describe a new problem and are ignored
     when attaching to an existing one.

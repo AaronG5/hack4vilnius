@@ -10,7 +10,7 @@ from vilnius_backend.generic_views import DefaultListAPIView
 
 @final
 class DistrictListView(DefaultListAPIView[District]):
-    """`GET /api/districts` — list districts and their boundaries."""
+    """`GET /api/districts` - list districts and their boundaries."""
 
     permission_classes = (AllowAny,)
     serializer_class = DistrictSerializer

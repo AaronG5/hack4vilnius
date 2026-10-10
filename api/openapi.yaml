@@ -389,7 +389,7 @@ paths:
         One answer per person per problem, and it is final: an answer is a
         vote, and a vote that can be revised is one that can be gamed.
         Answers decide a problem's status while it is `unconfirmed`,
-        `confirmed` or `canceled` — two residents saying it is there confirm
+        `confirmed` or `canceled` – two residents saying it is there confirm
         it, two saying it isn't cancel it. Once the municipality has taken
         the problem on, the status is theirs.
       security:

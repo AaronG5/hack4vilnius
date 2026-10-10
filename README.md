@@ -77,10 +77,10 @@ for this API in `src/api/` (see `planning/FRONTEND_PLAN.md`).
 
 ### Run it against the backend
 ```bash
-# terminal 1 — the API
+# terminal 1 – the API
 uv --directory ./src/backend run python manage.py runserver
 
-# terminal 2 — the app
+# terminal 2 – the app
 cd src/frontend/vilkas
 npm install
 npm run dev
@@ -98,7 +98,7 @@ The phone talks to the Vite dev server, which forwards `/api` and `/media` to
 Django, so only the dev server has to be reachable. Find the computer's Wi-Fi
 address first (`ipconfig` on Windows, `ip addr` on Linux, e.g. `10.194.94.151`).
 
-Terminal 1 — the API. Django must accept the phone's Host header (the Wi-Fi IP);
+Terminal 1 – the API. Django must accept the phone's Host header (the Wi-Fi IP);
 binding to `0.0.0.0` also lets the phone open `http://<ip>:8000/api/schema/swagger-ui/`.
 
 ```powershell
@@ -112,7 +112,7 @@ uv --directory ./src/backend run python manage.py runserver 0.0.0.0:8000
 DJANGO_ALLOWED_HOSTS=<ip>,localhost,127.0.0.1 uv --directory ./src/backend run python manage.py runserver 0.0.0.0:8000
 ```
 
-Terminal 2 — the app, on all network interfaces, over HTTPS:
+Terminal 2 – the app, on all network interfaces, over HTTPS:
 
 ```bash
 cd src/frontend/vilkas

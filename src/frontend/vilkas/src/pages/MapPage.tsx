@@ -131,7 +131,7 @@ export function MapPage() {
               </span>
               <span className="txt">
                 <small>Jūs šalia · {formatDistance(distanceMeters(onSite.at, here ?? onSite.at))}</small>
-                <b>{onSite.category} — vis dar yra?</b>
+                <b>{onSite.category} – vis dar yra?</b>
               </span>
               <span className="go">Patikrinti +10</span>
             </button>
@@ -147,7 +147,7 @@ export function MapPage() {
                   ) : (
                     <>
                       <b>Įjunkite lokaciją</b>
-                      <small>Problemas patvirtinti galima tik būnant šalia — iki {NEAR_RADIUS_M} m</small>
+                      <small>Problemas patvirtinti galima tik būnant šalia – iki {NEAR_RADIUS_M} m</small>
                     </>
                   )}
                 </span>
@@ -162,7 +162,7 @@ export function MapPage() {
                 <b>Patikrinkite nepatvirtintas</b>
                 <br />
                 <span className="m">
-                  {todo ? `${todo} laukia jūsų · +10 tšk. už kiekvieną` : "Visas aplinkui jau patikrinote — ačiū!"}
+                  {todo ? `${todo} laukia jūsų · +10 tšk. už kiekvieną` : "Visas aplinkui jau patikrinote – ačiū!"}
                 </span>
               </span>
             </div>
@@ -171,7 +171,7 @@ export function MapPage() {
               <button type="button" className="prompt" onClick={() => open(near.id)}>
                 <span className="dot" />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  {near.category} · {here ? `už ${formatDistance(distanceMeters(here, near.at))}` : near.address || near.district} —{" "}
+                  {near.category} · {here ? `už ${formatDistance(distanceMeters(here, near.at))}` : near.address || near.district} –{" "}
                   <b>vis dar yra?</b> Nueikite iki jos ir patikrinkite.
                 </span>
                 <span className="tag lime">+10</span>

@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING, cast, final
 
+import badges.services as badge_services
 from challenges.models import Challenge
 from challenges.serializers import ChallengeDetailSerializer, ChallengeSerializer
 from rest_framework import status
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 
 @final
 class ChallengeListView(DefaultListAPIView[Challenge]):
-    """`GET /api/challenges` — list challenges."""
+    """`GET /api/challenges` - list challenges."""
 
     permission_classes = (AllowAny,)
     serializer_class = ChallengeSerializer
@@ -30,7 +31,7 @@ class ChallengeListView(DefaultListAPIView[Challenge]):
 
 @final
 class ChallengeDetailView(DefaultRetrieveAPIView[Challenge]):
-    """`GET /api/challenges/{id}` — challenge details."""
+    """`GET /api/challenges/{id}` - challenge details."""
 
     permission_classes = (AllowAny,)
     serializer_class = ChallengeDetailSerializer
@@ -40,12 +41,20 @@ class ChallengeDetailView(DefaultRetrieveAPIView[Challenge]):
 
 @final
 class ChallengeJoinView(APIView):
-    """`POST /api/challenges/{id}/join` — join a challenge."""
+    """`POST`/`DELETE /api/challenges/{id}/join` - join or leave a challenge."""
 
     permission_classes = (IsAuthenticated,)
 
     def post(self, request: Request, id: str) -> Response:  # noqa: A002
         """Add the requesting user to the challenge's participants."""
         challenge = get_object_or_404(Challenge, pk=id)
-        challenge.participants.add(cast("User", request.user))
+        user = cast("User", request.user)
+        challenge.participants.add(user)
+        _ = badge_services.check_new_badges(user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request: Request, id: str) -> Response:  # noqa: A002
+        """Remove the requesting user from the challenge's participants."""
+        challenge = get_object_or_404(Challenge, pk=id)
+        challenge.participants.remove(cast("User", request.user))
         return Response(status=status.HTTP_204_NO_CONTENT)

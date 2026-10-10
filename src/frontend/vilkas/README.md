@@ -1,4 +1,4 @@
-# Vilkas — frontend
+# Vilkas – frontend
 
 The resident app and the municipality dashboards (Vite + React + TypeScript).
 `src/api/` is a typed client for `api/openapi.yaml`; the screens and phases are
@@ -7,10 +7,10 @@ described in `planning/FRONTEND_PLAN.md`.
 ## Run it against the backend
 
 ```bash
-# terminal 1 — the API (from the repository root)
+# terminal 1 – the API (from the repository root)
 uv --directory ./src/backend run python manage.py runserver
 
-# terminal 2 — the app
+# terminal 2 – the app
 npm install
 npm run dev
 ```
@@ -24,7 +24,7 @@ VITE_BACKEND_URL=http://192.168.1.10:8000 npm run dev
 ```
 
 A fresh database has no categories or districts, which leaves an empty map and
-no way to report anything — seed it first:
+no way to report anything – seed it first:
 
 ```bash
 uv --directory ./src/backend run python manage.py seed_demo --with-examples

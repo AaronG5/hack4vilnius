@@ -31,7 +31,12 @@ from problems.models import Problem
 from reports.models import Report
 from users.models import User
 from validations.models import Validation
-from vilnius_backend.choices import ChallengeStatus, ProblemStatus, ProblemUrgency
+from vilnius_backend.choices import (
+    BadgeRule,
+    ChallengeStatus,
+    ProblemStatus,
+    ProblemUrgency,
+)
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
@@ -52,6 +57,8 @@ class _BadgeSeed(NamedTuple):
     description: str
     criteria: str
     validations: int | None
+    rule: str
+    challenge: str | None = None
 
 
 class _ChallengeSeed(NamedTuple):
@@ -130,9 +137,23 @@ _BADGES: Final[tuple[_BadgeSeed, ...]] = (
         "Pirmas pranešimas",
         "Pateikti pirmą pranešimą",
         None,
+        BadgeRule.FIRST_REPORT,
     ),
-    _BadgeSeed("Tiesos tikrintojas", "5 patikrinimai", "Patikrinti 5 problemas", 5),
-    _BadgeSeed("Žiemos sargas", "Sezono iššūkis", "Dalyvauti sezono iššūkyje", None),
+    _BadgeSeed(
+        "Tiesos tikrintojas",
+        "5 pasitvirtinę patikrinimai",
+        "5 kartus teisingai atsakyti, ar problema yra",
+        5,
+        BadgeRule.PROVEN_ANSWERS,
+    ),
+    _BadgeSeed(
+        "Žiemos sargas",
+        "Sezono iššūkis",
+        "Dalyvauti iššūkyje „Duobių medžioklė prieš žiemą“",
+        None,
+        BadgeRule.CHALLENGE,
+        "Duobių medžioklė prieš žiemą",
+    ),
 )
 
 # The names are matched verbatim by the frontend (src/data/challengeMeta.ts),
@@ -333,8 +354,8 @@ class Command(BaseCommand):
             institutions = self._seed_institutions()
             categories = self._seed_categories(institutions)
             districts = self._seed_districts()
-            badges = self._seed_badges()
             challenges = self._seed_challenges(categories)
+            badges = self._seed_badges()
 
         counts = {
             "institutions": len(institutions),
@@ -413,6 +434,12 @@ class Command(BaseCommand):
                     "icon": f"/badges/badge-{index}.svg",
                     "criteria": seed.criteria,
                     "required_validation_count": seed.validations,
+                    "rule": seed.rule,
+                    "challenge": (
+                        Challenge.objects.filter(name=seed.challenge).first()
+                        if seed.challenge
+                        else None
+                    ),
                 },
             )
         return len(_BADGES)

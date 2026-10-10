@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 @final
 class ProblemListView(DefaultListAPIView[Problem]):
     """
-    `GET /api/problems` — list problems.
+    `GET /api/problems` - list problems.
 
     Filterable by `status`, `urgency` and `category` directly; `district`
     is filtered in Python since a problem's district isn't stored, only
@@ -85,7 +85,7 @@ class ProblemListView(DefaultListAPIView[Problem]):
 @final
 class ProblemNearbyView(APIView):
     """
-    `GET /api/problems/nearby` — open problems around a point.
+    `GET /api/problems/nearby` - open problems around a point.
 
     What a resident sees before filing a report, to confirm an existing
     problem instead of creating a duplicate. Same category first, then
@@ -117,7 +117,7 @@ class ProblemNearbyView(APIView):
 
 @final
 class ProblemDetailView(DefaultRetrieveAPIView[Problem]):
-    """`GET /api/problems/{id}` — problem details, reports and validations."""
+    """`GET /api/problems/{id}` - problem details, reports and validations."""
 
     permission_classes = (AllowAny,)
     serializer_class = ProblemDetailSerializer
@@ -134,7 +134,7 @@ class ProblemDetailView(DefaultRetrieveAPIView[Problem]):
 
 @final
 class ProblemStatusUpdateView(APIView):
-    """`PUT /api/problems/{id}/status` — admin/institution updates status."""
+    """`PUT /api/problems/{id}/status` - admin/institution updates status."""
 
     permission_classes = (IsCityAdministratorOrStaff,)
 

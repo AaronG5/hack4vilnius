@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 @final
 class NotificationListView(DefaultListAPIView[Notification]):
-    """`GET /api/notifications` — list current user's notifications."""
+    """`GET /api/notifications` - list current user's notifications."""
 
     permission_classes = (IsAuthenticated,)
     serializer_class = NotificationSerializer
@@ -35,7 +35,7 @@ class NotificationListView(DefaultListAPIView[Notification]):
 @final
 class NotificationMarkReadView(APIView):
     """
-    `PUT /api/notifications/{id}/read` — mark a notification as read.
+    `PUT /api/notifications/{id}/read` - mark a notification as read.
 
     Need-to-know basis: scoped to the requester's own notifications; any
     other id 404s rather than revealing it exists.

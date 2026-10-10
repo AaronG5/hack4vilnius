@@ -25,7 +25,7 @@ def _rendered(place: Place) -> dict[str, object]:
 @final
 class GeocodeView(APIView):
     """
-    `GET /api/geocode?q=` — find places in Vilnius matching a typed address.
+    `GET /api/geocode?q=` - find places in Vilnius matching a typed address.
 
     Authenticated: this spends an external service's quota on the app's
     behalf, so it answers the app's users rather than anyone on the internet.

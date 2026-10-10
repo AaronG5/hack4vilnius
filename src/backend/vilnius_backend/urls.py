@@ -28,6 +28,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from users.leaderboard import LeaderboardView
 from users.views import ProfileView, SessionView
 from vilnius_backend.views import ManualOpenApiSchemaView
 
@@ -36,6 +37,7 @@ urlpatterns = [
     path("api/auth/", include("users.urls")),
     path("api/session", SessionView.as_view(), name="session"),
     path("api/users/me", ProfileView.as_view(), name="profile"),
+    path("api/leaderboard", LeaderboardView.as_view(), name="leaderboard"),
     path("api/", include("districts.urls")),
     path("api/", include("categories.urls")),
     path("api/", include("problems.urls")),

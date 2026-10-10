@@ -12,6 +12,7 @@ const KIND: Record<string, { color: string; ink: string; Icon: typeof PinIcon }>
   validation_requested: { color: "var(--red)", ink: "#fff", Icon: PinIcon },
   status_changed: { color: "var(--green)", ink: "#fff", Icon: CheckIcon },
   points_awarded: { color: "var(--lime)", ink: "var(--chip-ink)", Icon: StarIcon },
+  badge_awarded: { color: "var(--lav)", ink: "var(--chip-ink)", Icon: StarIcon },
 };
 
 /**
@@ -71,11 +72,11 @@ export function NotificationsPage() {
           })}
         </div>
       ) : (
-        <div className="card empty">Pranešimų dar nėra.</div>
+        <div className="card empty">Pranešimų dar nėra. Čia matysite, kai jūsų pranešimus patvirtins kaimynai, imsis savivaldybė ar gausite taškų.</div>
       )}
 
       <p className="notif-note">
-        Pranešimai siunčiami tik kai esate šalia nepatvirtintos ar senos problemos — ne dažniau kaip 2 kartus per dieną.
+        Pranešimai siunčiami tik kai esate šalia nepatvirtintos ar senos problemos – ne dažniau kaip 2 kartus per dieną.
       </p>
     </main>
   );

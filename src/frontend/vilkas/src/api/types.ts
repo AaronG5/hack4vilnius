@@ -57,6 +57,8 @@ export interface Badge {
   icon: string;
   criteria: string;
   required_validation_count?: number | null;
+  /** What earns it automatically; "" when awarded by hand. */
+  rule?: "first_report" | "proven_answers" | "challenge" | "";
   district?: District | null;
 }
 
@@ -124,6 +126,23 @@ export interface Challenge {
   reward_points: number;
   status: ChallengeStatus;
   categories?: Category[];
+  participant_count?: number;
+  /** Whether the current user has joined it. */
+  joined?: boolean;
+}
+
+/** One row of GET /leaderboard. */
+export interface LeaderboardEntry {
+  rank: number;
+  user: UserRef;
+  points: number;
+  district: { id: Uuid; name: string } | null;
+}
+
+export interface Leaderboard {
+  entries: LeaderboardEntry[];
+  /** The current user's own row; null without points (or outside the district). */
+  me: LeaderboardEntry | null;
 }
 
 export interface ChallengeMilestone {
@@ -133,7 +152,6 @@ export interface ChallengeMilestone {
 }
 
 export interface ChallengeDetail extends Challenge {
-  participant_count?: number;
   milestones?: ChallengeMilestone[];
 }
 

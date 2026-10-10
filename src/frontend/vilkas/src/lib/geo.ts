@@ -22,7 +22,7 @@ export interface Fix {
   accuracy: number;
 }
 
-/** How close a resident must be to a problem to answer "still there?" — on site, geocaching-style. */
+/** How close a resident must be to a problem to answer "still there?" – on site, geocaching-style. */
 export const NEAR_RADIUS_M = 10;
 // Phone GPS is often only good to 10–20 m, so a fix's own uncertainty counts in
 // the resident's favour, up to this much; a vaguer fix can't prove they're there.

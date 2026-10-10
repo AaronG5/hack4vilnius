@@ -17,8 +17,8 @@ export interface WatchedFix {
 }
 
 function message(err: GeolocationPositionError): string {
-  if (err.code === err.PERMISSION_DENIED) return "Vietos nustatymas išjungtas — leiskite jį naršyklės nustatymuose.";
-  if (err.code === err.TIMEOUT) return "Vieta nustatoma per ilgai — pabandykite dar kartą.";
+  if (err.code === err.PERMISSION_DENIED) return "Vietos nustatymas išjungtas – leiskite jį naršyklės nustatymuose.";
+  if (err.code === err.TIMEOUT) return "Vieta nustatoma per ilgai – pabandykite dar kartą.";
   return "Nepavyko nustatyti vietos.";
 }
 

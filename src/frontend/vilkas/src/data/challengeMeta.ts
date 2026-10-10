@@ -66,13 +66,13 @@ const META: Record<ChallengeKey, ChallengeMeta> = {
   mokiniai: {
     tag: "Mokykloms", color: "var(--red-deep)", ink: "#fff",
     teams: { board: "Klasių lentelė", empty: "Klasių lentelė atsiras, kai prisijungs pirmosios klasės.", how: "Klasių kodai bus įjungti netrukus. Kol kas skaičiuojami jūsų veiksmai." },
-    rules: ["Mokytojas sukuria klasės kodą, mokiniai prisijungia.", "Tikrinkite problemas pakeliui į mokyklą — tik būdami šalia vietos."],
-    prize: "Laimėjusi klasė — ekskursija į Savivaldybę ir susitikimas su meru.", cta: ["Dalyvauti", "Dalyvaujate"],
+    rules: ["Mokytojas sukuria klasės kodą, mokiniai prisijungia.", "Tikrinkite problemas pakeliui į mokyklą – tik būdami šalia vietos."],
+    prize: "Laimėjusi klasė – ekskursija į Savivaldybę ir susitikimas su meru.", cta: ["Dalyvauti", "Dalyvaujate"],
   },
   kiemai: {
     tag: "Bendrijoms", color: "var(--peach)", ink: "#3C3C3C",
     teams: { board: "Kiemų lentelė", empty: "Kiemų lentelė atsiras, kai susikurs pirmosios kiemų komandos.", how: "Kiemų komandos bus įjungtos netrukus. Kol kas skaičiuojami jūsų veiksmai." },
-    rules: ["Sukurkite kiemo komandą ir pakvieskite bent 3 kaimynus.", "Kartu pažymėkite kiemo problemas — jos keliauja seniūnijai.", "Taškai skiriami už sutvarkytas problemas."],
+    rules: ["Sukurkite kiemo komandą ir pakvieskite bent 3 kaimynus.", "Kartu pažymėkite kiemo problemas – jos keliauja seniūnijai.", "Taškai skiriami už sutvarkytas problemas."],
     prize: "Laimėjęs kiemas gauna naujus suolus arba gėlių sodinimo talką su seniūnija.", cta: ["Dalyvauti", "Dalyvaujate"],
   },
 };

@@ -1,9 +1,9 @@
-// Tag: reports — user-submitted reports of problems.
+// Tag: reports – user-submitted reports of problems.
 
 import { request, toFormData } from "./client";
 import type { Category, Report, ReportCreate, Uuid } from "./types";
 
-/** POST /reports/analyze — AI's likeliest categories for a description, best first; empty if AI is unavailable. */
+/** POST /reports/analyze – AI's likeliest categories for a description, best first; empty if AI is unavailable. */
 export async function suggestCategories(description: string, limit?: number, signal?: AbortSignal): Promise<Category[]> {
   const res = await request<{ categories: Category[] }>("/reports/analyze", {
     method: "POST",
@@ -13,7 +13,7 @@ export async function suggestCategories(description: string, limit?: number, sig
   return res.categories;
 }
 
-/** POST /reports — submit a new report (multipart: media + description). */
+/** POST /reports – submit a new report (multipart: media + description). */
 export function createReport(report: ReportCreate, signal?: AbortSignal): Promise<Report> {
   // Flat latitude/longitude rather than a GeoPoint: the body is multipart/form-data.
   const [longitude, latitude] = report.location?.coordinates ?? [];
@@ -35,7 +35,7 @@ export function createReport(report: ReportCreate, signal?: AbortSignal): Promis
   });
 }
 
-/** GET /reports/{id} — report details. */
+/** GET /reports/{id} – report details. */
 export function getReport(id: Uuid, signal?: AbortSignal): Promise<Report> {
   return request<Report>(`/reports/${encodeURIComponent(id)}`, { signal });
 }

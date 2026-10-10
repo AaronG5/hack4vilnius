@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast, final, override
 
+import badges.services as badge_services
 import problems.services as problem_services
 import reports.services as report_services
 from categories.models import Category
@@ -114,7 +115,7 @@ def _get_or_create_problem(
 
 @final
 class ReportCreateView(DefaultCreateAPIView[Report]):
-    """`POST /api/reports` — submit a new report (media + description)."""
+    """`POST /api/reports` - submit a new report (media + description)."""
 
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser)
@@ -158,6 +159,7 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
             problem=problem,
         )
         _attach_media(report, user, files)
+        _ = badge_services.check_new_badges(user)
         # A report on a problem that already existed backs it up like an
         # answer would. Points come only once the problem is confirmed; see
         # `problems.lifecycle`.
@@ -175,7 +177,7 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
 @final
 class ReportAnalyzeView(APIView):
     """
-    `POST /api/reports/analyze` — suggest categories before a report is filed.
+    `POST /api/reports/analyze` - suggest categories before a report is filed.
 
     Lets the report form offer a few likely categories instead of the full
     list. Authenticated: each call spends the AI provider's quota.
@@ -204,7 +206,7 @@ class ReportAnalyzeView(APIView):
 @final
 class ReportDetailView(DefaultRetrieveAPIView[Report]):
     """
-    `GET /api/reports/{id}` — report details.
+    `GET /api/reports/{id}` - report details.
 
     Need-to-know basis: a report is only visible to the user who filed it,
     or to staff/city administrators.

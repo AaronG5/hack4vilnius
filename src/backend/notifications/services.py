@@ -8,7 +8,11 @@ so it's implemented directly rather than stubbed.
 
 from typing import TYPE_CHECKING
 
-from notifications.constants import EVENT_POINTS_AWARDED, EVENT_STATUS_CHANGED
+from notifications.constants import (
+    EVENT_BADGE_AWARDED,
+    EVENT_POINTS_AWARDED,
+    EVENT_STATUS_CHANGED,
+)
 from notifications.models import Notification
 from reports.models import Report
 from validations.models import Validation
@@ -17,6 +21,7 @@ from vilnius_backend.choices import ProblemStatus
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from badges.models import Badge
     from problems.models import Problem
     from users.models import User
 
@@ -100,6 +105,15 @@ def notify_points(
         message=f"Gavote {points} tšk.! {body}",
         event_type=EVENT_POINTS_AWARDED,
         problem=problem,
+    )
+
+
+def notify_badge(user: "User", badge: "Badge") -> Notification:
+    """Tell `user` they earned `badge`."""
+    return Notification.objects.create(
+        user=user,
+        message=f"Naujas ženklelis! „{badge.name}“: {badge.description.lower()}.",
+        event_type=EVENT_BADGE_AWARDED,
     )
 
 

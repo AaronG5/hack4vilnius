@@ -1,4 +1,4 @@
-// Board 8 · Šios savaitės prioritetai — the municipality's prioritised, deduplicated problem list.
+// Board 8 · Šios savaitės prioritetai – the municipality's prioritised, deduplicated problem list.
 
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { LazyMap } from "../../components/map/LazyMap";
@@ -20,7 +20,7 @@ function subline(v: ProblemView): string {
   const parts = [v.address || v.district];
   if (v.nearSensitive) parts.push("prie mokyklos");
   const merged = duplicatesMerged(v);
-  if (merged) parts.push(`DI sujungė ${merged + 1}`);
+  if (merged) parts.push(`sujungta ${merged + 1} pranešimų`);
   if (isReopened(v)) parts.push("gyventojai teigia, kad vis dar yra");
   return parts.join(" · ");
 }
@@ -126,10 +126,10 @@ export function DashboardPage() {
         <div className="kpi">
           <span>Patvirtino bendruomenė</span>
           <b>{confirmedShare} %</b>
-          <small>≥ 3 patikimi patvirtinimai</small>
+          <small>≥ 3 gyventojų patvirtinimai</small>
         </div>
         <div className="kpi">
-          <span>DI sujungti dublikatai</span>
+          <span>Sujungti dublikatai</span>
           <b>{merged}</b>
           <small>pranešimai, priskirti esamoms problemoms</small>
         </div>
@@ -153,7 +153,7 @@ export function DashboardPage() {
           <div className="sec-head">
             <h2>Problemų reitingas</h2>
             <span className="hint pill">
-              Prioritetas = patikimi patvirtinimai × skubumas (gyventojų balsai) × vieta × tendencija × amžius
+              Prioritetas = skubumas (gyventojų balsai) + patvirtinimai + jautri vieta + amžius
             </span>
           </div>
           {ranked.length ? (
@@ -191,7 +191,7 @@ export function DashboardPage() {
                           <span className={`badge-score ${scoreTone(v.score)}`}>{v.score}</span>
                         </td>
                         <td>{v.confirms}</td>
-                        <td className={up ? "trend-up" : "trend-flat"}>{up ? "▲ auga" : "— stabili"}</td>
+                        <td className={up ? "trend-up" : "trend-flat"}>{up ? "▲ auga" : "– stabili"}</td>
                         <td>{status === "Atidaryta iš naujo" ? <span className="pill-reopened">{status}</span> : status}</td>
                         <td>
                           <Link className={`city-btn sm${assign ? "" : " ghost"}`} to={`/city/problems/${v.id}`}>

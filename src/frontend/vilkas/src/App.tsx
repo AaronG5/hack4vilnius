@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { CityShell } from "./components/CityShell";
 import { RootLayout } from "./components/RootLayout";
+import { LeaderboardPage } from "./pages/challenges/LeaderboardPage";
 import { ChallengeCreatePage } from "./pages/challenges/ChallengeCreatePage";
 import { ChallengeDetailPage } from "./pages/challenges/ChallengeDetailPage";
 import { ChallengesPage } from "./pages/challenges/ChallengesPage";
@@ -29,6 +30,7 @@ export default function App() {
 
             <Route path="challenges" element={<ChallengesPage />} />
             <Route path="challenges/new" element={<ChallengeCreatePage />} />
+            <Route path="challenges/leaders" element={<LeaderboardPage />} />
             <Route path="challenges/:id" element={<ChallengeDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="notifications" element={<NotificationsPage />} />

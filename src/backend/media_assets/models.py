@@ -3,7 +3,7 @@ Photo, video or audio attachments uploaded with a report or validation.
 
 A `Media` row can attach to any model (a `Report` or a `Validation`) via a
 generic relation, rather than carrying one nullable `ForeignKey` per possible
-parent — see planning/ARCHITECTURE.md's Media relationships.
+parent - see planning/ARCHITECTURE.md's Media relationships.
 """
 
 import uuid

@@ -25,6 +25,7 @@ class BadgeSerializer(serializers.ModelSerializer[Badge]):
             "icon",
             "criteria",
             "required_validation_count",
+            "rule",
             "district",
         )
         read_only_fields = ("id",)

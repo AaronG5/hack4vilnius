@@ -36,7 +36,7 @@ function createDb() {
       flags: fx.moderationFlags,
       earnedBadges: fx.earnedBadges,
     }),
-    joined: new Set<string>([fx.challenges[0].id, fx.challenges[1].id]),
+    joined: new Set<string>(),
     myUrgency: new Map<string, ProblemUrgency>(),
   };
 }
@@ -217,7 +217,7 @@ export const handlers = [
       db.myUrgency.set(problem.id, urgency);
     }
     // Two answers that agree, and more of them than the other way, decide the
-    // status — while it is still the residents' to decide (as the backend does).
+    // status – while it is still the residents' to decide (as the backend does).
     const answers = db.validations.filter((v) => v.problem === problem.id);
     const confirming = answers.filter((v) => v.is_valid).length;
     const disputing = answers.length - confirming;
@@ -308,7 +308,9 @@ export const handlers = [
   http.get(`${API}/badges`, () => HttpResponse.json(fx.badges)),
 
   // -- challenges ------------------------------------------------------------
-  http.get(`${API}/challenges`, () => HttpResponse.json(db.challenges.map(fx.challengeSummary))),
+  http.get(`${API}/challenges`, () =>
+    HttpResponse.json(db.challenges.map((c) => ({ ...fx.challengeSummary(c), participant_count: c.participant_count, joined: db.joined.has(c.id) }))),
+  ),
   http.get(`${API}/challenges/:id`, ({ params }) => {
     const challenge = db.challenges.find((c) => c.id === idParam(params));
     return challenge ? HttpResponse.json(challenge) : notFound();
@@ -322,6 +324,18 @@ export const handlers = [
       challenge.participant_count = (challenge.participant_count ?? 0) + 1;
     }
     return new HttpResponse(null, { status: 204 });
+  }),
+  http.delete(`${API}/challenges/:id/join`, ({ request, params }) => {
+    if (!isAuthed(request)) return unauthorized();
+    const challenge = db.challenges.find((c) => c.id === idParam(params));
+    if (!challenge) return notFound();
+    if (db.joined.delete(challenge.id)) challenge.participant_count = Math.max(0, (challenge.participant_count ?? 1) - 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+  // Only the current user has points in the mock data.
+  http.get(`${API}/leaderboard`, () => {
+    const me = db.user.points > 0 ? { rank: 1, user: { id: db.user.id, name: db.user.name }, points: db.user.points, district: db.user.district ?? null } : null;
+    return HttpResponse.json({ entries: me ? [me] : [], me });
   }),
 
   // -- notifications ---------------------------------------------------------

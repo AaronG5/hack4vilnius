@@ -1,4 +1,4 @@
-// Board 9 · Rajono skydelis — statistics for one district over the last 8 weeks.
+// Board 9 · Rajono skydelis – statistics for one district over the last 8 weeks.
 
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
@@ -109,7 +109,7 @@ export function DistrictPage() {
         ? `${district.name} problemas sprendžia tiek pat laiko, kiek miesto vidurkis.`
         : `${district.name} problemas sprendžia ${decimal(diff)} d. ${faster ? "greičiau" : "lėčiau"} nei miesto vidurkis.`
       : `${district.name} per 8 savaites dar neturi sutvarkytų problemų.`,
-    cats[0] ? `Daugiausia pranešimų — ${cats[0].name.toLowerCase()}.` : "",
+    cats[0] ? `Daugiausia pranešimų – ${cats[0].name.toLowerCase()}.` : "",
     `Per 8 savaites susikaupė ${count(backlog, ["neišspręsta problema", "neišspręstos problemos", "neišspręstų problemų"])}, skirtumas tarp gautų ir išspręstų ${growing ? "auga" : "nedidėja"}.`,
   ]
     .filter(Boolean)
@@ -174,7 +174,7 @@ export function DistrictPage() {
         <section className="ccard" style={{ flex: "999 1 560px", gap: 14 }}>
           <div className="sec-head" style={{ gap: 10 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <h2>Gauta per savaitę — kokioje stadijoje dabar</h2>
+              <h2>Gauta per savaitę – kokioje stadijoje dabar</h2>
               <span className="hint" style={{ fontSize: 13 }}>
                 {insight}
               </span>
@@ -301,7 +301,7 @@ export function DistrictPage() {
           <h2>Kaip sekasi rajonui?</h2>
           <span style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.45 }}>{summary}</span>
           <span className="tag lime" style={{ alignSelf: "flex-start" }}>
-            Atnaujinama kas savaitę
+            Atnaujinama realiu laiku
           </span>
         </section>
       </div>

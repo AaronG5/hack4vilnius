@@ -5,7 +5,7 @@ Mix `AnonymousIdentityMixin` into any `APIView` that anonymous visitors may
 hit. It attaches `self.anonymous_identity` for the duration of the request
 (creating one and issuing its cookie if none was presented yet), and the view
 calls `self.anonymous_identity.claim(user)` once that visitor registers or
-logs in — see `users.models.AnonymousIdentity.claim`.
+logs in - see `users.models.AnonymousIdentity.claim`.
 """
 
 from typing import cast, override

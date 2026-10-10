@@ -9,3 +9,4 @@ values used by our own notification-sending code consistent.
 EVENT_STATUS_CHANGED = "status_changed"
 EVENT_VALIDATION_REQUESTED = "validation_requested"
 EVENT_POINTS_AWARDED = "points_awarded"
+EVENT_BADGE_AWARDED = "badge_awarded"

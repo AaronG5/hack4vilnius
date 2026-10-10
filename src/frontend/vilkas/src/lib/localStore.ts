@@ -1,5 +1,5 @@
 // Browser-local stand-ins (per-viewer only), as the demo uses when it has no shared database.
-// TODO(api-gap): joined challenges and private challenges belong on the server.
+// TODO(api-gap): private challenges belong on the server (POST /challenges).
 
 import type { GoalKey } from "../data/challengeMeta";
 
@@ -31,7 +31,7 @@ export interface PrivateChallenge {
   ownerName: string;
 }
 
-/** TODO(api-gap): POST /problems/{id}/assignments — kept per browser until it exists. */
+/** TODO(api-gap): POST /problems/{id}/assignments – kept per browser until it exists. */
 export interface Assignment {
   institutions: string[];
   due: number;
@@ -42,8 +42,6 @@ export interface Assignment {
 export const store = {
   assignments: () => read<Record<string, Assignment>>("vilkas.assignments", {}),
   setAssignments: (v: Record<string, Assignment>) => write("vilkas.assignments", v),
-  joined: () => read<Record<string, boolean>>("vilkas.joined", {}),
-  setJoined: (v: Record<string, boolean>) => write("vilkas.joined", v),
   privateChallenges: () => read<PrivateChallenge[]>("vilkas.private", []),
   setPrivateChallenges: (v: PrivateChallenge[]) => write("vilkas.private", v),
 };

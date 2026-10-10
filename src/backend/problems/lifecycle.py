@@ -21,6 +21,7 @@ answering blindly earns nothing:
 
 import datetime as dt
 
+import badges.services as badge_services
 import users.services as user_services
 from django.utils import timezone
 from notifications.services import notify_points, notify_problem_status_change
@@ -194,4 +195,5 @@ def _pay(
     entry.save(update_fields=["points_awarded"])
     user_services.award_points(entry.user, points)
     _ = notify_points(entry.user, problem, points, reason)
+    _ = badge_services.check_new_badges(entry.user)
     return True

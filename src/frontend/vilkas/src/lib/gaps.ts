@@ -98,6 +98,6 @@ export async function analyzeReport(
     address,
     nearSensitive: SENSITIVE.test(text),
     source: suggested.length ? "ai" : "keywords",
-    note: recognized ? undefined : "Iš aprašymo tipo neatpažinome — pasirinkite jį žemiau.",
+    note: recognized ? undefined : "Iš aprašymo tipo neatpažinome – pasirinkite jį žemiau.",
   };
 }

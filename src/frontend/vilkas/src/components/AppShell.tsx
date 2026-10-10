@@ -69,7 +69,7 @@ function Splash({ ready }: { ready: boolean }) {
     <div
       className={`splash${gone ? " gone" : ""}`}
       role="img"
-      aria-label="Vilkas — Vilniaus problemų radaras"
+      aria-label="Vilkas – Vilniaus problemų radaras"
       onClick={() => ready && setDismissed(true)}
     >
       <span className="wolf">

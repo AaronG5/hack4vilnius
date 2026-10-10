@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 @final
 class ModerationFlagListView(DefaultListAPIView[ModerationFlag]):
-    """`GET /api/moderation/flags` — list flagged reports pending review."""
+    """`GET /api/moderation/flags` - list flagged reports pending review."""
 
     permission_classes = (IsCityAdministratorOrStaff,)
     serializer_class = ModerationFlagSerializer
@@ -36,7 +36,7 @@ class ModerationFlagListView(DefaultListAPIView[ModerationFlag]):
 
 @final
 class ModerationFlagUpdateView(APIView):
-    """`PUT /api/moderation/flags/{id}` — approve or dismiss a flag."""
+    """`PUT /api/moderation/flags/{id}` - approve or dismiss a flag."""
 
     permission_classes = (IsCityAdministratorOrStaff,)
 

@@ -1,4 +1,4 @@
-// Problem details sheet from the demo: facts, photo history, and one final answer —
+// Problem details sheet from the demo: facts, photo history, and one final answer –
 // "Problema yra" or "Problemos nėra", with an optional urgency vote, a longer
 // account than the report gave, and any photos or videos backing it. The two
 // answers carry equal weight, so they look alike. One answer per person.
@@ -91,7 +91,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
         await reload();
         toast("Jūs jau atsakėte į šį pranešimą");
       } else {
-        toast(status === 413 ? "Failas per didelis — pabandykite kitą" : "Nepavyko išsaugoti — pabandykite dar kartą");
+        toast(status === 413 ? "Failas per didelis – pabandykite kitą" : "Nepavyko išsaugoti – pabandykite dar kartą");
       }
     } finally {
       setBusy(false);
@@ -136,7 +136,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
           <p className="lead">
             {photoAsk === "no"
               ? "Nuotrauka padės kitiems patikėti, kad problemos šioje vietoje nebėra."
-              : "Problema pranešta daugiau nei prieš parą. Nauja nuotrauka parodys savivaldybei, kaip ji atrodo dabar — ar nepablogėjo."}
+              : "Problema pranešta daugiau nei prieš parą. Nauja nuotrauka parodys savivaldybei, kaip ji atrodo dabar – ar nepablogėjo."}
           </p>
           {busy ? (
             <div className="spin" role="progressbar" aria-label="Įkeliama" />
@@ -291,13 +291,13 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
             m.status !== "work" && (
               <div className="note">
                 Jūs pažymėjote: <b>{myAnswer}</b>.{" "}
-                {answered ? "Atsakymas galutinis — pakeisti nebegalima." : "Galite atsakyti, kai apsispręsite."}
+                {answered ? "Atsakymas galutinis – pakeisti nebegalima." : "Galite atsakyti, kai apsispręsite."}
               </div>
             )
           )}
           {m.status === "work" && (
             <div className="note" style={{ background: "rgba(255,198,41,.25)" }}>
-              <b>Sprendžia savivaldybė.</b> Būseną atnaujina vykdytojas — patvirtinti nereikia.
+              <b>Sprendžia savivaldybė.</b> Būseną atnaujina vykdytojas – patvirtinti nereikia.
             </div>
           )}
 
@@ -308,7 +308,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                 ? m.myUrg
                   ? "Jūsų balsas suskaičiuotas"
                   : "Atsakėte nebalsavę dėl skubumo"
-                : "Pasirinkite — balsas bus išsiųstas kartu su atsakymu"}
+                : "Pasirinkite – balsas bus išsiųstas kartu su atsakymu"}
               <div className="urg">
                 {URGENCIES.map((k) => (
                   <button
@@ -335,7 +335,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
             <div className="note" style={{ background: "rgba(0,150,64,.18)" }}>
               {m.fixWindowOpen ? (
                 <>
-                  <b>Ar tikrai sutvarkyta?</b> Pažymėta {ago(m.fixedAt ?? m.created)}. Jei esate šalia, patvirtinkite per valandą — pirmieji
+                  <b>Ar tikrai sutvarkyta?</b> Pažymėta {ago(m.fixedAt ?? m.created)}. Jei esate šalia, patvirtinkite per valandą – pirmieji
                   patvirtinę gauna taškų. Jei problema vis dar yra, ji grįš į sąrašą.
                 </>
               ) : (
@@ -349,7 +349,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
           {canAnswer && (
             <>
               <label className="fld">
-                Ką matote? (nebūtina) — papasakokite plačiau nei pranešime
+                Ką matote? (nebūtina) – papasakokite plačiau nei pranešime
                 <textarea
                   className="inp"
                   maxLength={1000}
@@ -361,7 +361,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
               </label>
 
               <div className="fld">
-                Nuotraukos ar vaizdo įrašai (nebūtina) — iki {MAX_ATTACHMENTS}
+                Nuotraukos ar vaizdo įrašai (nebūtina) – iki {MAX_ATTACHMENTS}
                 <div className="row">
                   <label className="btn ghost" style={{ flex: 1, cursor: "pointer" }}>
                     <CameraIcon size={18} />
@@ -406,7 +406,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                       {fix
                         ? `Priėję iki ${NEAR_RADIUS_M} m galėsite atsakyti.`
                         : located?.error ??
-                          (located?.watching ? "Nustatoma vieta…" : `Įjunkite lokaciją — atsakyti galima būnant iki ${NEAR_RADIUS_M} m nuo problemos.`)}
+                          (located?.watching ? "Nustatoma vieta…" : `Įjunkite lokaciją – atsakyti galima būnant iki ${NEAR_RADIUS_M} m nuo problemos.`)}
                     </span>
                   </div>
                 </div>
@@ -428,7 +428,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
                 </button>
               </div>
               <span className="sm">
-                Taškus gausite, kai jūsų atsakymas pasitvirtins: pirmieji teisingai atsakę gauna iškart, vėlesni — kai savivaldybė imsis
+                Taškus gausite, kai jūsų atsakymas pasitvirtins: pirmieji teisingai atsakę gauna iškart, vėlesni – kai savivaldybė imsis
                 problemos. Atsakyti galima vieną kartą.
               </span>
             </>

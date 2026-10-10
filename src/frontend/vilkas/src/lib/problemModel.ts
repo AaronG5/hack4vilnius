@@ -79,9 +79,9 @@ export const FIX_WINDOW_MS = 3_600_000;
 
 export const STATUS_TEXT: Record<ViewStatus, string> = {
   fixed: "Pažymėta sutvarkyta",
-  work: "Sprendžiama — savivaldybė jau dirba",
+  work: "Sprendžiama – savivaldybė jau dirba",
   new: "Laukia kaimynų patvirtinimo",
-  urgent: "Skubi — aukštas prioritetas",
+  urgent: "Skubi – aukštas prioritetas",
   ok: "Patvirtinta, laukia sprendimo",
 };
 

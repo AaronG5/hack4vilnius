@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @final
 class BadgeListView(DefaultListAPIView[Badge]):
-    """`GET /api/badges` — list all available badges."""
+    """`GET /api/badges` - list all available badges."""
 
     permission_classes = (AllowAny,)
     serializer_class = BadgeSerializer
@@ -23,7 +23,7 @@ class BadgeListView(DefaultListAPIView[Badge]):
 
 @final
 class MyBadgesView(DefaultListAPIView[UserBadge]):
-    """`GET /api/users/me/badges` — badges earned by the current user."""
+    """`GET /api/users/me/badges` - badges earned by the current user."""
 
     permission_classes = (IsAuthenticated,)
     serializer_class = EarnedBadgeSerializer
