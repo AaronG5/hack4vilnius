@@ -17,6 +17,7 @@ import "./MapPage.css";
 const FILTERS: [MapFilter, string][] = [
   ["all", "Visos"],
   ["new", "Nepatvirtintos"],
+  ["confirmed", "Patvirtintos"],
   // Problems you answered (gray on the map, "Jūs atsakėte" in the legend).
   ["checked", "Atsakytos"],
   ["work", "Sprendžiamos"],
@@ -26,6 +27,7 @@ const FILTERS: [MapFilter, string][] = [
 function passes(filter: MapFilter, v: ProblemView): boolean {
   if (filter === "all") return true;
   if (filter === "new") return v.status === "new";
+  if (filter === "confirmed") return v.status === "ok" || v.status === "urgent";
   if (filter === "checked") return v.myVote !== undefined;
   if (filter === "work") return v.status === "work";
   return v.isFixed;
@@ -34,6 +36,7 @@ function passes(filter: MapFilter, v: ProblemView): boolean {
 function listFor(filter: MapFilter, views: ProblemView[], shown: ProblemView[]): [string, ProblemView[]] {
   if (filter === "new")
     return ["Laukia patvirtinimo", [...shown].sort((a, b) => Number(!!a.myVote) - Number(!!b.myVote) || b.score - a.score)];
+  if (filter === "confirmed") return ["Patvirtintos", [...shown].sort((a, b) => b.score - a.score)];
   if (filter === "checked") return ["Jūsų atsakytos", [...shown].sort((a, b) => b.created - a.created)];
   if (filter === "work") return ["Sprendžiamos", [...shown].sort((a, b) => b.score - a.score)];
   if (filter === "fixed") return ["Sutvarkytos", [...shown].sort((a, b) => b.created - a.created)];
@@ -80,6 +83,7 @@ export function MapPage() {
   const counts: Record<MapFilter, number> = {
     all: views.length,
     new: views.filter((v) => v.status === "new").length,
+    confirmed: views.filter((v) => v.status === "ok" || v.status === "urgent").length,
     checked: views.filter((v) => v.myVote !== undefined).length,
     work: views.filter((v) => v.status === "work").length,
     fixed: views.filter((v) => v.isFixed).length,

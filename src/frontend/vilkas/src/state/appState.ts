@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import type { Category, District, Notification, User } from "../api";
 import type { ProblemView } from "../lib/problemModel";
 
-export type MapFilter = "all" | "new" | "checked" | "work" | "fixed";
+export type MapFilter = "all" | "new" | "confirmed" | "checked" | "work" | "fixed";
 
 export interface AppState {
   me?: User;
