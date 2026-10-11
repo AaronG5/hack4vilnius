@@ -214,6 +214,8 @@ export interface Activity {
   where: LngLat;
   category: string;
   district: string;
+  /** Proved right: the backend paid points for it. */
+  paid: boolean;
 }
 
 /** The current user's reports and answers, newest last (drives landmarks, weekly checks, challenges). */
@@ -222,9 +224,9 @@ export function myActivity(views: ProblemView[], meId: Uuid | undefined): Activi
   const acts: Activity[] = [];
   for (const v of views) {
     const base = { where: v.at, category: v.category, district: v.district };
-    for (const r of v.detail.reports) if (r.user.id === meId) acts.push({ ...base, type: "report", at: Date.parse(r.created_at) });
+    for (const r of v.detail.reports) if (r.user.id === meId) acts.push({ ...base, type: "report", at: Date.parse(r.created_at), paid: (r.points_awarded ?? 0) > 0 });
     for (const val of v.detail.validations)
-      if (val.user.id === meId) acts.push({ ...base, type: val.is_valid ? "yes" : "no", at: Date.parse(val.created_at) });
+      if (val.user.id === meId) acts.push({ ...base, type: val.is_valid ? "yes" : "no", at: Date.parse(val.created_at), paid: val.points_awarded > 0 });
   }
   return acts.sort((a, b) => a.at - b.at);
 }

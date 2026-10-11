@@ -193,7 +193,7 @@ function ProblemDetails({ view: m, onClose }: { view: ProblemView; onClose: () =
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1>{m.title}</h1>
           <p className="lead" style={{ marginTop: 4 }}>
-            {m.address || m.district} · {m.district}
+            {m.address ? `${m.address} · ${m.district}` : m.district}
           </p>
         </div>
         <span className={`score ${scoreClass(m)}`} style={{ fontSize: 20, padding: "8px 10px" }}>

@@ -108,6 +108,15 @@ def notify_points(
     )
 
 
+def notify_reward(user: "User", points: int, reason: str) -> Notification:
+    """Tell `user` they earned `points` not tied to one problem, and why."""
+    return Notification.objects.create(
+        user=user,
+        message=f"Gavote {points} tšk.! {reason}",
+        event_type=EVENT_POINTS_AWARDED,
+    )
+
+
 def notify_badge(user: "User", badge: "Badge") -> Notification:
     """Tell `user` they earned `badge`."""
     return Notification.objects.create(

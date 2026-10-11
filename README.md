@@ -70,6 +70,18 @@ each resident a trust score learned from which of their reports and answers
 proved right. How both work, with worked examples: `planning/PRIORITY.md`.
 The weights live in `src/backend/problems/priority.py` and `trust.py`.
 
+### Challenge rewards
+When a challenge ends, each participant who reported or answered at least once
+during it (in its categories, if it has any) gets its `reward_points`. That
+happens whenever the challenge list is read, and can also be run on a schedule
+(for example daily from cron or Windows Task Scheduler):
+
+```bash
+uv --directory ./src/backend run python manage.py settle_challenges
+```
+
+Nobody is paid twice, however often it runs.
+
 ### Municipality tools without a staff login
 There is no staff login screen yet. While `DEBUG` is on, any signed-in user may
 use the municipality endpoints (changing a problem's status, moderation), so the

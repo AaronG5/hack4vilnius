@@ -1,8 +1,9 @@
 """Views for listing, reading and joining challenges."""
 
-from typing import TYPE_CHECKING, cast, final
+from typing import TYPE_CHECKING, cast, final, override
 
 import badges.services as badge_services
+import challenges.services as challenge_services
 from challenges.models import Challenge
 from challenges.serializers import ChallengeDetailSerializer, ChallengeSerializer
 from rest_framework import status
@@ -17,6 +18,7 @@ from vilnius_backend.generic_views import (
 )
 
 if TYPE_CHECKING:
+    from django.db.models import QuerySet
     from users.models import User
 
 
@@ -26,7 +28,17 @@ class ChallengeListView(DefaultListAPIView[Challenge]):
 
     permission_classes = (AllowAny,)
     serializer_class = ChallengeSerializer
-    queryset = Challenge.objects.prefetch_related("categories")
+
+    @override
+    def get_queryset(self) -> "QuerySet[Challenge]":
+        """
+        List challenges, settling any that ended first.
+
+        Settling here means ended challenges pay out even where nobody has
+        scheduled `manage.py settle_challenges`; it's cheap once settled.
+        """
+        _ = challenge_services.settle_ended_challenges()
+        return Challenge.objects.prefetch_related("categories")
 
 
 @final

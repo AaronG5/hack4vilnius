@@ -1,4 +1,4 @@
-// Board 8 · Šios savaitės prioritetai – the municipality's prioritised, deduplicated problem list.
+// Board 8 · Prioritetai – the municipality's prioritised, deduplicated problem list.
 
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { LazyMap } from "../../components/map/LazyMap";
@@ -48,7 +48,8 @@ export function DashboardPage() {
   );
   const open = scoped.filter((v) => !v.isFixed || isReopened(v));
   const ranked = [...open].sort((a, b) => b.score - a.score);
-  const confirmedShare = open.length ? Math.round((open.filter((v) => v.confirms >= 3).length / open.length) * 100) : 0;
+  // Confirmed by residents (or already taken on by the city), as opposed to still waiting for confirmation.
+  const confirmedShare = open.length ? Math.round((open.filter((v) => v.detail.status !== "unconfirmed").length / open.length) * 100) : 0;
   const merged = scoped.reduce((n, v) => n + duplicatesMerged(v), 0);
   const reopened = scoped.filter(isReopened).length;
 
@@ -74,7 +75,7 @@ export function DashboardPage() {
       <header className="city-head">
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span className="city-kicker">Vilkas · Vilniaus miesto savivaldybė</span>
-          <h1 className="city-title">Šios savaitės prioritetai</h1>
+          <h1 className="city-title">Prioritetai</h1>
         </div>
         <div className="city-filters">
           <label>
@@ -126,7 +127,7 @@ export function DashboardPage() {
         <div className="kpi">
           <span>Patvirtino bendruomenė</span>
           <b>{confirmedShare} %</b>
-          <small>≥ 3 gyventojų patvirtinimai</small>
+          <small>neišspręstų, kurias patvirtino gyventojai</small>
         </div>
         <div className="kpi">
           <span>Sujungti dublikatai</span>

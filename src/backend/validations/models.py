@@ -1,5 +1,6 @@
 """User confirmations (or disputes) of reported problems."""
 
+import datetime as dt
 from typing import ClassVar, final, override
 
 from django.contrib.contenttypes.fields import GenericRelation
@@ -67,3 +68,38 @@ class Validation(UUIDModel, TimestampedModel):
     def __str__(self) -> str:
         """Return the validation's id, used in the admin and shell."""
         return str(self.id)
+
+
+@final
+class WeeklyBonus(UUIDModel, TimestampedModel):
+    """
+    The weekly goal's bonus, paid at most once per resident per week.
+
+    See `problems.rewards.check_weekly_bonus`.
+    """
+
+    user: models.ForeignKey[User | Combinable, User] = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="weekly_bonuses",
+    )
+    week_start: models.DateField[str | dt.date | Combinable, dt.date] = (
+        models.DateField(help_text="Monday of the week it was earned (Vilnius time).")
+    )
+    points: models.IntegerField[int | Combinable, int] = models.IntegerField()
+
+    class Meta(UUIDModel.Meta, TimestampedModel.Meta):
+        """Once per resident per week; most recent first."""
+
+        ordering: ClassVar[list[str]] = ["-week_start"]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["user", "week_start"],
+                name="unique_weekly_bonus_per_user_and_week",
+            ),
+        ]
+
+    @override
+    def __str__(self) -> str:
+        """Return who earned it and for which week."""
+        return f"{self.user} {self.week_start}"

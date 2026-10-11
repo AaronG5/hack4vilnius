@@ -137,6 +137,17 @@ export function ChallengeDetailPage() {
         </div>
       )}
 
+      {c.reward !== undefined && c.reward > 0 && (
+        <div className="card" style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center" }}>
+          <span className="tag lime" style={{ flexShrink: 0 }}>
+            +{c.reward} tšk.
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>
+            Kiekvienam dalyviui, iki iššūkio pabaigos atlikusiam bent vieną veiksmą. Taškai skiriami iššūkiui pasibaigus.
+          </span>
+        </div>
+      )}
+
       {c.prize && (
         <div className="card" style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center" }}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>

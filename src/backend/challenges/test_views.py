@@ -53,7 +53,8 @@ class TestChallengeList:
         assert entry["start_date"] == "2026-03-01"
         assert entry["end_date"] == "2026-04-01"
         assert entry["reward_points"] == REWARD_POINTS
-        assert entry["status"] == ChallengeStatus.UPCOMING
+        # The fixture ran in March 2026, so reading the list settles it as ended.
+        assert entry["status"] == ChallengeStatus.ENDED
         categories = cast("list[dict[str, object]]", entry["categories"])
         assert categories[0]["id"] == str(category.id)
 

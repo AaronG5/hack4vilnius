@@ -23,10 +23,13 @@ export function isReopened(v: ProblemView): boolean {
   return !v.isFixed && Boolean(v.detail.reopened_at);
 }
 
-/** Rising when 2+ confirmations or urgency votes arrived in the last 3 days. */
+/**
+ * Rising when 2+ "Problema yra" answers arrived in the last 72 hours: the same
+ * rule as the priority score's momentum signal (problems/priority.py).
+ */
 export function trend(v: ProblemView, now = Date.now()): "up" | "flat" {
   const recent = v.detail.validations.filter((val) => val.is_valid && now - Date.parse(val.created_at) <= 3 * DAY).length;
-  return recent >= 2 || (v.ageDays <= 3 && v.confirms >= 2) ? "up" : "flat";
+  return recent >= 2 ? "up" : "flat";
 }
 
 /** Board 8 status column. */

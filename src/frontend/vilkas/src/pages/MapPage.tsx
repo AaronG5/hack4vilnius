@@ -7,7 +7,7 @@ import { PinIcon } from "../components/icons";
 import { LazyMap, MapLegend } from "../components/map/LazyMap";
 import { MARKS } from "../components/map/marks";
 import { ProblemItem } from "../components/ProblemItem";
-import { weekChecks } from "../lib/activity";
+import { WEEKLY_GOAL, weekChecks } from "../lib/activity";
 import { distanceMeters, formatDistance, isNear, NEAR_RADIUS_M, type LngLat } from "../lib/geo";
 import { myActivity, type ProblemView } from "../lib/problemModel";
 import { useWatchedFix } from "../lib/useWatchedFix";
@@ -100,7 +100,7 @@ export function MapPage() {
   const fix = located.fix;
   const onSite = fix ? toCheck.find((v) => isNear(fix, v.at)) : undefined;
   const todo = shown.filter((v) => !v.mine && !v.myVote).length;
-  const week = Math.min(5, weekChecks(myActivity(views, me?.id)));
+  const week = Math.min(WEEKLY_GOAL, weekChecks(myActivity(views, me?.id)));
 
   return (
     <>
@@ -159,7 +159,7 @@ export function MapPage() {
 
           {onSite ? null : filter === "new" ? (
             <div className="card wk" style={{ marginBottom: 10 }}>
-              <span className="wkn">{week}/5</span>
+              <span className="wkn">{week}/{WEEKLY_GOAL}</span>
               <span style={{ flex: 1 }}>
                 <b>Patikrinkite nepatvirtintas</b>
                 <br />

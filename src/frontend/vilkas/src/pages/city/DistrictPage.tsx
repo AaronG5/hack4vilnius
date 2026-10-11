@@ -166,7 +166,7 @@ export function DistrictPage() {
         <div className="kpi dark">
           <span>Aktyvūs gyventojai</span>
           <b>{activeResidents(recent)}</b>
-          <small>{league}. vieta rajonų varžytynėse</small>
+          <small>{inDistrict.length ? `${league}. vieta rajonų varžytynėse` : "Rajonų varžytynėse dar nedalyvauja"}</small>
         </div>
       </div>
 

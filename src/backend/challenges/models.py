@@ -7,7 +7,7 @@ from categories.models import Category
 from django.db import models
 from django.db.models.expressions import Combinable
 from users.models import User
-from vilnius_backend.base_models import UUIDModel
+from vilnius_backend.base_models import TimestampedModel, UUIDModel
 from vilnius_backend.choices import ChallengeStatus
 
 
@@ -47,3 +47,37 @@ class Challenge(UUIDModel):
     def __str__(self) -> str:
         """Return the challenge's name, used in the admin and shell."""
         return self.name
+
+
+@final
+class ChallengeReward(UUIDModel, TimestampedModel):
+    """
+    A challenge's `reward_points`, paid to one participant when it ended.
+
+    See `challenges.services.settle_ended_challenges`.
+    """
+
+    challenge: models.ForeignKey[Challenge | Combinable, Challenge] = models.ForeignKey(
+        Challenge, on_delete=models.CASCADE, related_name="rewards"
+    )
+    user: models.ForeignKey[User | Combinable, User] = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="challenge_rewards",
+    )
+    points: models.IntegerField[int | Combinable, int] = models.IntegerField()
+
+    class Meta(UUIDModel.Meta, TimestampedModel.Meta):
+        """Once per participant per challenge."""
+
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["challenge", "user"],
+                name="unique_challenge_reward_per_user",
+            ),
+        ]
+
+    @override
+    def __str__(self) -> str:
+        """Return who was rewarded for which challenge."""
+        return f"{self.user} {self.challenge}"

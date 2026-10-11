@@ -42,6 +42,8 @@ export interface ChallengeCard {
   prize: string;
   cta?: [string, string];
   joined: boolean;
+  /** Points each participant with at least one action gets when it ends. */
+  reward?: number;
   /** How many have joined (public challenges). */
   participants?: number;
   seasonal?: boolean;
@@ -129,6 +131,7 @@ export function useChallenges() {
           mine,
           rules: meta?.rules ?? [],
           prize: meta?.prize ?? "",
+          reward: c.reward_points,
           cta: meta?.cta ?? (["Dalyvauti", "Dalyvaujate"] as [string, string]),
           joined: joined[c.id] ?? Boolean(c.joined),
           participants: c.participant_count,
@@ -137,8 +140,8 @@ export function useChallenges() {
           rows: [] as BoardRow[],
           progLabel: "Jūsų veiksmai nuo pradžios",
           yours: "",
-          // TODO(api-gap): challenge `reward_points` aren't paid by the backend yet, so not shown.
-          short: `Jūsų veiksmai: ${mine}`,
+          // Paid when the challenge ends, to participants with at least one action (challenges/services.py).
+          short: `Jūsų veiksmai: ${mine} · +${c.reward_points} tšk. dalyviams`,
         };
 
         if (meta?.seasonal) {

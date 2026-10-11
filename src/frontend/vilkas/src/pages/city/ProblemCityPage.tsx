@@ -62,9 +62,9 @@ function history(v: ProblemView, assignment: Assignment | undefined): HistoryIte
   });
   for (const val of v.detail.validations) {
     const at = Date.parse(val.created_at);
-    if (val.media.length) items.push({ at, color: "var(--navy)", title: "Nauja nuotrauka", sub: `${ago(at)} · ${val.is_valid ? "„vis dar yra“" : "„sutvarkyta“"}` });
-    else if (val.is_valid) items.push({ at, color: "var(--red)", title: "Patvirtino: vis dar yra", sub: `${ago(at)} · ${val.user.name || "Gyventojas"}` });
-    else items.push({ at, color: "var(--green)", title: "Pažymėjo „sutvarkyta“", sub: `${ago(at)} · ${val.user.name || "Gyventojas"}` });
+    if (val.media.length) items.push({ at, color: "var(--navy)", title: "Nauja nuotrauka", sub: `${ago(at)} · ${val.is_valid ? "„problema yra“" : "„problemos nėra“"}` });
+    else if (val.is_valid) items.push({ at, color: "var(--red)", title: "Atsakė: problema yra", sub: `${ago(at)} · ${val.user.name || "Gyventojas"}` });
+    else items.push({ at, color: "var(--green)", title: "Atsakė: problemos nėra", sub: `${ago(at)} · ${val.user.name || "Gyventojas"}` });
   }
   if (assignment) {
     items.push({
@@ -200,7 +200,7 @@ export function ProblemCityPage() {
           </Link>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
             <span className="hint">
-              <Link to="/city">Šios savaitės prioritetai</Link> ·{" "}
+              <Link to="/city">Prioritetai</Link> ·{" "}
               {districtId ? <Link to={`/city/districts/${districtId}`}>{v.district}</Link> : v.district} · Nr. {caseNumber(v)}
             </span>
             <h1 style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.15 }}>{v.title}</h1>

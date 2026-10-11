@@ -6,7 +6,7 @@ import { getLeaderboard } from "../../api";
 import { CH_ICON } from "../../data/challengeMeta";
 import { useApi } from "../../hooks/useApi";
 import { ChevronIcon, PlusIcon } from "../../components/icons";
-import { weekChecks } from "../../lib/activity";
+import { WEEKLY_BONUS, WEEKLY_GOAL, weekChecks } from "../../lib/activity";
 import { count } from "../../lib/format";
 import { useAppState } from "../../state/appState";
 import { useChallenges, type ChallengeCard } from "./useChallenges";
@@ -57,7 +57,7 @@ export function ChallengesPage() {
   const list = cards.filter((c) => !c.seasonal);
   const total = cards.length;
   const joinedCount = cards.filter((c) => c.joined).length;
-  const week = Math.min(5, weekChecks(acts));
+  const week = Math.min(WEEKLY_GOAL, weekChecks(acts));
 
   const joinByCode = () => {
     const normalized = code.trim().toUpperCase().replace(/\s+/g, "");
@@ -100,7 +100,9 @@ export function ChallengesPage() {
               Jūsų indėlis: <b style={{ color: "#fff" }}>{seasonal.mine}</b>
             </span>
           </span>
-          <small style={{ color: "#fff", fontWeight: 600 }}>{seasonal.prize}</small>
+          <small style={{ color: "#fff", fontWeight: 600 }}>{seasonal.prize}
+            {seasonal.reward ? ` · +${seasonal.reward} tšk. dalyviams` : ""}
+          </small>
         </section>
       )}
 
@@ -152,11 +154,17 @@ export function ChallengesPage() {
       </div>
 
       <div className="card wk" style={{ marginTop: 8 }}>
-        <span className="wkn">{week}/5</span>
+        <span className="wkn">
+          {week}/{WEEKLY_GOAL}
+        </span>
         <span style={{ flex: 1 }}>
-          <b>Savaitės tikslas</b>
+          <b>Savaitės tikslas · +{WEEKLY_BONUS} tšk.</b>
           <br />
-          <span className="m">Patikrinkite 5 problemas pakeliui per savaitę</span>
+          <span className="m">
+            {week >= WEEKLY_GOAL
+              ? "Pasiektas – taškai jau jūsų!"
+              : `${WEEKLY_GOAL} pasitvirtinę patikrinimai per savaitę (pirmadienis–sekmadienis)`}
+          </span>
         </span>
         <button
           type="button"

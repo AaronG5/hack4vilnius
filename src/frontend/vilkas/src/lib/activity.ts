@@ -4,11 +4,22 @@ import landmarksData from "../data/landmarks.json";
 import { distanceMeters, type LngLat } from "./geo";
 import type { Activity } from "./problemModel";
 
-const WEEK = 7 * 86_400_000;
+/** The weekly goal, as the backend pays it (problems/rewards.py). */
+export const WEEKLY_GOAL = 5;
+export const WEEKLY_BONUS = 50;
 
-/** Answers either way in the last 7 days (weekly challenge: 5). */
+/** Monday 00:00 of this week, local time (the backend uses Vilnius time). */
+function weekStart(now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getTime();
+}
+
+/** Answers given this week (Monday to Sunday) that proved right: the weekly goal's count. */
 export function weekChecks(acts: Activity[], now = Date.now()): number {
-  return acts.filter((a) => a.at >= now - WEEK && a.type !== "report").length;
+  const start = weekStart(now);
+  return acts.filter((a) => a.at >= start && a.type !== "report" && a.paid).length;
 }
 
 export interface Landmark {

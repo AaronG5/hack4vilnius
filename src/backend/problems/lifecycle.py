@@ -29,7 +29,7 @@ import badges.services as badge_services
 import users.services as user_services
 from django.utils import timezone
 from notifications.services import notify_points, notify_problem_status_change
-from problems import trust
+from problems import rewards, trust
 from problems.models import Problem
 from reports.models import Report
 from users.models import User
@@ -225,6 +225,8 @@ def _pay(
     entry.save(update_fields=["points_awarded"])
     user_services.award_points(entry.user, points)
     _ = trust.recompute_trust(entry.user)
+    if isinstance(entry, Validation):
+        _ = rewards.check_weekly_bonus(entry.user)
     _ = notify_points(entry.user, problem, points, reason)
     _ = badge_services.check_new_badges(entry.user)
     return True
