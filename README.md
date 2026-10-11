@@ -70,6 +70,14 @@ each resident a trust score learned from which of their reports and answers
 proved right. How both work, with worked examples: `planning/PRIORITY.md`.
 The weights live in `src/backend/problems/priority.py` and `trust.py`.
 
+### Walking routes
+The route planner ("Planuoti maršrutą" on the map) picks the problems most
+worth checking within a time budget, in the app; `GET /api/routes/walk` turns
+them into a path along streets. It proxies an OSRM router with a foot profile,
+by default the public OpenStreetMap one, which is fine for light use; point
+`WALKING_ROUTER_URL` at your own OSRM for more. Without it the planner draws
+straight lines.
+
 ### Challenge rewards
 When a challenge ends, each participant who reported or answered at least once
 during it (in its categories, if it has any) gets its `reward_points`. That

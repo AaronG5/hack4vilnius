@@ -232,6 +232,15 @@ GEOCODER_USER_AGENT = os.environ.get(
     "vilkas-hack4vilnius (https://hack4vilnius.lt)",
 )
 
+# Walking routes for the route planner come from an OSRM router with a foot
+# profile. The default is the public OpenStreetMap (FOSSGIS) instance, which
+# is fine for light use; point WALKING_ROUTER_URL at your own OSRM for more.
+# Requests reuse GEOCODER_USER_AGENT to identify the app.
+WALKING_ROUTER_URL = os.environ.get(
+    "WALKING_ROUTER_URL",
+    "https://routing.openstreetmap.de/routed-foot/route/v1/driving",
+)
+
 
 # AI category suggestion
 # Anthropic API key used to rank categories for new reports. Leave unset to

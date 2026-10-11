@@ -181,3 +181,45 @@
     box-shadow: 0 4px 16px rgba(60, 60, 60, 0.16);
   }
 }
+
+/* Route planner: numbered stops (map, planner list) and the walk in progress. */
+.route-n {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: #3d7bff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.route-n.done {
+  background: var(--green);
+}
+
+.prompt.route svg {
+  color: #3d7bff;
+  flex-shrink: 0;
+}
+
+.route-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 16px 0 16px 16px;
+  background: var(--surface);
+  border-left: 4px solid #3d7bff;
+}
+
+.route-card .bar i {
+  background: #3d7bff;
+}
+
+.route-card .row {
+  gap: 8px;
+}

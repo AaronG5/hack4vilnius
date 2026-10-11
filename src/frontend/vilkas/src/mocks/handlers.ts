@@ -307,6 +307,10 @@ export const handlers = [
   http.get(`${API}/districts`, () => HttpResponse.json(fx.districts)),
   http.get(`${API}/badges`, () => HttpResponse.json(fx.badges)),
 
+  // -- walking routes --------------------------------------------------------
+  // No street router in mock mode: the planner falls back to straight lines.
+  http.get(`${API}/routes/walk`, () => HttpResponse.json({ detail: "Walking routes are unavailable in mock mode." }, { status: 503 })),
+
   // -- challenges ------------------------------------------------------------
   http.get(`${API}/challenges`, () =>
     HttpResponse.json(db.challenges.map((c) => ({ ...fx.challengeSummary(c), participant_count: c.participant_count, joined: db.joined.has(c.id) }))),
