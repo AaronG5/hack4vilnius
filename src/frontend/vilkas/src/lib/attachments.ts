@@ -45,14 +45,17 @@ export function useAttachments(max: number, onFull?: (max: number) => void): Att
 
   const add = useCallback(
     (picked: FileList | null) => {
-      if (!picked?.length) return;
+      // Copy now: callers clear the input right after, which empties the live
+      // FileList before React runs the updater below.
+      const chosen = picked ? [...picked] : [];
+      if (!chosen.length) return;
       setFiles((current) => {
         const room = max - current.length;
         if (room <= 0) {
           onFull?.(max);
           return current;
         }
-        const fresh = [...picked].filter(
+        const fresh = chosen.filter(
           (file) => !current.some((had) => had.name === file.name && had.size === file.size),
         );
         if (fresh.length > room) onFull?.(max);
