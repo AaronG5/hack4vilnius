@@ -296,11 +296,25 @@ export function ProblemCityPage() {
 
             <section className="ccard">
               <h2 style={{ fontSize: 16 }}>Kodėl prioritetas {v.score}</h2>
-              <div className="pc-bars" style={{ gridTemplateColumns: "150px 1fr 120px" }}>
-                <FactorRow label="Patvirtinimai" pct={(Math.min(v.confirms, 10) / 10) * 100} value={String(v.confirms)} />
-                <FactorRow label="Skubumas" pct={(severity / 3) * 100} value={URGENCY_LABEL[v.urgency]} />
-                <FactorRow label="Jautri vieta" pct={v.nearSensitive ? 100 : 0} value={v.nearSensitive ? "Mokykla" : "–"} />
-                <FactorRow label="Amžius" pct={(Math.min(v.ageDays, 14) / 14) * 100} value={`${Math.floor(v.ageDays)} d.`} />
+              <div className="pc-bars" style={{ gridTemplateColumns: v.detail.priority ? "130px 1fr minmax(150px, 1.4fr)" : "150px 1fr 120px" }}>
+                {v.detail.priority ? (
+                  // The backend's breakdown: each factor's points of its maximum, with the reason.
+                  v.detail.priority.factors.map((f) => (
+                    <FactorRow
+                      key={f.key}
+                      label={f.label}
+                      pct={(f.points / f.max) * 100}
+                      value={`${Math.round(f.points)}/${f.max}${f.detail ? ` · ${f.detail}` : ""}`}
+                    />
+                  ))
+                ) : (
+                  <>
+                    <FactorRow label="Patvirtinimai" pct={(Math.min(v.confirms, 10) / 10) * 100} value={String(v.confirms)} />
+                    <FactorRow label="Skubumas" pct={(severity / 3) * 100} value={URGENCY_LABEL[v.urgency]} />
+                    <FactorRow label="Jautri vieta" pct={v.nearSensitive ? 100 : 0} value={v.nearSensitive ? "Mokykla" : "–"} />
+                    <FactorRow label="Amžius" pct={(Math.min(v.ageDays, 14) / 14) * 100} value={`${Math.floor(v.ageDays)} d.`} />
+                  </>
+                )}
               </div>
               <span className="hint">Tendencija: {trend(v, now) === "up" ? "▲ auga" : "– stabili"}</span>
               {ai && (

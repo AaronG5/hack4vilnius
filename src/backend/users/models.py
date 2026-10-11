@@ -14,7 +14,8 @@ from vilnius_backend.choices import UserRole
 if TYPE_CHECKING:
     from districts.models import District
 
-_DEFAULT_TRUST_SCORE = 100.0
+# Unknown: see problems/trust.py and planning/PRIORITY.md.
+_DEFAULT_TRUST_SCORE = 50.0
 
 
 @final

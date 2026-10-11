@@ -25,6 +25,10 @@ class Report(UUIDModel, TimestampedModel):
     ai_abuse_flag: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
         default=False,
     )
+    refuted: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
+        default=False,
+        help_text="Proved wrong: its problem was canceled or it was found harmful.",
+    )
     points_awarded: models.IntegerField[int | Combinable, int] = models.IntegerField(
         default=0,
         help_text="Paid once the problem is confirmed, not when reported.",

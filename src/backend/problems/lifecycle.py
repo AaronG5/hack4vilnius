@@ -7,8 +7,10 @@ answering blindly earns nothing:
 - A report earns its reporter `REPORT_POINTS` once the problem is confirmed,
   not when it is filed.
 - Answers saying the problem is there, given before it is confirmed, are the
-  ones that confirm it (the first `ANSWERS_TO_DECIDE` decide), and are paid
-  at that moment. Answers after confirmation add nothing new, so they wait:
+  ones that confirm it, and are paid at that moment. Confirming takes at
+  least `ANSWERS_TO_DECIDE` people besides the reporter whose trust-weighted
+  sum reaches `CONFIRMING_WEIGHT` (see `problems.trust` and
+  planning/PRIORITY.md). Answers after confirmation add nothing new, so they wait:
   they are paid only when the city takes the problem on, which is the
   strongest confirmation there is. The city starting work pays every true
   claim still unpaid, the report included.
@@ -17,6 +19,8 @@ answering blindly earns nothing:
   confirm are paid, and so is whoever said it was fixed. Anyone saying it is
   still there reopens it instead, and the claim earns nothing. After the
   window the problem leaves the map whether or not anyone confirmed.
+- The city canceling a problem as not real proves its reports and "it's
+  there" answers wrong, which lowers their authors' trust.
 """
 
 import datetime as dt
@@ -25,6 +29,7 @@ import badges.services as badge_services
 import users.services as user_services
 from django.utils import timezone
 from notifications.services import notify_points, notify_problem_status_change
+from problems import trust
 from problems.models import Problem
 from reports.models import Report
 from users.models import User
@@ -37,6 +42,9 @@ FIX_WINDOW = dt.timedelta(hours=1)
 
 # How many agreeing answers decide something, and so how many are paid for it.
 ANSWERS_TO_DECIDE = 2
+# The trust-weighted sum those answers must reach to confirm a problem: two
+# newcomers (weight 1.0 each) do; two distrusted residents (0.7 each) don't.
+CONFIRMING_WEIGHT = 2.0
 
 # Statuses residents' answers decide; once the city is working on a problem,
 # its status is the city's. (Sets, also for single statuses: comparing a
@@ -45,6 +53,7 @@ _RESIDENTS_DECIDE = frozenset({ProblemStatus.UNCONFIRMED, ProblemStatus.CONFIRME
 _CITY_WORKING = frozenset({ProblemStatus.PENDING, ProblemStatus.ONGOING})
 _FIXED = frozenset({ProblemStatus.COMPLETED})
 _UNCONFIRMED = frozenset({ProblemStatus.UNCONFIRMED})
+_CANCELED = frozenset({ProblemStatus.CANCELED})
 
 
 def in_fix_window(problem: Problem, now: dt.datetime | None = None) -> bool:
@@ -79,7 +88,7 @@ def record_answer(problem: Problem, answer: Validation | Report) -> None:
         user = answer.user
         _mark_fixed(problem, now, claimed_by=user)
         return
-    if problem.status in _UNCONFIRMED and _confirmations(problem) >= ANSWERS_TO_DECIDE:
+    if problem.status in _UNCONFIRMED and _residents_confirm(problem):
         problem.status = ProblemStatus.CONFIRMED
         problem.save(update_fields=["status", "updated_at"])
         paid = _pay_true_claims(problem, "confirmed")
@@ -91,6 +100,12 @@ def apply_city_status(problem: Problem, new_status: str) -> None:
     old_status = problem.status
     if new_status == old_status:
         return
+    if new_status in _CANCELED:
+        # Not real: whoever said it was there was wrong.
+        for report in Report.objects.filter(problem=problem):
+            trust.refute(report)
+        for answer in Validation.objects.filter(problem=problem, is_valid=True):
+            trust.refute(answer)
     if new_status in _FIXED:
         # The city fixing something reported is the city confirming it.
         paid = (
@@ -115,10 +130,25 @@ def apply_city_status(problem: Problem, new_status: str) -> None:
     _ = notify_problem_status_change(problem, exclude=paid)
 
 
-def _confirmations(problem: Problem) -> int:
-    """Count residents saying the problem is there, besides its first report."""
-    yes = Validation.objects.filter(problem=problem, is_valid=True).count()
-    return yes + max(0, Report.objects.filter(problem=problem).count() - 1)
+def _residents_confirm(problem: Problem) -> bool:
+    """
+    Whether enough reliable residents, besides the reporter, say it's there.
+
+    At least `ANSWERS_TO_DECIDE` different people, whose trust-weighted sum
+    reaches `CONFIRMING_WEIGHT`. A second report counts like an answer.
+    """
+    reports = list(Report.objects.filter(problem=problem).order_by("created_at"))
+    reporter = reports[0].user if reports else None
+    supporters: dict[str, User] = {}
+    for report in reports[1:]:
+        supporters[report.user.email] = report.user
+    answers = Validation.objects.filter(problem=problem, is_valid=True)
+    for answer in answers.select_related("user"):
+        supporters[answer.user.email] = answer.user
+    if reporter is not None:
+        _ = supporters.pop(reporter.email, None)
+    weight = sum(trust.weight(user) for user in supporters.values())
+    return len(supporters) >= ANSWERS_TO_DECIDE and weight >= CONFIRMING_WEIGHT
 
 
 def _mark_fixed(
@@ -194,6 +224,7 @@ def _pay(
     entry.points_awarded = points
     entry.save(update_fields=["points_awarded"])
     user_services.award_points(entry.user, points)
+    _ = trust.recompute_trust(entry.user)
     _ = notify_points(entry.user, problem, points, reason)
     _ = badge_services.check_new_badges(entry.user)
     return True

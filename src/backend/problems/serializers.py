@@ -7,6 +7,7 @@ from categories.models import Category
 from categories.serializers import CategorySerializer
 from institutions.serializers import InstitutionSerializer
 from problems.models import Problem
+from problems.priority import Priority, priority_of
 from reports.serializers import ReportSerializer
 from rest_framework import serializers
 from users.models import User
@@ -23,6 +24,7 @@ class ProblemSerializer(serializers.ModelSerializer[Problem]):
     institution: InstitutionSerializer = InstitutionSerializer(read_only=True)
     urgency_votes = serializers.SerializerMethodField()
     my_urgency_vote = serializers.SerializerMethodField()
+    priority: serializers.SerializerMethodField = serializers.SerializerMethodField()
 
     class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
         """Expose every contract field; status changes via the status serializer."""
@@ -41,6 +43,7 @@ class ProblemSerializer(serializers.ModelSerializer[Problem]):
             "institution",
             "urgency_votes",
             "my_urgency_vote",
+            "priority",
             "fixed_at",
             "reopened_at",
             "created_at",
@@ -51,6 +54,10 @@ class ProblemSerializer(serializers.ModelSerializer[Problem]):
     def get_urgency_votes(self, problem: Problem) -> dict[str, int]:
         """Count how urgent residents think this problem is."""
         return validation_services.urgency_votes(problem)
+
+    def get_priority(self, problem: Problem) -> Priority | None:
+        """Score this problem from 0 to 100 with its reasons (planning/PRIORITY.md)."""
+        return priority_of(problem)
 
     def get_my_urgency_vote(self, problem: Problem) -> str | None:
         """Return the requesting user's own urgency vote, if they cast one."""

@@ -13,6 +13,7 @@ from users.models import User
 from vilnius_backend.choices import ModerationFlagStatus
 
 FLAGS_URL = "/api/moderation/flags"
+ONE_WRONG_TRUST = 33.3
 
 
 def _entries(response: Response) -> list[dict[str, object]]:
@@ -140,18 +141,35 @@ class TestModerationFlagUpdate:
         moderation_flag.refresh_from_db()
         assert moderation_flag.status == ModerationFlagStatus.DISMISSED
 
-    def test_leaves_the_trust_score_alone_while_stubbed(
+    def test_confirming_harm_lowers_the_reporters_trust(
         self,
         staff_client: APIClient,
         moderation_flag: ModerationFlag,
         user: User,
     ) -> None:
-        """Trust rating is deferred, so confirming a flag doesn't change the score."""
-        before = user.trust_score
-
+        """A report confirmed harmful is proved wrong: 1 wrong, 0 right is 33."""
         _ = staff_client.put(
             f"{FLAGS_URL}/{moderation_flag.id}",
             {"status": ModerationFlagStatus.CONFIRMED_HARMFUL},
+            format="json",
+        )
+
+        user.refresh_from_db()
+        moderation_flag.report.refresh_from_db()
+        assert moderation_flag.report.refuted is True
+        assert user.trust_score == ONE_WRONG_TRUST
+
+    def test_dismissing_leaves_the_trust_alone(
+        self,
+        staff_client: APIClient,
+        moderation_flag: ModerationFlag,
+        user: User,
+    ) -> None:
+        """A dismissed flag says nothing about the reporter."""
+        before = user.trust_score
+        _ = staff_client.put(
+            f"{FLAGS_URL}/{moderation_flag.id}",
+            {"status": ModerationFlagStatus.DISMISSED},
             format="json",
         )
 

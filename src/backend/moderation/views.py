@@ -41,18 +41,13 @@ class ModerationFlagUpdateView(APIView):
     permission_classes = (IsCityAdministratorOrStaff,)
 
     def put(self, request: Request, id: str) -> Response:  # noqa: A002
-        """Record the review decision and (eventually) its trust-score effect."""
+        """Record the review decision and its effect on the reporter's trust."""
         flag = get_object_or_404(ModerationFlag, pk=id)
         serializer = ModerationFlagUpdateSerializer(data=request.data)
         _ = serializer.is_valid(raise_exception=True)
         new_status = cast("str", serializer.validated_data["status"])
 
-        reporter = flag.report.user
-        reporter.trust_score = moderation_services.compute_trust_adjustment(
-            reporter.trust_score,
-            new_status,
-        )
-        reporter.save(update_fields=["trust_score"])
+        moderation_services.apply_review(flag, new_status)
 
         flag.status = new_status
         flag.reviewed_by = cast("User", request.user)

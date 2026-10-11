@@ -64,6 +64,12 @@ form. It proxies [Photon](https://photon.komoot.io/) (OpenStreetMap data);
 point it at another instance with `GEOCODER_URL`, and identify your
 deployment with `GEOCODER_USER_AGENT`.
 
+### Priority and trust
+Each open problem gets a 0–100 priority score with the reasons behind it, and
+each resident a trust score learned from which of their reports and answers
+proved right. How both work, with worked examples: `planning/PRIORITY.md`.
+The weights live in `src/backend/problems/priority.py` and `trust.py`.
+
 ### Municipality tools without a staff login
 There is no staff login screen yet. While `DEBUG` is on, any signed-in user may
 use the municipality endpoints (changing a problem's status, moderation), so the

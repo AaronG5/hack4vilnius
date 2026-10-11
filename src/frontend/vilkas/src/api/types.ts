@@ -195,6 +195,8 @@ export interface Problem {
   urgency_votes: Partial<Record<ProblemUrgency, number>>;
   /** The current user's urgency vote, null if they haven't voted. */
   my_urgency_vote: ProblemUrgency | null;
+  /** Where it stands in the queue, with the reasons; null when fixed or canceled. See planning/PRIORITY.md. */
+  priority?: Priority | null;
   /** When it was marked fixed; residents may confirm for an hour, then it leaves the map. */
   fixed_at?: DateTime | null;
   /** Last time residents said it was still there after a fix. */
@@ -307,4 +309,23 @@ export interface ModerationFlag {
 
 export interface ModerationFlagUpdate {
   status: Exclude<ModerationFlagStatus, "pending">;
+}
+
+// -- Priority (planning/PRIORITY.md) -------------------------------------------
+
+export interface PriorityFactor {
+  key: "danger" | "evidence" | "place" | "waiting" | "signals";
+  /** Lithuanian name, e.g. "Pavojingumas". */
+  label: string;
+  points: number;
+  max: number;
+  /** Lithuanian explanation; empty when there's nothing to add. */
+  detail: string;
+}
+
+export interface Priority {
+  /** 0–100: danger 35 + evidence 25 + vulnerable place 15 + waiting 15 + signals 10. */
+  score: number;
+  band: "critical" | "high" | "medium" | "low";
+  factors: PriorityFactor[];
 }

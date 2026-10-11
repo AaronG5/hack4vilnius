@@ -32,6 +32,10 @@ class Validation(UUIDModel, TimestampedModel):
     points_awarded: models.IntegerField[int | Combinable, int] = models.IntegerField(
         default=0,
     )
+    refuted: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
+        default=False,
+        help_text="Proved wrong: its problem was canceled as not real.",
+    )
     user: models.ForeignKey[User | Combinable, User] = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

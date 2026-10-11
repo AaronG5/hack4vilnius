@@ -1,21 +1,20 @@
-"""
-Trust-score adjustment logic. Stubbed for now.
+"""What a moderation decision does to the reporter's trust."""
 
-Real trust-score rating (lowering it when a flag is confirmed harmful,
-previously raising it for validators who caught it) is left for later;
-callers get back the unchanged score in the meantime.
-"""
+from moderation.models import ModerationFlag
+from problems import trust
+from vilnius_backend.choices import ModerationFlagStatus
+
+# Membership rather than `==`: comparing with a `TextChoices` member confuses
+# the type checker.
+_HARMFUL = frozenset({ModerationFlagStatus.CONFIRMED_HARMFUL})
 
 
-def compute_trust_adjustment(current_score: float, outcome: str) -> float:
+def apply_review(flag: ModerationFlag, outcome: str) -> None:
     """
-    Compute a user's new trust score after a moderation decision.
+    Apply a reviewer's decision on `flag` to its reporter's trust.
 
-    `outcome` is a `vilnius_backend.choices.ModerationFlagStatus` value.
-
-    Stub: always returns `current_score` unchanged until real trust rating
-    is implemented.
+    A report confirmed harmful is proved wrong, which lowers its author's
+    trust (see `problems.trust`). A dismissed flag changes nothing.
     """
-    # TODO:
-    del outcome
-    return current_score
+    if outcome in _HARMFUL:
+        trust.refute(flag.report)

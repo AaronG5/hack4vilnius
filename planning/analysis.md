@@ -200,6 +200,6 @@ Decided with the product owner and implemented in `src/backend/problems/lifecycl
 | 10 | `GET /institutions` + `Assignment` model | BE + FE | Municipality card |
 | 11 | ✅ Badges awarded by the backend by rule (first report, 5 answers that proved right, joining the seasonal challenge); profile reads `/users/me/badges` – checkpoint 7, 2026-10-11 | BE + FE | Profile |
 | 12 | Launch screen setting, ✅ user leaderboard (`GET /api/leaderboard`, checkpoint 7), discovery route | FE (+ small BE) | AGENTS.md feature list |
-| 13 | `priority_score`, trust score, `completed_at` on the backend | BE | Consistency, trust index |
+| 13 | ✅ Priority score (0–100 with reasons) and trust index on the backend; `fixed_at` covers completion — checkpoint 8, 2026-10-11, see `planning/PRIORITY.md` | BE | Consistency, trust index |
 
 Items 1–7 are the "nothing to pick on" set: each is small, and together they remove every fake number and every action that silently does nothing. Items 8–13 make the core thesis (validation, clustering, trust) real.

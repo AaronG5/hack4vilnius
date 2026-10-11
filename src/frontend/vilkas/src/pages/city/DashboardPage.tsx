@@ -153,7 +153,7 @@ export function DashboardPage() {
           <div className="sec-head">
             <h2>Problemų reitingas</h2>
             <span className="hint pill">
-              Prioritetas = skubumas (gyventojų balsai) + patvirtinimai + jautri vieta + amžius
+              Prioritetas (0–100) = pavojingumas + patvirtinimai pagal patikimumą + jautri vieta + laukimas + įspėjamieji ženklai
             </span>
           </div>
           {ranked.length ? (

@@ -258,16 +258,17 @@ class TestValidationCreate:
 
     def test_confirming_tells_the_people_involved(
         self,
-        auth_client: APIClient,
         other_auth_client: APIClient,
+        staff_client: APIClient,
         problem: Problem,
         report: Report,
     ) -> None:
-        """When answers confirm a problem, its reporter is paid and told why."""
+        """When two neighbours confirm a problem, its reporter is paid and told why."""
         problem.status = ProblemStatus.UNCONFIRMED
         problem.save(update_fields=["status"])
 
-        for client in (auth_client, other_auth_client):
+        # Two people besides the reporter (the `report` fixture's author).
+        for client in (other_auth_client, staff_client):
             _ = client.post(_url(problem), {"is_valid": True}, format="multipart")
 
         messages: list[str] = list(

@@ -53,9 +53,9 @@ export function needsAssignment(v: ProblemView): boolean {
   return v.detail.status === "confirmed" && !v.detail.institution;
 }
 
-/** Score badge tone: deep red ≥ 80, peach ≥ 50, lavender below. */
+/** Score badge tone by priority band: critical (≥ 70) deep red, high (≥ 50) peach, lower lavender. */
 export function scoreTone(score: number): string {
-  return score >= 80 ? "s-hi" : score >= 50 ? "s-mid" : "s-lo";
+  return score >= 70 ? "s-hi" : score >= 50 ? "s-mid" : "s-lo";
 }
 
 export function duplicatesMerged(v: ProblemView): number {

@@ -153,7 +153,9 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
 
   const confirms = Math.max(1, p.reports.length) + yesVotes;
   const nearSensitive = p.near_sensitive ?? false;
-  const score = priorityScore(urgency, confirms, nearSensitive, ageDays);
+  // The backend's score (planning/PRIORITY.md); the local formula only covers
+  // the mock API, which doesn't compute one.
+  const score = p.priority?.score ?? priorityScore(urgency, confirms, nearSensitive, ageDays);
   const isFixed = p.status === "completed";
   const fixedAt = isFixed ? Date.parse(p.fixed_at ?? p.updated_at) : undefined;
   const fixWindowOpen = fixedAt !== undefined && now - fixedAt <= FIX_WINDOW_MS;
@@ -163,7 +165,7 @@ export function toView(p: ProblemDetail, meId: Uuid | undefined, districts: Dist
       ? "work"
       : p.status === "unconfirmed"
         ? "new"
-        : score >= 85
+        : (p.priority ? p.priority.band === "critical" : score >= 70)
           ? "urgent"
           : "ok";
 

@@ -14,7 +14,8 @@ from vilnius_backend.choices import UserRole
 
 SESSION_URL = "/api/session"
 ME_URL = "/api/users/me"
-FULL_TRUST = 100.0
+# New accounts start with neutral trust; see problems/trust.py.
+NEUTRAL_TRUST = 50.0
 TWO_VISITORS = 2
 
 
@@ -109,7 +110,7 @@ class TestProfileRead:
         assert body["name"] == "Citizen"
         assert body["email"] == "citizen@example.com"
         assert body["role"] == UserRole.REGULAR_USER
-        assert body["trust_score"] == FULL_TRUST
+        assert body["trust_score"] == NEUTRAL_TRUST
         assert body["points"] == 0
         assert body["created_at"] is not None
 
@@ -219,4 +220,4 @@ class TestProfileUpdate:
         user.refresh_from_db()
         assert user.role == UserRole.REGULAR_USER
         assert user.points == 0
-        assert user.trust_score == FULL_TRUST
+        assert user.trust_score == NEUTRAL_TRUST

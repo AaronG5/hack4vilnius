@@ -754,6 +754,15 @@ components:
           $ref: "#/components/schemas/UserRole"
         trust_score:
           type: number
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: >-
+            How reliable this resident has been: 100 x (right + 1) / (right +
+            wrong + 2) over their reports and answers proved right (paid) or
+            wrong (the city canceled the problem as not real, or moderators
+            found the report harmful). 50 for a newcomer. Weights their
+            confirmations; see planning/PRIORITY.md.
         points:
           type: integer
         district:
@@ -1042,6 +1051,46 @@ components:
       type: string
       enum: [can_wait, urgent, dangerous_to_life]
 
+    Priority:
+      type: object
+      description: >-
+        A 0-100 score for an open problem: danger (35) + evidence (25) +
+        vulnerable place (15) + waiting (15) + signals (10). Factors are kept to
+        one decimal; the score is their sum, rounded once. See
+        planning/PRIORITY.md.
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        band:
+          type: string
+          enum: [critical, high, medium, low]
+          description: critical >= 70, high >= 50, medium >= 30, low below.
+        factors:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriorityFactor"
+      required: [score, band, factors]
+
+    PriorityFactor:
+      type: object
+      properties:
+        key:
+          type: string
+          enum: [danger, evidence, place, waiting, signals]
+        label:
+          type: string
+          description: Lithuanian name of the factor, e.g. "Pavojingumas".
+        points:
+          type: number
+        max:
+          type: number
+        detail:
+          type: string
+          description: Lithuanian explanation, e.g. "3 pavojinga gyvybei". Empty when there is nothing to add.
+      required: [key, label, points, max, detail]
+
     Problem:
       type: object
       properties:
@@ -1096,6 +1145,14 @@ components:
           description: >-
             The requesting user's own urgency vote, or null if they have not
             answered this problem (or answered without voting).
+        priority:
+          allOf:
+            - $ref: "#/components/schemas/Priority"
+          nullable: true
+          readOnly: true
+          description: >-
+            Where this problem stands in the queue, 0-100, with the reasons.
+            Null for fixed and canceled problems. See planning/PRIORITY.md.
         fixed_at:
           type: string
           format: date-time
