@@ -128,7 +128,7 @@ export function useChallenges() {
           time: timeLeft(start, end, now),
           mine,
           rules: meta?.rules ?? [],
-          prize: meta?.prize ?? `${c.reward_points} taškų dalyviams.`,
+          prize: meta?.prize ?? "",
           cta: meta?.cta ?? (["Dalyvauti", "Dalyvaujate"] as [string, string]),
           joined: joined[c.id] ?? Boolean(c.joined),
           participants: c.participant_count,
@@ -137,7 +137,8 @@ export function useChallenges() {
           rows: [] as BoardRow[],
           progLabel: "Jūsų veiksmai nuo pradžios",
           yours: "",
-          short: `Jūsų veiksmai: ${mine} · +${c.reward_points} tšk.`,
+          // TODO(api-gap): challenge `reward_points` aren't paid by the backend yet, so not shown.
+          short: `Jūsų veiksmai: ${mine}`,
         };
 
         if (meta?.seasonal) {

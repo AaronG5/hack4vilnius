@@ -116,6 +116,15 @@ export function ReportSheet() {
   const placePins = useMemo(() => views.map((v) => ({ id: v.id, at: v.at, status: v.status, title: v.title, score: v.score })), [views]);
 
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
+  // Changing the type also renames a title that was only the old type's name
+  // (what the form fills in when it can't recognise the problem).
+  const pickCategory = (id: string) =>
+    setForm((f) => {
+      const typeNames = new Set(categories.map((c) => c.name));
+      const automatic = !f.title.trim() || typeNames.has(f.title.trim());
+      const name = categories.find((c) => c.id === id)?.name ?? "";
+      return { ...f, categoryId: id, title: automatic ? name : f.title };
+    });
 
   // Look up what is typed, after a pause. A match means the map step can be
   // skipped; no match (or no geocoder) falls back to placing the pin by hand.
@@ -497,7 +506,7 @@ export function ReportSheet() {
             {shortList ? "Problemos tipas – DI siūlo, tinkamiausias pirmas" : "Problemos tipas – palieskite, jei reikia pataisyti"}
             <div className="cats">
               {pickerCategories.map((c) => (
-                <button key={c.id} type="button" className="cat" aria-pressed={form.categoryId === c.id} onClick={() => patch({ categoryId: c.id })}>
+                <button key={c.id} type="button" className="cat" aria-pressed={form.categoryId === c.id} onClick={() => pickCategory(c.id)}>
                   {c.name}
                 </button>
               ))}

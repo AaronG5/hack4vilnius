@@ -17,7 +17,8 @@ import "./MapPage.css";
 const FILTERS: [MapFilter, string][] = [
   ["all", "Visos"],
   ["new", "Nepatvirtintos"],
-  ["checked", "Patvirtintos"],
+  // Problems you answered (gray on the map, "Jūs atsakėte" in the legend).
+  ["checked", "Atsakytos"],
   ["work", "Sprendžiamos"],
   ["fixed", "Sutvarkytos"],
 ];
@@ -33,7 +34,7 @@ function passes(filter: MapFilter, v: ProblemView): boolean {
 function listFor(filter: MapFilter, views: ProblemView[], shown: ProblemView[]): [string, ProblemView[]] {
   if (filter === "new")
     return ["Laukia patvirtinimo", [...shown].sort((a, b) => Number(!!a.myVote) - Number(!!b.myVote) || b.score - a.score)];
-  if (filter === "checked") return ["Jūsų patikrintos", [...shown].sort((a, b) => b.created - a.created)];
+  if (filter === "checked") return ["Jūsų atsakytos", [...shown].sort((a, b) => b.created - a.created)];
   if (filter === "work") return ["Sprendžiamos", [...shown].sort((a, b) => b.score - a.score)];
   if (filter === "fixed") return ["Sutvarkytos", [...shown].sort((a, b) => b.created - a.created)];
   return [
@@ -133,7 +134,8 @@ export function MapPage() {
                 <small>Jūs šalia · {formatDistance(distanceMeters(onSite.at, here ?? onSite.at))}</small>
                 <b>{onSite.category} – vis dar yra?</b>
               </span>
-              <span className="go">Patikrinti +10</span>
+              {/* Paid once the answer proves right (problems/lifecycle.py). */}
+              <span className="go">Patikrinti · +10</span>
             </button>
           ) : (
             !located.fix && (
@@ -162,7 +164,7 @@ export function MapPage() {
                 <b>Patikrinkite nepatvirtintas</b>
                 <br />
                 <span className="m">
-                  {todo ? `${todo} laukia jūsų · +10 tšk. už kiekvieną` : "Visas aplinkui jau patikrinote – ačiū!"}
+                  {todo ? `${todo} laukia jūsų · +10 tšk. už kiekvieną pasitvirtinusį atsakymą` : "Visas aplinkui jau patikrinote – ačiū!"}
                 </span>
               </span>
             </div>

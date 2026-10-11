@@ -137,12 +137,14 @@ export function ChallengeDetailPage() {
         </div>
       )}
 
-      <div className="card" style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center" }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-          <path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8" />
-        </svg>
-        <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>{c.prize}</span>
-      </div>
+      {c.prize && (
+        <div className="card" style={{ marginTop: 10, display: "flex", gap: 12, alignItems: "center" }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8" />
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>{c.prize}</span>
+        </div>
+      )}
 
       {c.priv ? (
         <>

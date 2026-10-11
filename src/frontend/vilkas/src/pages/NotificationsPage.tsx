@@ -76,7 +76,7 @@ export function NotificationsPage() {
       )}
 
       <p className="notif-note">
-        Pranešimai siunčiami tik kai esate šalia nepatvirtintos ar senos problemos – ne dažniau kaip 2 kartus per dieną.
+        Pranešimus gaunate, kai pasikeičia problemų, apie kurias pranešėte ar atsakėte, būsena, ir kai gaunate taškų ar ženklelį.
       </p>
     </main>
   );

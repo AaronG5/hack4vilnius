@@ -154,9 +154,9 @@ export function ChallengesPage() {
       <div className="card wk" style={{ marginTop: 8 }}>
         <span className="wkn">{week}/5</span>
         <span style={{ flex: 1 }}>
-          <b>Savaitės iššūkis</b>
+          <b>Savaitės tikslas</b>
           <br />
-          <span className="m">Patikrinkite 5 problemas pakeliui · +50 tšk.</span>
+          <span className="m">Patikrinkite 5 problemas pakeliui per savaitę</span>
         </span>
         <button
           type="button"
