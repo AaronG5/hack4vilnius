@@ -1,7 +1,7 @@
 """Tests for the report endpoints."""
 
 from http import HTTPStatus
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 import pytest
@@ -15,6 +15,9 @@ from rest_framework.test import APIClient
 from users.models import User
 from validations.services import urgency_votes
 from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
+
+if TYPE_CHECKING:
+    from pytest_django.fixtures import Settings
 
 REPORTS_URL = "/api/reports"
 NEUTRAL_SCORE = 50.0
@@ -558,6 +561,18 @@ class TestReportDetail:
         response = other_auth_client.get(f"{REPORTS_URL}/{report.id}")
 
         assert response.status_code == HTTPStatus.NOT_FOUND
+
+    def test_in_demo_mode_anyone_signed_in_can_see_it(
+        self,
+        other_auth_client: APIClient,
+        report: Report,
+        settings: "Settings",
+    ) -> None:
+        """With the city tools open to everyone (demo mode), reports are too."""
+        settings.CITY_TOOLS_FOR_EVERYONE = True
+        response = other_auth_client.get(f"{REPORTS_URL}/{report.id}")
+
+        assert response.status_code == HTTPStatus.OK
 
     def test_staff_can_read_any_report(
         self,
