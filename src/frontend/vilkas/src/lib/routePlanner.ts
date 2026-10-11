@@ -7,8 +7,11 @@
 //   fixed by the city, not their own, not already answered.
 // - Nearest first: from where you are, the next stop is the closest one, as
 //   long as walking there (plus a couple of minutes to look and answer) still
-//   fits in the time chosen.
-// - Then a 2-opt pass removes crossings, so the walk doesn't zig-zag.
+//   fits in the time chosen. For a loop ("Grįžti į pradžią") the walk back
+//   from that stop to the start has to fit as well, so a 60-minute loop ends
+//   at home within the hour.
+// - Then a 2-opt pass removes crossings, so the walk doesn't zig-zag; a loop
+//   is optimised as a closed circuit, so it goes out one way and back another.
 // Walking time is estimated from straight-line distance × DETOUR at WALK_SPEED;
 // the backend's real path replaces the estimate once it arrives.
 
@@ -37,8 +40,10 @@ export interface RouteStop {
 export interface PlannedRoute {
   minutes: number;
   start: LngLat;
+  /** Ends back at `start` (a circular walk); absent on routes saved before loops existed. */
+  loop?: boolean;
   stops: RouteStop[];
-  /** Street path from start through the stops; straight lines if the router was unavailable. */
+  /** Street path from start through the stops (and back, for a loop); straight lines if the router was unavailable. */
   path: LngLat[];
   /** True when `path` follows streets (from the backend), false for straight lines. */
   onStreets: boolean;
@@ -57,18 +62,18 @@ function walkMinutes(a: LngLat, b: LngLat): number {
   return (distanceMeters(a, b) * DETOUR) / WALK_SPEED;
 }
 
-function pathMinutes(start: LngLat, stops: RouteStop[]): number {
+function pathMinutes(start: LngLat, stops: RouteStop[], loop: boolean): number {
   let total = 0;
   let here = start;
   for (const s of stops) {
     total += walkMinutes(here, s.at) + STOP_MINUTES;
     here = s.at;
   }
-  return total;
+  return loop ? total + walkMinutes(here, start) : total;
 }
 
-/** Reverse segments while that shortens the walk (start stays first, the end is free). */
-function twoOpt(start: LngLat, stops: RouteStop[]): RouteStop[] {
+/** Reverse segments while that shortens the walk (start stays first; the end is free, or the start for a loop). */
+function twoOpt(start: LngLat, stops: RouteStop[], loop: boolean): RouteStop[] {
   let best = stops;
   let improved = true;
   while (improved) {
@@ -76,7 +81,7 @@ function twoOpt(start: LngLat, stops: RouteStop[]): RouteStop[] {
     for (let i = 0; i < best.length - 1; i++) {
       for (let k = i + 1; k < best.length; k++) {
         const next = [...best.slice(0, i), ...best.slice(i, k + 1).reverse(), ...best.slice(k + 1)];
-        if (pathMinutes(start, next) + 1e-9 < pathMinutes(start, best)) {
+        if (pathMinutes(start, next, loop) + 1e-9 < pathMinutes(start, best, loop)) {
           best = next;
           improved = true;
         }
@@ -86,8 +91,8 @@ function twoOpt(start: LngLat, stops: RouteStop[]): RouteStop[] {
   return best;
 }
 
-/** Choose and order the stops for a walk of about `minutes` from `start`. */
-export function planStops(views: ProblemView[], start: LngLat, minutes: number): RouteStop[] {
+/** Choose and order the stops for a walk of about `minutes` from `start` (and back to it, if `loop`). */
+export function planStops(views: ProblemView[], start: LngLat, minutes: number, loop: boolean): RouteStop[] {
   const pool: RouteStop[] = candidates(views).map((v) => ({ id: v.id, at: v.at, title: v.title, category: v.category, score: v.score }));
   const chosen: RouteStop[] = [];
   let here = start;
@@ -97,7 +102,9 @@ export function planStops(views: ProblemView[], start: LngLat, minutes: number):
     for (const stop of pool) {
       if (chosen.includes(stop)) continue;
       const cost = walkMinutes(here, stop.at) + STOP_MINUTES;
-      if (used + cost > minutes) continue;
+      // A loop must still be able to get home from this stop in time.
+      const home = loop ? walkMinutes(stop.at, start) : 0;
+      if (used + cost + home > minutes) continue;
       if (!pick || cost < pick.cost) pick = { stop, cost };
     }
     if (!pick) break;
@@ -105,26 +112,31 @@ export function planStops(views: ProblemView[], start: LngLat, minutes: number):
     used += pick.cost;
     here = pick.stop.at;
   }
-  return twoOpt(start, chosen);
+  return twoOpt(start, chosen, loop);
 }
 
 /** Straight-line estimate for a planned walk, used until (or instead of) the street path. */
-export function estimate(start: LngLat, stops: RouteStop[]): { distanceM: number; durationS: number } {
+export function estimate(start: LngLat, stops: RouteStop[], loop: boolean): { distanceM: number; durationS: number } {
   let metres = 0;
   let here = start;
   for (const s of stops) {
     metres += distanceMeters(here, s.at) * DETOUR;
     here = s.at;
   }
+  if (loop) metres += distanceMeters(here, start) * DETOUR;
   return { distanceM: metres, durationS: (metres / WALK_SPEED) * 60 };
 }
 
-/** Google Maps walking directions through the stops (opens the app on phones). */
-export function googleMapsUrl(start: LngLat, stops: RouteStop[]): string {
+/**
+ * Google Maps walking directions from `origin` through the stops (opens the app
+ * on phones). With `home`, the walk ends there (a loop); with no stops left it
+ * just leads home.
+ */
+export function googleMapsUrl(origin: LngLat, stops: RouteStop[], home?: LngLat): string {
   const ll = ([lng, lat]: LngLat) => `${lat},${lng}`;
-  const last = stops[stops.length - 1];
-  const params = new URLSearchParams({ api: "1", origin: ll(start), destination: ll(last.at), travelmode: "walking" });
-  const via = stops.slice(0, -1).map((s) => ll(s.at));
+  const destination = home ?? stops[stops.length - 1].at;
+  const params = new URLSearchParams({ api: "1", origin: ll(origin), destination: ll(destination), travelmode: "walking" });
+  const via = (home ? stops : stops.slice(0, -1)).map((s) => ll(s.at));
   if (via.length) params.set("waypoints", via.join("|"));
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }

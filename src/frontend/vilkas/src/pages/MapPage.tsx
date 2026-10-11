@@ -25,6 +25,9 @@ const FILTERS: [MapFilter, string][] = [
   ["fixed", "Sutvarkytos"],
 ];
 
+/** Within this distance of the start, a circular walk counts as back home. */
+const HOME_RADIUS_M = 50;
+
 function passes(filter: MapFilter, v: ProblemView): boolean {
   if (filter === "all") return true;
   if (filter === "new") return v.status === "new";
@@ -114,6 +117,8 @@ export function MapPage() {
   const routeStops = route?.stops.map((s, i) => ({ ...s, n: i + 1, done: stopDone(s.id) })) ?? [];
   const nextStop = routeStops.find((s) => !s.done);
   const doneCount = routeStops.filter((s) => s.done).length;
+  // A loop isn't over until you're back where you started.
+  const homeward = Boolean(route?.loop && !nextStop && !(here && route && distanceMeters(here, route.start) <= HOME_RADIUS_M));
   const mapRoute = route ? { path: route.path, stops: routeStops.map((s) => ({ at: s.at, n: s.n, done: s.done })) } : undefined;
 
   return (
@@ -159,15 +164,29 @@ export function MapPage() {
                     <b>{nextStop.title}</b>
                   </span>
                 </button>
+              ) : homeward && route ? (
+                <div className="prompt" style={{ margin: 0, cursor: "default" }}>
+                  <span className="route-n home" aria-hidden="true">
+                    ⌂
+                  </span>
+                  <span className="txt">
+                    <small>Visos stotelės patikrintos{here ? ` · už ${formatDistance(distanceMeters(here, route.start))}` : ""}</small>
+                    <b>Grįžimas į pradžią</b>
+                  </span>
+                </div>
               ) : (
                 <b>Maršrutas įveiktas – ačiū! Taškai ateis, kai atsakymai pasitvirtins.</b>
               )}
               <div className="row">
-                {nextStop && (
+                {(nextStop || homeward) && (
                   <a
                     className="btn ghost"
                     style={{ flex: 1, height: 40, fontSize: 13 }}
-                    href={googleMapsUrl(here ?? route.start, routeStops.filter((s) => !s.done))}
+                    href={googleMapsUrl(
+                      here ?? route.start,
+                      routeStops.filter((s) => !s.done),
+                      route.loop ? route.start : undefined,
+                    )}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -175,7 +194,7 @@ export function MapPage() {
                   </a>
                 )}
                 <button type="button" className="btn ghost" style={{ flex: 1, height: 40, fontSize: 13 }} onClick={() => setActiveRoute(null)}>
-                  {nextStop ? "Baigti maršrutą" : "Uždaryti"}
+                  {nextStop || homeward ? "Baigti maršrutą" : "Uždaryti"}
                 </button>
               </div>
             </section>

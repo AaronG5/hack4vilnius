@@ -196,6 +196,11 @@
   font-weight: 800;
 }
 
+.route-n.home {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
 .route-n.done {
   background: var(--green);
 }

@@ -331,9 +331,29 @@ export default function VilniusMap(props: VilniusMapProps) {
       map.addControl(geo, "top-right");
     }
 
+    // First view: fit to the walk or the pins once the style is in. (Not on
+    // "load", which waits for every tile and can come late or, with a missing
+    // style image, not at all.)
+    let fitted = false;
+    const firstFit = () => {
+      if (fitted) return;
+      fitted = true;
+      const cur = latest.current;
+      const points = cur.route && cur.route.path.length > 1 ? cur.route.path : (cur.fit ?? !cur.center) ? cur.pins?.map((pin) => pin.at) : undefined;
+      if (!points?.length) return;
+      // Measured again first: inside a sliding sheet the map can start before its final size.
+      requestAnimationFrame(() => {
+        map.resize();
+        const bounds = new maplibregl.LngLatBounds();
+        for (const point of points) bounds.extend(point);
+        map.fitBounds(bounds, { padding: 40, maxZoom: cur.route ? 16 : 15, duration: 0 });
+      });
+    };
+
     map.on("style.load", () => {
       install(map, latest.current);
       ready.current = true;
+      firstFit();
     });
 
     // The compact OpenStreetMap credit opens itself once the tiles' attribution arrives.
@@ -347,19 +367,6 @@ export default function VilniusMap(props: VilniusMapProps) {
     });
     if (attrib) collapseOnce.observe(attrib, { attributes: true, attributeFilter: ["class"] });
 
-    map.once("load", () => {
-      const cur = latest.current;
-      if (cur.route && cur.route.path.length > 1) {
-        // A planned walk takes the view over from the pins.
-        const bounds = new maplibregl.LngLatBounds();
-        for (const point of cur.route.path) bounds.extend(point);
-        map.fitBounds(bounds, { padding: 50, maxZoom: 16, duration: 0 });
-      } else if ((cur.fit ?? !cur.center) && cur.pins?.length) {
-        const bounds = new maplibregl.LngLatBounds();
-        for (const pin of cur.pins) bounds.extend(pin.at);
-        map.fitBounds(bounds, { padding: 40, maxZoom: 15, duration: 0 });
-      }
-    });
 
     // Interactions (layers may not exist in every mode; MapLibre ignores unknown ids).
     const openFeature = (e: maplibregl.MapLayerMouseEvent) => {

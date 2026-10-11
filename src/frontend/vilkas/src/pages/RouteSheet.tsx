@@ -26,6 +26,8 @@ export function RouteSheet() {
   const { views, toast } = useAppState();
   const located = useOutletContext<WatchedFix | undefined>();
   const [minutes, setMinutes] = useState<number>(30);
+  // A circular walk: from home, through the closest problems, and back home in time.
+  const [loop, setLoop] = useState(true);
   const [plan, setPlan] = useState<PlannedRoute>();
   const [busy, setBusy] = useState(false);
 
@@ -35,13 +37,15 @@ export function RouteSheet() {
 
   const build = async () => {
     setBusy(true);
-    const stops = planStops(views, start, minutes);
-    const rough = estimate(start, stops);
+    const stops = planStops(views, start, minutes, loop);
+    const rough = estimate(start, stops, loop);
+    const points = [start, ...stops.map((s) => s.at), ...(loop ? [start] : [])];
     let route: PlannedRoute = {
       minutes,
       start,
+      loop,
       stops,
-      path: [start, ...stops.map((s) => s.at)],
+      path: points,
       onStreets: false,
       distanceM: rough.distanceM,
       durationS: rough.durationS,
@@ -50,7 +54,7 @@ export function RouteSheet() {
     if (stops.length) {
       try {
         // Follow streets and paths; if the router is down, straight lines will do.
-        const walk = await walkingRoute([start, ...stops.map((s) => s.at)]);
+        const walk = await walkingRoute(points);
         route = { ...route, path: walk.path.coordinates, onStreets: true, distanceM: walk.distance_m, durationS: walk.duration_s };
       } catch {
         // Keep the straight-line estimate.
@@ -86,8 +90,30 @@ export function RouteSheet() {
         </div>
       )}
 
+      <div className="fld" role="group" aria-label="Kur baigti">
+        Kur baigti
+        <div className="seg" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {[
+            [true, "Grįžti į pradžią"],
+            [false, "Paskutinėje stotelėje"],
+          ].map(([value, label]) => (
+            <button
+              key={String(value)}
+              type="button"
+              aria-pressed={loop === value}
+              onClick={() => {
+                setLoop(value as boolean);
+                setPlan(undefined);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="fld" role="group" aria-label="Kiek laiko">
-        Kiek laiko turite
+        {loop ? "Kiek laiko turite (su grįžimu)" : "Kiek laiko turite"}
         <div className="seg" style={{ gridTemplateColumns: `repeat(${DURATIONS.length}, minmax(0,1fr))` }}>
           {DURATIONS.map((d) => (
             <button
@@ -111,7 +137,7 @@ export function RouteSheet() {
         </button>
       ) : plan.stops.length === 0 ? (
         <div className="note">
-          Per {minutes} min. pasiekiamų problemų nėra (artimiausia per toli). Pasirinkite daugiau laiko.
+          Per {minutes} min.{plan.loop ? " su grįžimu" : ""} pasiekiamų problemų nėra (artimiausia per toli). Pasirinkite daugiau laiko.
         </div>
       ) : (
         <>
@@ -145,11 +171,23 @@ export function RouteSheet() {
                 </li>
               );
             })}
+            {plan.loop && (
+              <li className="item" style={{ cursor: "default" }}>
+                <span className="route-n home" aria-hidden="true">
+                  ⌂
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span className="t">Atgal į pradžią</span>
+                  <br />
+                  <span className="m">už {formatDistance(distanceMeters(plan.stops[plan.stops.length - 1].at, plan.start))}</span>
+                </span>
+              </li>
+            )}
           </ol>
           <button type="button" className="btn bright" onClick={begin}>
             Pradėti maršrutą
           </button>
-          <a className="btn ghost" href={googleMapsUrl(plan.start, plan.stops)} target="_blank" rel="noopener noreferrer">
+          <a className="btn ghost" href={googleMapsUrl(plan.start, plan.stops, plan.loop ? plan.start : undefined)} target="_blank" rel="noopener noreferrer">
             Nurodymai Google Maps
           </a>
           <button type="button" className="btn link" onClick={() => setPlan(undefined)}>
