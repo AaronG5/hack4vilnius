@@ -28,8 +28,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
+from users.permissions import has_city_powers
 from validations.models import Validation
-from vilnius_backend.choices import ProblemStatus, UserRole
+from vilnius_backend.choices import ProblemStatus
 from vilnius_backend.generic_views import (
     DefaultCreateAPIView,
     DefaultRetrieveAPIView,
@@ -230,7 +231,8 @@ class ReportDetailView(DefaultRetrieveAPIView[Report]):
     `GET /api/reports/{id}` - report details.
 
     Need-to-know basis: a report is only visible to the user who filed it,
-    or to staff/city administrators.
+    or to whoever may act as the municipality (everyone in demo mode; see
+    `users.permissions.has_city_powers`).
     """
 
     permission_classes = (IsAuthenticated,)
@@ -239,9 +241,9 @@ class ReportDetailView(DefaultRetrieveAPIView[Report]):
 
     @override
     def get_queryset(self) -> "QuerySet[Report]":
-        """Scope visible reports to the requester's own, unless staff/admin."""
+        """Scope visible reports to the requester's own, unless city staff."""
         user = cast("User", self.request.user)
         queryset = Report.objects.select_related("user", "problem")
-        if user.role in {UserRole.CITY_ADMINISTRATOR, UserRole.STAFF}:
+        if has_city_powers(user):
             return queryset
         return queryset.filter(user=user)

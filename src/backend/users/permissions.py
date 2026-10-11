@@ -13,6 +13,20 @@ if TYPE_CHECKING:
 _STAFF_ROLES = frozenset({UserRole.CITY_ADMINISTRATOR, UserRole.STAFF})
 
 
+def has_city_powers(user: object) -> bool:
+    """
+    Whether `user` may act as the municipality.
+
+    Any signed-in user while `settings.CITY_TOOLS_FOR_EVERYONE` (demo mode,
+    the default) is on; otherwise only city administrators and staff.
+    """
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if cast("bool", settings.CITY_TOOLS_FOR_EVERYONE):
+        return True
+    return getattr(user, "role", None) in _STAFF_ROLES
+
+
 @final
 class IsCityAdministratorOrStaff(BasePermission):
     """
@@ -25,11 +39,6 @@ class IsCityAdministratorOrStaff(BasePermission):
 
     @override
     def has_permission(self, request: "Request", view: "APIView") -> bool:
-        """Check the requester is authenticated with a privileged role."""
+        """Check the requester may act as the municipality."""
         del view
-        user = request.user
-        if not user.is_authenticated:
-            return False
-        if cast("bool", settings.CITY_TOOLS_FOR_EVERYONE):
-            return True
-        return getattr(user, "role", None) in _STAFF_ROLES
+        return has_city_powers(request.user)
