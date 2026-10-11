@@ -90,11 +90,16 @@ uv --directory ./src/backend run python manage.py settle_challenges
 
 Nobody is paid twice, however often it runs.
 
-### Municipality tools without a staff login
-There is no staff login screen yet. While `DEBUG` is on, any signed-in user may
-use the municipality endpoints (changing a problem's status, moderation), so the
-`/city` dashboard works out of the box. Set `CITY_TOOLS_FOR_EVERYONE=false` to
-test the real staff-only rules; with `DEBUG` off they always apply.
+### Demo mode: municipality tools without a staff login
+There is no staff login screen yet, so by default (also in production) any
+signed-in user may use the municipality endpoints: change a problem's status,
+review moderation flags, read any report. Residents get an anonymous session
+automatically, so the whole flow, `/city` dashboard included, works for anyone
+who opens the app.
+
+**This means anyone who can reach the server can act as the municipality.**
+After the demo, set `CITY_TOOLS_FOR_EVERYONE=false` to restore the staff-only
+rules (city administrators and staff).
 
 ## Frontend
 
