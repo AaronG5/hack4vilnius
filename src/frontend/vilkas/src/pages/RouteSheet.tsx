@@ -1,4 +1,4 @@
-// Route planner sheet: choose what to check and for how long, preview the walk,
+// Route planner sheet: choose how long to walk, preview the walk through the closest problems,
 // then start it (drawn on the map, with progress) or open it in Google Maps.
 
 import { useCallback, useState } from "react";
@@ -11,12 +11,10 @@ import {
   candidates,
   DURATIONS,
   estimate,
-  FOCUSES,
   googleMapsUrl,
   planStops,
   routeSummary,
   type PlannedRoute,
-  type RouteFocus,
 } from "../lib/routePlanner";
 import { setActiveRoute } from "../lib/routeStore";
 import type { WatchedFix } from "../lib/useWatchedFix";
@@ -27,21 +25,19 @@ export function RouteSheet() {
   const close = useCallback(() => navigate("/map"), [navigate]);
   const { views, toast } = useAppState();
   const located = useOutletContext<WatchedFix | undefined>();
-  const [focus, setFocus] = useState<RouteFocus>("hazards");
   const [minutes, setMinutes] = useState<number>(30);
   const [plan, setPlan] = useState<PlannedRoute>();
   const [busy, setBusy] = useState(false);
 
   const here = located?.fix?.at;
   const start: LngLat = here ?? VILNIUS_CENTER;
-  const available = candidates(views, focus).length;
+  const available = candidates(views).length;
 
   const build = async () => {
     setBusy(true);
-    const stops = planStops(views, start, focus, minutes);
+    const stops = planStops(views, start, minutes);
     const rough = estimate(start, stops);
     let route: PlannedRoute = {
-      focus,
       minutes,
       start,
       stops,
@@ -71,13 +67,11 @@ export function RouteSheet() {
     toast(`Maršrutas pradėtas – ${plan.stops.length} stotelės`);
   };
 
-  const focusLabel = FOCUSES.find((f) => f.id === focus)?.label.toLowerCase() ?? "";
-
   return (
     <Sheet label="Maršruto planavimas" onClose={close}>
       <h1>Pasivaikščiojimas su tikslu</h1>
       <p className="lead">
-        Sudarysime pėsčiųjų maršrutą per problemas, kurias verta patikrinti. Pakeliui atsakykite būdami šalia – +10 tšk. už kiekvieną
+        Sudarysime pėsčiųjų maršrutą per artimiausias problemas, kurias dar galite patikrinti. Pakeliui atsakykite būdami šalia – +10 tšk. už kiekvieną
         pasitvirtinusį atsakymą.
       </p>
 
@@ -91,30 +85,6 @@ export function RouteSheet() {
           )}
         </div>
       )}
-
-      <div className="fld" role="group" aria-label="Ką tikrinti">
-        Ką tikrinti
-        <div className="list">
-          {FOCUSES.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className="src"
-              aria-pressed={focus === f.id}
-              style={focus === f.id ? { outline: "2px solid var(--red)" } : undefined}
-              onClick={() => {
-                setFocus(f.id);
-                setPlan(undefined);
-              }}
-            >
-              <span style={{ flex: 1 }}>
-                <b>{f.label}</b>
-                <small>{f.hint}</small>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="fld" role="group" aria-label="Kiek laiko">
         Kiek laiko turite
@@ -137,11 +107,11 @@ export function RouteSheet() {
 
       {!plan ? (
         <button type="button" className="btn" disabled={busy || available === 0} onClick={() => void build()}>
-          {busy ? "Planuojama…" : available === 0 ? `Šiuo metu tikrinti nėra ką (${focusLabel})` : "Sudaryti maršrutą"}
+          {busy ? "Planuojama…" : available === 0 ? "Šiuo metu tikrinti nėra ką" : "Sudaryti maršrutą"}
         </button>
       ) : plan.stops.length === 0 ? (
         <div className="note">
-          Per {minutes} min. pasiekiamų problemų nėra (artimiausia per toli). Pasirinkite daugiau laiko ar kitą tipą.
+          Per {minutes} min. pasiekiamų problemų nėra (artimiausia per toli). Pasirinkite daugiau laiko.
         </div>
       ) : (
         <>

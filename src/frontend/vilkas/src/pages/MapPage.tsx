@@ -184,7 +184,7 @@ export function MapPage() {
               <RouteIcon size={18} />
               <span className="txt">
                 <b>Planuoti maršrutą</b>
-                <small>Pasivaikščiokite per pavojingas ar nepatikrintas problemas</small>
+                <small>Pasivaikščiokite per artimiausias problemas ir jas patikrinkite</small>
               </span>
             </button>
           )}

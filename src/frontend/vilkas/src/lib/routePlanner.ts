@@ -1,27 +1,19 @@
-// Route planner: a walk through the problems most worth checking, within a
-// time budget. Picks the stops and their order here (all problems are already
-// loaded); the backend's /routes/walk then turns them into a street path.
+// Route planner: a walk through the closest problems, within a time budget.
+// Picks the stops and their order here (all problems are already loaded); the
+// backend's /routes/walk then turns them into a street path.
 //
 // How stops are chosen:
-// - Only open problems this person can still answer: not fixed, not their own,
-//   not already answered, and matching the chosen focus.
-// - Greedy by value per minute: from where you are, the next stop is the one
-//   with the best priority score per minute of walking (plus a couple of
-//   minutes to look and answer), as long as it still fits in the budget.
+// - Every open problem this person can still answer: not fixed, not being
+//   fixed by the city, not their own, not already answered.
+// - Nearest first: from where you are, the next stop is the closest one, as
+//   long as walking there (plus a couple of minutes to look and answer) still
+//   fits in the time chosen.
 // - Then a 2-opt pass removes crossings, so the walk doesn't zig-zag.
 // Walking time is estimated from straight-line distance × DETOUR at WALK_SPEED;
 // the backend's real path replaces the estimate once it arrives.
 
 import { distanceMeters, type LngLat } from "./geo";
 import type { ProblemView } from "./problemModel";
-
-export type RouteFocus = "hazards" | "unconfirmed" | "all";
-
-export const FOCUSES: { id: RouteFocus; label: string; hint: string }[] = [
-  { id: "hazards", label: "Pavojingos", hint: "Pavojinga gyvybei, prie mokyklų ar kritinio prioriteto" },
-  { id: "unconfirmed", label: "Laukia patvirtinimo", hint: "Dar niekas nepatikrino, ar jos tikros" },
-  { id: "all", label: "Visos", hint: "Visos neišspręstos, svarbiausios pirmiau" },
-];
 
 export const DURATIONS = [15, 30, 60] as const;
 
@@ -43,7 +35,6 @@ export interface RouteStop {
 }
 
 export interface PlannedRoute {
-  focus: RouteFocus;
   minutes: number;
   start: LngLat;
   stops: RouteStop[];
@@ -56,15 +47,9 @@ export interface PlannedRoute {
   createdAt: number;
 }
 
-export function matchesFocus(v: ProblemView, focus: RouteFocus): boolean {
-  if (focus === "unconfirmed") return v.status === "new";
-  if (focus === "hazards") return v.urgency === "dangerous_to_life" || v.nearSensitive || v.detail.priority?.band === "critical";
-  return true;
-}
-
 /** Problems this person could check on a walk. */
-export function candidates(views: ProblemView[], focus: RouteFocus): ProblemView[] {
-  return views.filter((v) => !v.isFixed && v.status !== "work" && !v.mine && v.myVote === undefined && matchesFocus(v, focus));
+export function candidates(views: ProblemView[]): ProblemView[] {
+  return views.filter((v) => !v.isFixed && v.status !== "work" && !v.mine && v.myVote === undefined);
 }
 
 /** Estimated minutes to walk between two points. */
@@ -102,20 +87,18 @@ function twoOpt(start: LngLat, stops: RouteStop[]): RouteStop[] {
 }
 
 /** Choose and order the stops for a walk of about `minutes` from `start`. */
-export function planStops(views: ProblemView[], start: LngLat, focus: RouteFocus, minutes: number): RouteStop[] {
-  const pool: RouteStop[] = candidates(views, focus).map((v) => ({ id: v.id, at: v.at, title: v.title, category: v.category, score: v.score }));
+export function planStops(views: ProblemView[], start: LngLat, minutes: number): RouteStop[] {
+  const pool: RouteStop[] = candidates(views).map((v) => ({ id: v.id, at: v.at, title: v.title, category: v.category, score: v.score }));
   const chosen: RouteStop[] = [];
   let here = start;
   let used = 0;
   while (chosen.length < MAX_STOPS) {
-    let pick: { stop: RouteStop; cost: number; value: number } | undefined;
+    let pick: { stop: RouteStop; cost: number } | undefined;
     for (const stop of pool) {
       if (chosen.includes(stop)) continue;
       const cost = walkMinutes(here, stop.at) + STOP_MINUTES;
       if (used + cost > minutes) continue;
-      // Priority per minute; +10 so a low score still counts for something.
-      const value = (stop.score + 10) / cost;
-      if (!pick || value > pick.value) pick = { stop, cost, value };
+      if (!pick || cost < pick.cost) pick = { stop, cost };
     }
     if (!pick) break;
     chosen.push(pick.stop);
