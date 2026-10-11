@@ -494,6 +494,22 @@ class TestValidationCreate:
         assert Validation.objects.count() == 1
         assert Validation.objects.get().is_valid is True
 
+    def test_the_reporter_cannot_also_answer(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        report: Report,
+    ) -> None:
+        """Reporting a problem is your say on it; answering too is refused."""
+        del report
+        response = auth_client.post(
+            _url(problem),
+            {"is_valid": True},
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CONFLICT
+
     def test_another_resident_can_still_answer(
         self,
         auth_client: APIClient,

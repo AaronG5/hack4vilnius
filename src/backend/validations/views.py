@@ -10,6 +10,7 @@ from media_assets.models import Media
 from media_assets.services import infer_media_type
 from problems import lifecycle
 from problems.models import Problem
+from reports.models import Report
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
@@ -80,11 +81,14 @@ class ValidationListCreateView(DefaultListCreateAPIView[Validation]):
         user = cast("User", request.user)
         files = cast("list[UploadedFile[bytes]]", data["media"])
 
-        # One answer per person: an answer is a vote, and a vote that can be
-        # revised is one that can be gamed.
-        if Validation.objects.filter(user=user, problem=problem).exists():
+        # One say per person: an answer (or a report of the same problem) is a
+        # vote, and a vote that can be cast twice or revised can be gamed.
+        if (
+            Validation.objects.filter(user=user, problem=problem).exists()
+            or Report.objects.filter(user=user, problem=problem).exists()
+        ):
             return Response(
-                {"detail": "You have already answered this problem."},
+                {"detail": "You have already reported or answered this problem."},
                 status=status.HTTP_409_CONFLICT,
             )
 

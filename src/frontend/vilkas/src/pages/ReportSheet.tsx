@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiError, createProblemValidation, createReport, nearbyProblems, searchPlaces, type Place, type ProblemUrgency } from "../api";
+import { ApiError, createReport, nearbyProblems, searchPlaces, type Place, type ProblemUrgency } from "../api";
 import { AttachmentStrip } from "../components/AttachmentStrip";
 import { LazyMap } from "../components/map/LazyMap";
 import { CameraIcon, GalleryIcon, MicIcon, PinIcon } from "../components/icons";
@@ -331,14 +331,21 @@ export function ReportSheet() {
         navigate("/map");
         toast("Pranešimas išsiųstas! +20 tšk. gausite, kai kaimynai jį patvirtins");
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // It joined a problem you had already reported or answered.
+        await reload();
+        navigate("/map");
+        toast("Apie šią problemą čia jau pranešėte – ji jau sąraše");
+        return;
+      }
       setStep(from);
       toast("Nepavyko išsiųsti – pabandykite dar kartą");
     }
   };
 
-  // Confirming a duplicate = answering "the problem is there" on the existing
-  // problem, with this reporter's photo, text and urgency.
+  // Confirming a duplicate = filing this report on the existing problem, with
+  // the reporter's photo, text and urgency vote.
   const confirmDuplicate = async () => {
     const chosen = dupSel !== null ? cands[dupSel] : undefined;
     if (!chosen) return;
@@ -350,21 +357,25 @@ export function ReportSheet() {
     }
     setStep("saving");
     try {
-      const result = await createProblemValidation(chosen.view.id, {
-        is_valid: true,
-        description: form.description.trim(),
+      // Filed as a report on the existing problem: it keeps this reporter's
+      // text, files and urgency vote, counts as a confirmation, and shows up
+      // as a merged duplicate for the city.
+      const result = await createReport({
+        problem: chosen.view.id,
+        description: form.description.trim() || chosen.view.title,
         urgency: form.urgency,
         media: files,
       });
       await reload();
       navigate(`/problems/${chosen.view.id}`);
-      toast(result.points_awarded > 0 ? `Ačiū, patvirtinta! +${result.points_awarded} tšk.` : "Ačiū, patvirtinta! Taškus gausite, kai pasitvirtins");
+      const points = result.points_awarded ?? 0;
+      toast(points > 0 ? `Ačiū, prisijungėte prie pranešimo! +${points} tšk.` : "Ačiū, prisijungėte prie pranešimo! Taškus gausite, kai jis pasitvirtins");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         // Already answered from another device: show the problem instead.
         await reload();
         navigate(`/problems/${chosen.view.id}`);
-        toast("Jūs jau atsakėte apie šią problemą");
+        toast("Apie šią problemą jau pranešėte ar atsakėte");
         return;
       }
       setStep("dupes");

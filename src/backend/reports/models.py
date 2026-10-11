@@ -9,6 +9,7 @@ from media_assets.models import Media, MediaRelation
 from problems.models import Problem
 from users.models import User
 from vilnius_backend.base_models import TimestampedModel, UUIDModel
+from vilnius_backend.choices import ProblemUrgency
 
 
 @final
@@ -24,6 +25,16 @@ class Report(UUIDModel, TimestampedModel):
     )
     ai_abuse_flag: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
         default=False,
+    )
+    urgency: models.CharField[str | Combinable, str] = models.CharField(
+        max_length=32,
+        choices=ProblemUrgency.choices,
+        blank=True,
+        default="",
+        help_text=(
+            "The reporter's urgency vote; on a further report of an existing "
+            "problem it counts like an answer's."
+        ),
     )
     refuted: models.BooleanField[bool | Combinable, bool] = models.BooleanField(
         default=False,

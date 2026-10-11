@@ -6,6 +6,7 @@ What an answer does to a problem's status, and the points it earns, live in
 """
 
 from problems.models import Problem
+from reports.models import Report
 from users.models import User
 from validations.models import Validation
 from vilnius_backend.choices import ProblemUrgency
@@ -23,7 +24,8 @@ def urgency_votes(problem: Problem) -> dict[str, int]:
     Count how urgent residents think `problem` is.
 
     The first report's urgency counts as the reporter's own vote, so a
-    problem nobody has validated yet still shows where it started.
+    problem nobody has validated yet still shows where it started. Further
+    reports of the same problem (duplicates joined to it) vote like answers.
     """
     # TODO:
     tally = dict.fromkeys(_BY_SEVERITY, 0)
@@ -32,14 +34,21 @@ def urgency_votes(problem: Problem) -> dict[str, int]:
     voted = Validation.objects.filter(problem=problem).exclude(urgency="")
     for urgency in voted.values_list("urgency", flat=True):
         tally[urgency] = tally.get(urgency, 0) + 1
+    further = Report.objects.filter(problem=problem).order_by("created_at")[1:]
+    for report in further:
+        if report.urgency:
+            tally[report.urgency] = tally.get(report.urgency, 0) + 1
     return tally
 
 
 def urgency_vote_of(problem: Problem, user: User) -> str | None:
-    """Return the urgency `user` voted for on `problem`, if they answered it."""
+    """Return the urgency `user` voted for on `problem`, by answer or report."""
     # TODO:
     answer = Validation.objects.filter(problem=problem, user=user).first()
-    return (answer.urgency or None) if answer is not None else None
+    if answer is not None:
+        return answer.urgency or None
+    report = Report.objects.filter(problem=problem, user=user).first()
+    return (report.urgency or None) if report is not None else None
 
 
 def apply_urgency_votes(problem: Problem) -> None:

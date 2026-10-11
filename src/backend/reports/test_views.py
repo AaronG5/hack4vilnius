@@ -13,6 +13,7 @@ from reports.models import Report
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 from users.models import User
+from validations.services import urgency_votes
 from vilnius_backend.choices import MediaType, ProblemStatus, ProblemUrgency
 
 REPORTS_URL = "/api/reports"
@@ -20,6 +21,7 @@ NEUTRAL_SCORE = 50.0
 UPLOAD_COUNT = 2
 MIXED_UPLOAD_COUNT = 4
 PROBLEMS_AFTER_A_SECOND = 2
+JOINED_REPORTS = 2
 
 
 def _body(response: Response) -> dict[str, object]:
@@ -229,6 +231,45 @@ class TestReportCreate:
         )
 
         assert Problem.objects.count() == PROBLEMS_AFTER_A_SECOND
+
+    def test_a_joined_report_votes_on_urgency_and_counts_as_a_duplicate(
+        self,
+        other_auth_client: APIClient,
+        problem: Problem,
+        report: Report,
+    ) -> None:
+        """Picking an existing problem files a report on it, urgency vote included."""
+        del report
+        response = other_auth_client.post(
+            REPORTS_URL,
+            {
+                "description": "Same pothole, deeper now.",
+                "problem": str(problem.id),
+                "urgency": ProblemUrgency.DANGEROUS_TO_LIFE,
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CREATED
+        assert Report.objects.filter(problem=problem).count() == JOINED_REPORTS
+        assert urgency_votes(problem)[ProblemUrgency.DANGEROUS_TO_LIFE] == 1
+
+    def test_one_say_per_person_on_a_problem(
+        self,
+        auth_client: APIClient,
+        problem: Problem,
+        report: Report,
+    ) -> None:
+        """Whoever already reported a problem can't report it again."""
+        del report
+        response = auth_client.post(
+            REPORTS_URL,
+            {"description": "Me again.", "problem": str(problem.id)},
+            format="multipart",
+        )
+
+        assert response.status_code == HTTPStatus.CONFLICT
+        assert Report.objects.filter(problem=problem).count() == 1
 
     def test_falls_back_to_the_other_category_without_one(
         self,

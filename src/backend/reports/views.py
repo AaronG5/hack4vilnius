@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, cast, final, override
 import badges.services as badge_services
 import problems.services as problem_services
 import reports.services as report_services
+import validations.services as validation_services
 from categories.models import Category
 from categories.serializers import CategorySerializer
 from django.contrib.contenttypes.models import ContentType
@@ -27,6 +28,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import User
+from validations.models import Validation
 from vilnius_backend.choices import ProblemStatus, UserRole
 from vilnius_backend.generic_views import (
     DefaultCreateAPIView,
@@ -157,8 +159,19 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
             ),
         )
 
+        # One say per person on a problem: whoever already reported or
+        # answered it can't add another report and be counted (and paid) twice.
+        if Report.objects.filter(problem=problem, user=user).exists() or (
+            Validation.objects.filter(problem=problem, user=user).exists()
+        ):
+            return Response(
+                {"detail": "You have already reported or answered this problem."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
         report = Report.objects.create(
             description=description,
+            urgency=cast("str | None", data.get("urgency")) or "",
             ai_category_suggestion=report_services.suggest_category_label(suggestions)
             or "",
             ai_abuse_flag=report_services.detect_abuse(description, files),
@@ -171,6 +184,7 @@ class ReportCreateView(DefaultCreateAPIView[Report]):
         # answer would. Points come only once the problem is confirmed; see
         # `problems.lifecycle`.
         if Report.objects.filter(problem=problem).count() > 1:
+            validation_services.apply_urgency_votes(problem)
             lifecycle.record_answer(problem, report)
             report.refresh_from_db(fields=["points_awarded"])
 

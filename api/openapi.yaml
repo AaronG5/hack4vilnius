@@ -303,6 +303,10 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: >-
+            The resident already reported or answered this problem (one say
+            per person), either named in `problem` or found within 25 m.
 
   /reports/analyze:
     post:
@@ -1298,8 +1302,9 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProblemUrgency"
           description: >-
-            The reporter's own urgency vote for a new problem. Omit to use the
-            category's default. Ignored when `problem` is given.
+            The reporter's own urgency vote. For a new problem it sets the
+            starting urgency (omit to use the category's default); on an
+            existing problem it counts as one more vote, like an answer's.
         near_sensitive:
           type: boolean
           default: false
