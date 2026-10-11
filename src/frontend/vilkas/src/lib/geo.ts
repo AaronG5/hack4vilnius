@@ -7,6 +7,9 @@ export type LngLat = [number, number];
 /** Vilnius old town, for the initial map view. */
 export const VILNIUS_CENTER: LngLat = [25.2797, 54.6872];
 
+/** Reports must be within this far of `VILNIUS_CENTER`, so a stray or prank pin can't land elsewhere. */
+export const SERVICE_RADIUS_M = 40_000;
+
 /** Distance in metres between two points (haversine). */
 export function distanceMeters([lng1, lat1]: LngLat, [lng2, lat2]: LngLat): number {
   const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -14,6 +17,11 @@ export function distanceMeters([lng1, lat1]: LngLat, [lng2, lat2]: LngLat): numb
   const dLng = rad(lng2 - lng1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
   return 6_371_000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Whether `at` is within `SERVICE_RADIUS_M` of the city centre. */
+export function inServiceArea(at: LngLat): boolean {
+  return distanceMeters(at, VILNIUS_CENTER) <= SERVICE_RADIUS_M;
 }
 
 export interface Fix {

@@ -10,7 +10,7 @@ import { AttachmentStrip } from "../components/AttachmentStrip";
 import { LazyMap } from "../components/map/LazyMap";
 import { CameraIcon, GalleryIcon, MicIcon, PinIcon } from "../components/icons";
 import { Sheet, Steps } from "../components/Sheet";
-import { currentPosition, distanceMeters, districtOf, type Fix, type LngLat } from "../lib/geo";
+import { currentPosition, distanceMeters, districtOf, inServiceArea, SERVICE_RADIUS_M, type Fix, type LngLat } from "../lib/geo";
 import { analyzeReport } from "../lib/gaps";
 import { URGENCIES, URGENCY_LABEL } from "../lib/labels";
 import type { ProblemView } from "../lib/problemModel";
@@ -269,12 +269,21 @@ export function ReportSheet() {
     setStep("form");
   };
 
+  // Only Vilnius problems: a pin far outside the city sends the user back to place it.
+  const withinArea = (spot: LngLat): boolean => {
+    if (inServiceArea(spot)) return true;
+    toast(`Pranešti galima tik apie problemas Vilniuje – iki ${SERVICE_RADIUS_M / 1000} km nuo centro`);
+    setStep("place");
+    return false;
+  };
+
   // Before filing, offer open problems nearby: the same type within 270 m,
   // another type only when it's right here. The backend ranks them; when it
   // can't be reached, the problems already on the map are searched instead.
   // `from` is the step the user pressed "Toliau" on; a failed send returns them there.
   const checkDuplicates = async (from: Step) => {
     if (!at) return;
+    if (!withinArea(at)) return;
     const [lng, lat] = at;
     let near: { id: string; meters: number; category: string }[];
     try {
@@ -308,6 +317,7 @@ export function ReportSheet() {
   // `newProblem`: the user said none of the nearby problems is this one.
   const submit = async (from: Step, newProblem = false) => {
     if (!at) return;
+    if (!withinArea(at)) return;
     setStep("saving");
     const title = form.title.trim() || categories.find((c) => c.id === form.categoryId)?.name || "";
     try {
