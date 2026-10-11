@@ -14,6 +14,7 @@ import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProblemSheet } from "./pages/ProblemSheet";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ReportSheet } from "./pages/ReportSheet";
+import { RouteSheet } from "./pages/RouteSheet";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route element={<MapPage />}>
               <Route path="map" element={null} />
               <Route path="map/report" element={<ReportSheet />} />
+              <Route path="map/route" element={<RouteSheet />} />
               <Route path="problems/:id" element={<ProblemSheet />} />
             </Route>
 

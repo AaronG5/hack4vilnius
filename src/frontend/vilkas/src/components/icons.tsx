@@ -148,3 +148,12 @@ export const StarIcon = (p: IconProps) => (
     <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
   </Icon>
 );
+
+/** A winding path between two points: route planning. */
+export const RouteIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="6" cy="19" r="2" />
+    <circle cx="18" cy="5" r="2" />
+    <path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16" />
+  </Icon>
+);

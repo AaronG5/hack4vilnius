@@ -21,6 +21,12 @@ export interface MapPin {
   checked?: boolean;
 }
 
+/** A walk drawn on the map: its path and numbered stops. */
+export interface MapRoute {
+  path: LngLat[];
+  stops: { at: LngLat; n: number; done: boolean }[];
+}
+
 export interface MapLabel {
   at: LngLat;
   text: string;
@@ -50,6 +56,8 @@ export interface VilniusMapProps {
   fit?: boolean;
   /** Static preview: no panning, zooming or controls. */
   still?: boolean;
+  /** A planned walk; the view fits to it whenever its path changes. */
+  route?: MapRoute;
 }
 
 const STYLE = {
@@ -161,6 +169,24 @@ function markGeoJSON(mark?: LngLat): FeatureCollection {
   };
 }
 
+function routeLineGeoJSON(route?: MapRoute): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: route && route.path.length > 1 ? [{ type: "Feature", geometry: { type: "LineString", coordinates: route.path }, properties: {} }] : [],
+  };
+}
+
+function routeStopsGeoJSON(route?: MapRoute): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: (route?.stops ?? []).map((s) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: s.at },
+      properties: { n: String(s.n), done: s.done },
+    })),
+  };
+}
+
 function prefersDark(): boolean {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
@@ -184,6 +210,11 @@ function install(map: MLMap, props: VilniusMapProps) {
 
   map.addSource("districts", { type: "geojson", data: districtsGeoJSON(props.districts ?? []) });
   map.addLayer({ id: "district-line", type: "line", source: "districts", paint: { "line-color": "#414454", "line-opacity": 0.35, "line-width": 1.5, "line-dasharray": [3, 2] } });
+
+  // The walk goes under the pins; its numbered stops go on top (added below).
+  map.addSource("route-line", { type: "geojson", data: routeLineGeoJSON(props.route) });
+  map.addLayer({ id: "route-casing", type: "line", source: "route-line", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.6 } });
+  map.addLayer({ id: "route-line", type: "line", source: "route-line", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#3D7BFF", "line-width": 4.5 } });
 
   map.addSource("problems", {
     type: "geojson",
@@ -245,6 +276,21 @@ function install(map: MLMap, props: VilniusMapProps) {
     paint: { "text-color": "#3C3C3C", "text-halo-color": "#ffffff", "text-halo-width": 6 },
   });
 
+  map.addSource("route-stops", { type: "geojson", data: routeStopsGeoJSON(props.route) });
+  map.addLayer({
+    id: "route-stop",
+    type: "circle",
+    source: "route-stops",
+    paint: { "circle-radius": 11, "circle-color": ["case", ["get", "done"], "#1C4B1D", "#3D7BFF"], "circle-stroke-color": "#ffffff", "circle-stroke-width": 2.5, "circle-translate": [14, -14] },
+  });
+  map.addLayer({
+    id: "route-stop-n",
+    type: "symbol",
+    source: "route-stops",
+    layout: { "text-field": ["case", ["get", "done"], "✓", ["get", "n"]], "text-font": FONT, "text-size": 12, "text-allow-overlap": true, "text-offset": [1.15, -1.15] },
+    paint: { "text-color": "#ffffff" },
+  });
+
   map.addSource("mark", { type: "geojson", data: markGeoJSON(props.mark) });
   map.addLayer({ id: "mark-ring", type: "circle", source: "mark", paint: { "circle-radius": 16, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ED1C24", "circle-stroke-width": 3 } });
   map.addLayer({ id: "mark-dot", type: "circle", source: "mark", paint: { "circle-radius": 5, "circle-color": "#ED1C24" } });
@@ -285,9 +331,29 @@ export default function VilniusMap(props: VilniusMapProps) {
       map.addControl(geo, "top-right");
     }
 
+    // First view: fit to the walk or the pins once the style is in. (Not on
+    // "load", which waits for every tile and can come late or, with a missing
+    // style image, not at all.)
+    let fitted = false;
+    const firstFit = () => {
+      if (fitted) return;
+      fitted = true;
+      const cur = latest.current;
+      const points = cur.route && cur.route.path.length > 1 ? cur.route.path : (cur.fit ?? !cur.center) ? cur.pins?.map((pin) => pin.at) : undefined;
+      if (!points?.length) return;
+      // Measured again first: inside a sliding sheet the map can start before its final size.
+      requestAnimationFrame(() => {
+        map.resize();
+        const bounds = new maplibregl.LngLatBounds();
+        for (const point of points) bounds.extend(point);
+        map.fitBounds(bounds, { padding: 40, maxZoom: cur.route ? 16 : 15, duration: 0 });
+      });
+    };
+
     map.on("style.load", () => {
       install(map, latest.current);
       ready.current = true;
+      firstFit();
     });
 
     // The compact OpenStreetMap credit opens itself once the tiles' attribution arrives.
@@ -301,14 +367,6 @@ export default function VilniusMap(props: VilniusMapProps) {
     });
     if (attrib) collapseOnce.observe(attrib, { attributes: true, attributeFilter: ["class"] });
 
-    map.once("load", () => {
-      const cur = latest.current;
-      if ((cur.fit ?? !cur.center) && cur.pins?.length) {
-        const bounds = new maplibregl.LngLatBounds();
-        for (const pin of cur.pins) bounds.extend(pin.at);
-        map.fitBounds(bounds, { padding: 40, maxZoom: 15, duration: 0 });
-      }
-    });
 
     // Interactions (layers may not exist in every mode; MapLibre ignores unknown ids).
     const openFeature = (e: maplibregl.MapLayerMouseEvent) => {
@@ -372,6 +430,25 @@ export default function VilniusMap(props: VilniusMapProps) {
     (map.getSource("labels") as GeoJSONSource | undefined)?.setData(labelsGeoJSON(labels ?? []));
     (map.getSource("mark") as GeoJSONSource | undefined)?.setData(markGeoJSON(mark));
   }, [pins, districts, labels, mark]);
+
+  // The walk: redraw on every change, refit the view only when the path itself changes.
+  const { route } = props;
+  const routeKey = route ? JSON.stringify(route.path) : "";
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready.current) return;
+    (map.getSource("route-line") as GeoJSONSource | undefined)?.setData(routeLineGeoJSON(route));
+    (map.getSource("route-stops") as GeoJSONSource | undefined)?.setData(routeStopsGeoJSON(route));
+  }, [route]);
+  // A walk set after the map loaded (the first load fits to it itself).
+  useEffect(() => {
+    const map = mapRef.current;
+    const path = latest.current.route?.path;
+    if (!map || !ready.current || !path || path.length < 2) return;
+    const bounds = new maplibregl.LngLatBounds();
+    for (const point of path) bounds.extend(point);
+    map.fitBounds(bounds, { padding: 50, maxZoom: 16, duration: 600 });
+  }, [routeKey]);
 
   // Recentre when asked (e.g. "use my location" in the report flow).
   const { center } = props;

@@ -3,13 +3,15 @@
 
 import { useMemo, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { PinIcon } from "../components/icons";
+import { PinIcon, RouteIcon } from "../components/icons";
 import { LazyMap, MapLegend } from "../components/map/LazyMap";
 import { MARKS } from "../components/map/marks";
 import { ProblemItem } from "../components/ProblemItem";
 import { WEEKLY_GOAL, weekChecks } from "../lib/activity";
 import { distanceMeters, formatDistance, isNear, NEAR_RADIUS_M, type LngLat } from "../lib/geo";
 import { myActivity, type ProblemView } from "../lib/problemModel";
+import { googleMapsUrl, routeSummary } from "../lib/routePlanner";
+import { setActiveRoute, useActiveRoute } from "../lib/routeStore";
 import { useWatchedFix } from "../lib/useWatchedFix";
 import { useAppState, type MapFilter } from "../state/appState";
 import "./MapPage.css";
@@ -23,6 +25,9 @@ const FILTERS: [MapFilter, string][] = [
   ["work", "Sprendžiamos"],
   ["fixed", "Sutvarkytos"],
 ];
+
+/** Within this distance of the start, a circular walk counts as back home. */
+const HOME_RADIUS_M = 50;
 
 function passes(filter: MapFilter, v: ProblemView): boolean {
   if (filter === "all") return true;
@@ -106,6 +111,20 @@ export function MapPage() {
   const todo = shown.filter((v) => !v.mine && !v.myVote).length;
   const week = Math.min(WEEKLY_GOAL, weekChecks(myActivity(views, me?.id)));
 
+  // The walk in progress: a stop is done once you've answered (or reported) it,
+  // or it was fixed or taken on by the city meanwhile.
+  const route = useActiveRoute();
+  const stopDone = (id: string) => {
+    const v = all.find((x) => x.id === id);
+    return !v || v.mine || v.myVote !== undefined || v.isFixed || v.status === "work";
+  };
+  const routeStops = route?.stops.map((s, i) => ({ ...s, n: i + 1, done: stopDone(s.id) })) ?? [];
+  const nextStop = routeStops.find((s) => !s.done);
+  const doneCount = routeStops.filter((s) => s.done).length;
+  // A loop isn't over until you're back where you started.
+  const homeward = Boolean(route?.loop && !nextStop && !(here && route && distanceMeters(here, route.start) <= HOME_RADIUS_M));
+  const mapRoute = route ? { path: route.path, stops: routeStops.map((s) => ({ at: s.at, n: s.n, done: s.done })) } : undefined;
+
   return (
     <>
       <main className="app-main map-page">
@@ -128,6 +147,70 @@ export function MapPage() {
               </button>
             ))}
           </div>
+
+          {route ? (
+            <section className="route-card" aria-label="Maršrutas">
+              <div className="row" style={{ alignItems: "center", flexWrap: "nowrap" }}>
+                <RouteIcon size={20} />
+                <b style={{ flex: 1 }}>
+                  Maršrutas · {doneCount}/{routeStops.length} patikrinta
+                </b>
+                <span className="sm">{routeSummary(route.distanceM, route.durationS, route.stops.length)}</span>
+              </div>
+              <span className="bar" style={{ height: 6 }}>
+                <i style={{ height: 6, width: `${(doneCount / Math.max(1, routeStops.length)) * 100}%` }} />
+              </span>
+              {nextStop ? (
+                <button type="button" className="prompt" style={{ margin: 0 }} onClick={() => open(nextStop.id)}>
+                  <span className="route-n">{nextStop.n}</span>
+                  <span className="txt">
+                    <small>Kita stotelė{here ? ` · už ${formatDistance(distanceMeters(here, nextStop.at))}` : ""}</small>
+                    <b>{nextStop.title}</b>
+                  </span>
+                </button>
+              ) : homeward && route ? (
+                <div className="prompt" style={{ margin: 0, cursor: "default" }}>
+                  <span className="route-n home" aria-hidden="true">
+                    ⌂
+                  </span>
+                  <span className="txt">
+                    <small>Visos stotelės patikrintos{here ? ` · už ${formatDistance(distanceMeters(here, route.start))}` : ""}</small>
+                    <b>Grįžimas į pradžią</b>
+                  </span>
+                </div>
+              ) : (
+                <b>Maršrutas įveiktas – ačiū! Taškai ateis, kai atsakymai pasitvirtins.</b>
+              )}
+              <div className="row">
+                {(nextStop || homeward) && (
+                  <a
+                    className="btn ghost"
+                    style={{ flex: 1, height: 40, fontSize: 13 }}
+                    href={googleMapsUrl(
+                      here ?? route.start,
+                      routeStops.filter((s) => !s.done),
+                      route.loop ? route.start : undefined,
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Google Maps
+                  </a>
+                )}
+                <button type="button" className="btn ghost" style={{ flex: 1, height: 40, fontSize: 13 }} onClick={() => setActiveRoute(null)}>
+                  {nextStop || homeward ? "Baigti maršrutą" : "Uždaryti"}
+                </button>
+              </div>
+            </section>
+          ) : (
+            <button type="button" className="prompt route" onClick={() => navigate("/map/route")}>
+              <RouteIcon size={18} />
+              <span className="txt">
+                <b>Planuoti maršrutą</b>
+                <small>Pasivaikščiokite per artimiausias problemas ir jas patikrinkite</small>
+              </span>
+            </button>
+          )}
 
           {onSite ? (
             <button type="button" className="prompt onsite" onClick={() => open(onSite.id)}>
@@ -187,7 +270,7 @@ export function MapPage() {
         </div>
 
         <div className="map-pane">
-          <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={onLocate} />
+          <LazyMap label="Vilniaus žemėlapis su pranešimais" height={400} pins={pins} onOpen={open} onLocate={onLocate} route={mapRoute} />
           <MapLegend />
         </div>
 

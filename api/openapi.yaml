@@ -177,6 +177,57 @@ paths:
                 items:
                   $ref: "#/components/schemas/Problem"
 
+  /routes/walk:
+    get:
+      tags: [geocoding]
+      summary: A walk along streets and paths through stops
+      description: >-
+        Backs the route planner. The app chooses which problems to visit and in
+        what order (best priority per minute of walking, within the resident's
+        time budget); this returns the path between them, with its length and
+        walking time overall and per leg. Proxies an OSRM router with a foot
+        profile (WALKING_ROUTER_URL; by default the public OpenStreetMap one).
+        503 when the router is unavailable, in which case the app draws
+        straight lines.
+      parameters:
+        - name: stops
+          in: query
+          required: true
+          description: 2 to 12 "longitude,latitude" pairs separated by ";", in walking order.
+          schema: { type: string, example: "25.2797,54.6872;25.2870,54.6890" }
+      responses:
+        "200":
+          description: The walk.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  distance_m: { type: integer }
+                  duration_s: { type: integer }
+                  path:
+                    type: object
+                    description: GeoJSON LineString.
+                    properties:
+                      type: { type: string, enum: [LineString] }
+                      coordinates:
+                        type: array
+                        items: { type: array, items: { type: number } }
+                  legs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        distance_m: { type: integer }
+                        duration_s: { type: integer }
+                required: [distance_m, duration_s, path, legs]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          description: The walking router is unavailable.
+
   /problems/nearby:
     get:
       tags: [problems]
