@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 _FALLBACK_CATEGORY_NAME = "other"
 
-CATEGORY_SUGGESTION_MODEL = "claude-sonnet-5-5"
+CATEGORY_SUGGESTION_MODEL = "claude-haiku-5-5"
 _ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 _ANTHROPIC_VERSION = "2023-06-01"
 # Report submission waits on this call, so keep it short and fall back fast.
@@ -141,8 +141,9 @@ def _request_ranking(
     body: dict[str, object] = {
         "model": CATEGORY_SUGGESTION_MODEL,
         "max_tokens": _MAX_TOKENS,
-        # A quick classification: thinking off, lowest effort.
-        "thinking": {"type": "between_tools"},
+        # A quick classification: thinking off, lowest effort. Haiku turns
+        # thinking off with "disabled"; Sonnet 5.5 would need "between_tools".
+        "thinking": {"type": "disabled"},
         "output_config": {
             "effort": "low",
             "format": {"type": "json_schema", "schema": _RANKING_SCHEMA},
